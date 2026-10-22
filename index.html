@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Balanço de Branco v1.1 — 2026-10-22: saída padrão 400x400 (recorte central da câmera); v1.0: versão inicial -->
+<!-- Balanço de Branco v1.2 — 2026-10-22: ajustes de imagem (nível de preto, contraste, brilho, gama, saturação) e controles de hardware da câmera
+     v1.1: saída padrão 400x400 (recorte central); v1.0: versão inicial -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -28,12 +29,15 @@
   #status.ok { color:var(--ok); } #status.bad { color:var(--bad); }
   .hint { color:var(--dim); font-size:12px; margin-top:14px; }
   label { display:flex; gap:6px; align-items:center; margin:4px 0; color:var(--dim); }
+  .sl { display:grid; grid-template-columns:86px 1fr 40px; gap:6px; align-items:center; margin:3px 0; color:var(--dim); }
+  .sl input { width:100%; } .sl span:last-child { text-align:right; color:var(--txt); font-variant-numeric:tabular-nums; }
+  .mini { padding:3px 8px; font-size:12px; margin-top:4px; }
   :fullscreen aside, :fullscreen header { display:none; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Balanço de Branco <span style="color:var(--dim);font-weight:400;font-size:12px">v1.1</span></h1>
+  <h1>Balanço de Branco <span style="color:var(--dim);font-weight:400;font-size:12px">v1.2</span></h1>
   <select id="cam" title="Câmera"></select>
   <select id="res" title="Resolução">
     <option value="400x400" selected>400×400</option>
@@ -67,6 +71,13 @@
     <label><input type="radio" name="norm" value="g"> Referência no verde</label>
     <label><input type="range" id="roi" min="10" max="50" value="25"> Área <span id="roiTxt">25%</span></label>
 
+    <h2>Ajustes de imagem</h2>
+    <div id="adj"></div>
+    <button class="mini" id="btnAdjReset">Padrão</button>
+
+    <h2>Câmera (hardware)</h2>
+    <div id="hw"><span style="color:var(--dim)">–</span></div>
+
     <div class="hint">
       1. Aponte para a referência branca preenchendo o quadrado amarelo.<br>
       2. Clique em <b>Balanço de branco</b> (ou tecle W).<br>
@@ -87,29 +98,104 @@
   const LIN = new Float64Array(256);
   for (let i = 0; i < 256; i++) { const v = i / 255; LIN[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
   const toLin = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-  function buildLut(gain) {
+  const ADJ_DEF = { black: 0, contrast: 1, bright: 0, gamma: 1, sat: 1 };
+  const ADJ_UI = [
+    ["black",    "Nível de preto", 0,    0.30, 0.01],
+    ["contrast", "Contraste",      0.5,  2.0,  0.01],
+    ["bright",   "Brilho",        -0.30, 0.30, 0.01],
+    ["gamma",    "Gama",           0.5,  2.0,  0.01],
+    ["sat",      "Saturação",      0,    2.0,  0.01]
+  ];
+  let adj = { ...ADJ_DEF };
+
+  // pipeline por canal: sRGB -> linear -> x ganho WB -> sRGB -> preto -> contraste -> brilho -> gama
+  function buildLut(gain, a) {
+    a = a || ADJ_DEF;
     const lut = new Uint8ClampedArray(256);
     for (let i = 0; i < 256; i++) {
       let v = Math.min(1, LIN[i] * gain);
       v = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+      v = (v - a.black) / (1 - a.black);
+      v = (v - 0.5) * a.contrast + 0.5;
+      v = v + a.bright;
+      v = Math.min(1, Math.max(0, v));
+      v = Math.pow(v, 1 / a.gamma);
       lut[i] = Math.round(v * 255);
     }
     return lut;
   }
 
-  let gains = [1, 1, 1], luts = gains.map(buildLut);
+  let gains = [1, 1, 1], luts = gains.map(g => buildLut(g, adj)), wbLuts = gains.map(g => buildLut(g));
+  function rebuildLuts() { luts = gains.map(g => buildLut(g, adj)); wbLuts = gains.map(g => buildLut(g)); }
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25;
   let outW = 400, outH = 400;
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
   function showGains() { ["gR", "gG", "gB"].forEach((id, i) => $(id).textContent = gains[i].toFixed(3)); }
-  function setGains(g) { gains = g; luts = g.map(buildLut); showGains(); }
+  function setGains(g) { gains = g; rebuildLuts(); showGains(); }
 
   function saveGains() { try { localStorage.setItem("wb:" + camKey, JSON.stringify(gains)); } catch (e) {} }
   function loadGains() {
     try { const g = JSON.parse(localStorage.getItem("wb:" + camKey)); if (Array.isArray(g) && g.length === 3) return g; } catch (e) {}
     return null;
+  }
+
+  function saveAdj() { try { localStorage.setItem("adj:" + camKey, JSON.stringify(adj)); } catch (e) {} }
+  function loadAdj() {
+    try { const a = JSON.parse(localStorage.getItem("adj:" + camKey)); if (a && typeof a === "object") return { ...ADJ_DEF, ...a }; } catch (e) {}
+    return { ...ADJ_DEF };
+  }
+
+  function slider(parent, label, min, max, step, value, fmt, onInput) {
+    const row = document.createElement("div"); row.className = "sl";
+    const l = document.createElement("span"); l.textContent = label;
+    const inp = document.createElement("input"); inp.type = "range"; inp.min = min; inp.max = max; inp.step = step; inp.value = value;
+    const v = document.createElement("span"); v.textContent = fmt(+value);
+    inp.oninput = () => { v.textContent = fmt(+inp.value); onInput(+inp.value); };
+    row.append(l, inp, v); parent.appendChild(row);
+    return inp;
+  }
+
+  function renderAdj() {
+    const box = $("adj"); box.innerHTML = "";
+    ADJ_UI.forEach(([k, label, min, max, step]) => {
+      slider(box, label, min, max, step, adj[k], x => x.toFixed(2), x => { adj[k] = x; rebuildLuts(); saveAdj(); });
+    });
+  }
+
+  // controles do hardware que a câmera expõe (UVC)
+  const HW = [
+    ["brightness", "Brilho"], ["contrast", "Contraste"], ["saturation", "Saturação"],
+    ["sharpness", "Nitidez"], ["exposureCompensation", "Comp. exposição"],
+    ["exposureTime", "Exposição"], ["colorTemperature", "Temp. cor (K)"]
+  ];
+  function renderHw(track) {
+    const box = $("hw"); box.innerHTML = "";
+    let caps = {}, set = {};
+    try { caps = track.getCapabilities ? track.getCapabilities() : {}; set = track.getSettings(); } catch (e) {}
+    let any = false;
+
+    if (caps.exposureMode && caps.exposureMode.includes("manual") && caps.exposureMode.includes("continuous")) {
+      const lab = document.createElement("label");
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = set.exposureMode !== "manual";
+      cb.onchange = () => track.applyConstraints({ advanced: [{ exposureMode: cb.checked ? "continuous" : "manual" }] }).catch(() => {});
+      lab.append(cb, " Exposição automática"); box.appendChild(lab); any = true;
+    }
+
+    HW.forEach(([k, label]) => {
+      const c = caps[k];
+      if (!c || typeof c.min !== "number" || c.max <= c.min) return;
+      const cur = typeof set[k] === "number" ? set[k] : c.min;
+      slider(box, label, c.min, c.max, c.step || 1, cur, x => Math.round(x) + "", x => {
+        const cons = { [k]: x };
+        if (k === "exposureTime") cons.exposureMode = "manual";
+        if (k === "colorTemperature") cons.whiteBalanceMode = "manual";
+        track.applyConstraints({ advanced: [cons] }).catch(() => {});
+      });
+      any = true;
+    });
+    if (!any) box.innerHTML = '<span style="color:var(--dim)">Esta câmera não expõe controles ao navegador</span>';
   }
 
   // ---- câmera ----
@@ -147,6 +233,8 @@
       }
     } catch (e) {}
     $("awb").textContent = awbTxt;
+    renderHw(track);
+    adj = loadAdj(); renderAdj();
 
     const g = loadGains();
     if (g) { setGains(g); setStatus("Ganhos salvos carregados", "ok"); }
@@ -172,13 +260,14 @@
       let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0;
       let cr = 0, cg = 0, cb = 0;
       const lr = luts[0], lg = luts[1], lb = luts[2];
+      const wr = wbLuts[0], wg = wbLuts[1], wb = wbLuts[2];
       for (let y = y0; y < y0 + s; y += 2) {
         let p = (y * w + x0) * 4;
         for (let x = 0; x < s; x += 2, p += 8) {
           const r = d[p], g = d[p + 1], b = d[p + 2];
           sr += r; sg += g; sb += b; n++;
           if (r >= 250) satR++; if (g >= 250) satG++; if (b >= 250) satB++;
-          cr += lr[r]; cg += lg[g]; cb += lb[b];
+          cr += wr[r]; cg += wg[g]; cb += wb[b];
         }
       }
       lastIn = [sr / n, sg / n, sb / n];
@@ -186,7 +275,16 @@
       const out = [cr / n, cg / n, cb / n];
 
       if (!showOriginal) {
-        for (let i = 0; i < d.length; i += 4) { d[i] = lr[d[i]]; d[i + 1] = lg[d[i + 1]]; d[i + 2] = lb[d[i + 2]]; }
+        const sat = adj.sat;
+        if (sat === 1) {
+          for (let i = 0; i < d.length; i += 4) { d[i] = lr[d[i]]; d[i + 1] = lg[d[i + 1]]; d[i + 2] = lb[d[i + 2]]; }
+        } else {
+          for (let i = 0; i < d.length; i += 4) {
+            const r = lr[d[i]], g = lg[d[i + 1]], b = lb[d[i + 2]];
+            const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            d[i] = y + sat * (r - y); d[i + 1] = y + sat * (g - y); d[i + 2] = y + sat * (b - y);
+          }
+        }
       }
       ctx.putImageData(img, 0, 0);
       ctx.strokeStyle = "#ffd400"; ctx.lineWidth = Math.max(2, w / 640);
@@ -215,6 +313,7 @@
   function toggleFull() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
 
   $("btnWB").onclick = doWB;
+  $("btnAdjReset").onclick = () => { adj = { ...ADJ_DEF }; rebuildLuts(); saveAdj(); renderAdj(); };
   $("btnReset").onclick = doReset;
   $("btnCmp").onclick = toggleCmp;
   $("btnFull").onclick = toggleFull;
