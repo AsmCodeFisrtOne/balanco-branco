@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balanço de Branco</title>
+<style>
+  :root { --bg:#111418; --panel:#1b2027; --line:#2c333d; --txt:#e6e9ee; --dim:#8b95a3; --acc:#3fa7ff; --ok:#3ecf8e; --bad:#ff5d5d; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt); font:14px/1.4 "Segoe UI",system-ui,sans-serif; }
+  body { display:flex; flex-direction:column; }
+  header { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 12px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header h1 { font-size:15px; margin:0 12px 0 0; font-weight:600; }
+  select, button { background:#252b34; color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font:inherit; cursor:pointer; }
+  button:hover, select:hover { border-color:var(--acc); }
+  button.main { background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:600; }
+  button.on { border-color:var(--acc); color:var(--acc); }
+  main { flex:1; display:flex; min-height:0; }
+  #stage { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; background:#000; }
+  canvas { max-width:100%; max-height:100%; }
+  aside { width:260px; padding:12px; background:var(--panel); border-left:1px solid var(--line); overflow:auto; }
+  aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); margin:14px 0 6px; font-weight:600; }
+  aside h2:first-child { margin-top:0; }
+  .row { display:flex; justify-content:space-between; font-variant-numeric:tabular-nums; padding:2px 0; }
+  .r { color:#ff7b7b; } .g { color:#6fe08f; } .b { color:#7fb2ff; }
+  #status { padding:8px; border-radius:6px; background:#252b34; margin-top:4px; }
+  #status.ok { color:var(--ok); } #status.bad { color:var(--bad); }
+  .hint { color:var(--dim); font-size:12px; margin-top:14px; }
+  label { display:flex; gap:6px; align-items:center; margin:4px 0; color:var(--dim); }
+  :fullscreen aside, :fullscreen header { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Balanço de Branco</h1>
+  <select id="cam" title="Câmera"></select>
+  <select id="res" title="Resolução">
+    <option value="1280x720">1280×720</option>
+    <option value="1920x1080">1920×1080</option>
+    <option value="640x480">640×480</option>
+  </select>
+  <button class="main" id="btnWB" title="Tecla W">Balanço de branco</button>
+  <button id="btnReset" title="Tecla R">Reset</button>
+  <button id="btnCmp" title="Tecla O">Ver original</button>
+  <button id="btnFull" title="Tecla F">Tela cheia</button>
+</header>
+<main>
+  <div id="stage"><canvas id="cv"></canvas></div>
+  <aside>
+    <h2>Medição na área central</h2>
+    <div class="row"><span>Original</span><span><span class="r" id="inR">–</span> <span class="g" id="inG">–</span> <span class="b" id="inB">–</span></span></div>
+    <div class="row"><span>Corrigido</span><span><span class="r" id="outR">–</span> <span class="g" id="outG">–</span> <span class="b" id="outB">–</span></span></div>
+
+    <h2>Ganhos travados</h2>
+    <div class="row"><span class="r">R</span><span id="gR">1.000</span></div>
+    <div class="row"><span class="g">G</span><span id="gG">1.000</span></div>
+    <div class="row"><span class="b">B</span><span id="gB">1.000</span></div>
+
+    <h2>Estado</h2>
+    <div id="status">Iniciando…</div>
+    <div class="row" style="margin-top:6px"><span>AWB da câmera</span><span id="awb">–</span></div>
+
+    <h2>Opções</h2>
+    <label><input type="radio" name="norm" value="min" checked> Ganhos ≤ 1 (não estoura)</label>
+    <label><input type="radio" name="norm" value="g"> Referência no verde</label>
+    <label><input type="range" id="roi" min="10" max="50" value="25"> Área <span id="roiTxt">25%</span></label>
+
+    <div class="hint">
+      1. Aponte para a referência branca preenchendo o quadrado amarelo.<br>
+      2. Clique em <b>Balanço de branco</b> (ou tecle W).<br>
+      3. Os ganhos ficam travados e salvos para esta câmera.<br><br>
+      Atalhos: W balanço · R reset · O original · F tela cheia
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d", { willReadFrequently: true });
+  const video = document.createElement("video");
+  video.muted = true; video.playsInline = true;
+
+  // ---- sRGB <-> linear e LUTs ----
+  const LIN = new Float64Array(256);
+  for (let i = 0; i < 256; i++) { const v = i / 255; LIN[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+  const toLin = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  function buildLut(gain) {
+    const lut = new Uint8ClampedArray(256);
+    for (let i = 0; i < 256; i++) {
+      let v = Math.min(1, LIN[i] * gain);
+      v = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+      lut[i] = Math.round(v * 255);
+    }
+    return lut;
+  }
+
+  let gains = [1, 1, 1], luts = gains.map(buildLut);
+  let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
+  let roiFrac = 0.25;
+
+  function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
+  function showGains() { ["gR", "gG", "gB"].forEach((id, i) => $(id).textContent = gains[i].toFixed(3)); }
+  function setGains(g) { gains = g; luts = g.map(buildLut); showGains(); }
+
+  function saveGains() { try { localStorage.setItem("wb:" + camKey, JSON.stringify(gains)); } catch (e) {} }
+  function loadGains() {
+    try { const g = JSON.parse(localStorage.getItem("wb:" + camKey)); if (Array.isArray(g) && g.length === 3) return g; } catch (e) {}
+    return null;
+  }
+
+  // ---- câmera ----
+  async function listCams() {
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+    const sel = $("cam"), cur = sel.value;
+    sel.innerHTML = "";
+    devs.forEach((d, i) => { const o = document.createElement("option"); o.value = d.deviceId; o.textContent = d.label || ("Câmera " + (i + 1)); sel.appendChild(o); });
+    if (cur && devs.some(d => d.deviceId === cur)) sel.value = cur;
+  }
+
+  async function startCam() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    const [w, h] = $("res").value.split("x").map(Number);
+    const id = $("cam").value;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: id ? { exact: id } : undefined, width: { ideal: w }, height: { ideal: h } }, audio: false
+      });
+    } catch (e) { setStatus("Erro ao abrir câmera: " + e.message, "bad"); return; }
+    video.srcObject = stream; await video.play();
+    await listCams();
+    const track = stream.getVideoTracks()[0];
+    camKey = track.label || id || "default";
+    $("cam").value = track.getSettings().deviceId || $("cam").value;
+
+    // tenta desligar o AWB do hardware
+    let awbTxt = "não controlável";
+    try {
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.whiteBalanceMode && caps.whiteBalanceMode.includes("manual")) {
+        await track.applyConstraints({ advanced: [{ whiteBalanceMode: "manual" }] });
+        awbTxt = "desligado";
+      }
+    } catch (e) {}
+    $("awb").textContent = awbTxt;
+
+    const g = loadGains();
+    if (g) { setGains(g); setStatus("Ganhos salvos carregados", "ok"); }
+    else { setGains([1, 1, 1]); setStatus("Sem balanço — aponte para o branco e clique", ""); }
+  }
+
+  // ---- loop de vídeo ----
+  function frame() {
+    const w = video.videoWidth, h = video.videoHeight;
+    if (w && h) {
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      ctx.drawImage(video, 0, 0, w, h);
+      const img = ctx.getImageData(0, 0, w, h), d = img.data;
+
+      // ROI central
+      const s = Math.max(4, Math.floor(Math.min(w, h) * roiFrac));
+      const x0 = (w - s) >> 1, y0 = (h - s) >> 1;
+      let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0;
+      let cr = 0, cg = 0, cb = 0;
+      const lr = luts[0], lg = luts[1], lb = luts[2];
+      for (let y = y0; y < y0 + s; y += 2) {
+        let p = (y * w + x0) * 4;
+        for (let x = 0; x < s; x += 2, p += 8) {
+          const r = d[p], g = d[p + 1], b = d[p + 2];
+          sr += r; sg += g; sb += b; n++;
+          if (r >= 250) satR++; if (g >= 250) satG++; if (b >= 250) satB++;
+          cr += lr[r]; cg += lg[g]; cb += lb[b];
+        }
+      }
+      lastIn = [sr / n, sg / n, sb / n];
+      lastSat = [satR / n, satG / n, satB / n];
+      const out = [cr / n, cg / n, cb / n];
+
+      if (!showOriginal) {
+        for (let i = 0; i < d.length; i += 4) { d[i] = lr[d[i]]; d[i + 1] = lg[d[i + 1]]; d[i + 2] = lb[d[i + 2]]; }
+      }
+      ctx.putImageData(img, 0, 0);
+      ctx.strokeStyle = "#ffd400"; ctx.lineWidth = Math.max(2, w / 640);
+      ctx.strokeRect(x0, y0, s, s);
+      if (showOriginal) { ctx.fillStyle = "#ffd400"; ctx.font = (16 * w / 640) + "px Segoe UI"; ctx.fillText("ORIGINAL", 10, 24 * w / 640); }
+
+      $("inR").textContent = lastIn[0].toFixed(0); $("inG").textContent = lastIn[1].toFixed(0); $("inB").textContent = lastIn[2].toFixed(0);
+      $("outR").textContent = out[0].toFixed(0); $("outG").textContent = out[1].toFixed(0); $("outB").textContent = out[2].toFixed(0);
+    }
+    if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
+  }
+
+  // ---- ações ----
+  function doWB() {
+    if (lastSat.some(x => x > 0.02)) { setStatus("Recusado: referência saturada — reduza a luz/exposição", "bad"); return; }
+    if (Math.max(...lastIn) < 40) { setStatus("Recusado: referência escura demais", "bad"); return; }
+    const lin = lastIn.map(v => Math.max(toLin(v), 1e-4));
+    const norm = document.querySelector('input[name="norm"]:checked').value;
+    const target = norm === "g" ? lin[1] : Math.min(...lin);
+    setGains(lin.map(v => target / v));
+    saveGains();
+    setStatus("Balanço travado e salvo", "ok");
+  }
+  function doReset() { setGains([1, 1, 1]); saveGains(); setStatus("Reset (ganhos = 1)", ""); }
+  function toggleCmp() { showOriginal = !showOriginal; $("btnCmp").classList.toggle("on", showOriginal); }
+  function toggleFull() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+
+  $("btnWB").onclick = doWB;
+  $("btnReset").onclick = doReset;
+  $("btnCmp").onclick = toggleCmp;
+  $("btnFull").onclick = toggleFull;
+  $("cam").onchange = startCam;
+  $("res").onchange = startCam;
+  $("roi").oninput = e => { roiFrac = e.target.value / 100; $("roiTxt").textContent = e.target.value + "%"; };
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "SELECT") return;
+    const k = e.key.toLowerCase();
+    if (k === "w") doWB(); else if (k === "r") doReset(); else if (k === "o") toggleCmp(); else if (k === "f") toggleFull();
+  });
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus("Navegador sem acesso à câmera. Use Edge ou Chrome.", "bad");
+  } else {
+    startCam().then(() => { if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame); });
+  }
+})();
+</script>
+</body>
+</html>
