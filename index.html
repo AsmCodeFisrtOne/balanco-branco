@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Balanço de Branco v1.1 — 2026-10-22: saída padrão 400x400 (recorte central da câmera); v1.0: versão inicial -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -32,9 +33,10 @@
 </head>
 <body>
 <header>
-  <h1>Balanço de Branco</h1>
+  <h1>Balanço de Branco <span style="color:var(--dim);font-weight:400;font-size:12px">v1.1</span></h1>
   <select id="cam" title="Câmera"></select>
   <select id="res" title="Resolução">
+    <option value="400x400" selected>400×400</option>
     <option value="1280x720">1280×720</option>
     <option value="1920x1080">1920×1080</option>
     <option value="640x480">640×480</option>
@@ -98,6 +100,7 @@
   let gains = [1, 1, 1], luts = gains.map(buildLut);
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25;
+  let outW = 400, outH = 400;
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
   function showGains() { ["gR", "gG", "gB"].forEach((id, i) => $(id).textContent = gains[i].toFixed(3)); }
@@ -121,6 +124,7 @@
   async function startCam() {
     if (stream) stream.getTracks().forEach(t => t.stop());
     const [w, h] = $("res").value.split("x").map(Number);
+    outW = w; outH = h;
     const id = $("cam").value;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -151,10 +155,15 @@
 
   // ---- loop de vídeo ----
   function frame() {
-    const w = video.videoWidth, h = video.videoHeight;
-    if (w && h) {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const w = outW, h = outH;
+    if (vw && vh) {
       if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
-      ctx.drawImage(video, 0, 0, w, h);
+      // recorte central da câmera na proporção da saída, escalado para w x h
+      const a = w / h;
+      let sx = 0, sy = 0, sw = vw, sh = vh;
+      if (vw / vh > a) { sw = vh * a; sx = (vw - sw) / 2; } else { sh = vw / a; sy = (vh - sh) / 2; }
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
       const img = ctx.getImageData(0, 0, w, h), d = img.data;
 
       // ROI central
