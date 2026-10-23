@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v2.6 — 2026-10-23: "Evitar estouro de luz" em 4 níveis (substitui Preservar reflexos / Manter o brilho)
+<!-- Ajuste de Imagem — Videoendoscopia  v2.7 — 2026-10-23: corrige "Alto" parecendo estourar — a proteção de reflexos clareava os brancos (agora só neutraliza a cor, sem clarear, e só no que já veio estourado)
+     v2.6: "Evitar estouro de luz" em 4 níveis (substitui Preservar reflexos / Manter o brilho)
      v2.5: "Preservar reflexos" com proteção de reflexos (não ficam tingidos); trocar a prioridade recalcula sem recalibrar
      v2.4: excluir capturas (✕ na miniatura / Excluir no visualizador, com confirmação; apaga da pasta escolhida)
      v2.3: calibração trava a câmera ANTES de medir (a cor não "volta" mais após calibrar) e mede a média de 12 quadros
@@ -226,7 +227,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.6</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.7</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -512,7 +513,7 @@
   // aplica LUTs + saturação + anti-vermelho seletivo, in-place
   // proteção de reflexos: onde a câmera já entregou o pixel quase branco/estourado, a correção de cor
   // não pode tingir o reflexo (ficaria azulado/rosado) — ele volta a ser branco neutro
-  const HP_W = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = Math.min(1, Math.max(0, (i - 175) / 55)); HP_W[i] = x * x * (3 - 2 * x); }  // pelo menor canal: só tons quase brancos
+  const HP_W = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = Math.min(1, Math.max(0, (i - 222) / 28)); HP_W[i] = x * x * (3 - 2 * x); }  // pelo menor canal: só o que a câmera já entregou quase estourado
   function applyPipeline(d, L, sat, arLevel, hp) {
     const lr = L[0], lg = L[1], lb = L[2], A = AR[arLevel || 0], K = KNEE_LUTS[arLevel || 0], BW = BLOOD_W[arLevel || 0], desat = A.desat, cut = A.cut;
     if (sat === 1 && !desat && !hp) {
@@ -524,7 +525,7 @@
       let r = lr[R0], g = lg[G0], b = lb[B0];
       if (hp) {
         const w = HP_W[mn3(R0, G0, B0)] * hp;
-        if (w > 0) { const t = r > g ? (r > b ? r : b) : (g > b ? g : b); r += w * (t - r); g += w * (t - g); b += w * (t - b); }
+        if (w > 0) { const t = 0.2126 * r + 0.7152 * g + 0.0722 * b; r += w * (t - r); g += w * (t - g); b += w * (t - b); }  // neutraliza sem clarear
       }
       let s = sat;
       if (desat && r > 0) {
