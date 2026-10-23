@@ -1,5 +1,8 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v2.3 — 2026-10-23: calibração trava a câmera ANTES de medir (a cor não "volta" mais após calibrar) e mede a média de 12 quadros
+<!-- Ajuste de Imagem — Videoendoscopia  v2.6 — 2026-10-23: "Evitar estouro de luz" em 4 níveis (substitui Preservar reflexos / Manter o brilho)
+     v2.5: "Preservar reflexos" com proteção de reflexos (não ficam tingidos); trocar a prioridade recalcula sem recalibrar
+     v2.4: excluir capturas (✕ na miniatura / Excluir no visualizador, com confirmação; apaga da pasta escolhida)
+     v2.3: calibração trava a câmera ANTES de medir (a cor não "volta" mais após calibrar) e mede a média de 12 quadros
      v2.2: anti-vermelho mais forte; galeria mostra a captura na hora (salvar nunca bloqueia a miniatura)
      v2.1: fonte Bonnie Condensed (embutida, woff2)
      v2.0 — 2026-10-23:
@@ -114,6 +117,10 @@
   .thumb img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
   .tag { position: absolute; left: 4px; bottom: 4px; font-size: 13px; background: rgba(0,0,0,.75); padding: 1px 6px; border-radius: 4px; }
   .tag.v { color: #ff9a9a; }
+  .del { position: absolute; top: 4px; right: 4px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; border: 1px solid rgba(255,255,255,.25);
+    background: rgba(0,0,0,.72); color: #fff; font: inherit; font-size: 15px; line-height: 24px; cursor: pointer; box-shadow: 0 2px 0 #000; transition: transform .07s; }
+  .del:active { transform: translateY(2px); box-shadow: none; }
+  .del.armed, #btnDel.armed { background: #c62828; border-color: #ff8c8c; color: #fff; font-size: 13px; }
   #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 6; }
 
   /* ---------- painel lateral ---------- */
@@ -219,7 +226,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.3</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.6</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -247,7 +254,7 @@
       <div id="live" title="Voltar ao vivo"><canvas id="cv"></canvas><canvas id="ov"></canvas></div>
       <div id="viewer" hidden>
         <img id="vImg" alt=""><video id="vVid" controls></video>
-        <div id="vbar"><span id="vName"></span><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
+        <div id="vbar"><span id="vName"></span><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
       </div>
       <div id="tools">
         <button class="btn big" id="btnFreeze" title="Congelar a imagem (Espaço)">
@@ -302,11 +309,14 @@
       </div>
 
       <div class="card">
-        <h2>Prioridade da calibração <button class="btn sm help" data-goto="t2" title="Qual escolher">?</button></h2>
-        <label class="choice"><input type="radio" name="norm" value="min" checked>
-          <div><b>Preservar reflexos (recomendado)</b><span>Nenhuma cor é amplificada: brilhos e reflexos não estouram. A imagem pode ficar um pouco mais escura.</span></div></label>
-        <label class="choice"><input type="radio" name="norm" value="g">
-          <div><b>Manter o brilho da imagem</b><span>Mantém a luminosidade original. Reflexos fortes podem estourar (ficar brancos sem detalhe).</span></div></label>
+        <h2>Evitar estouro de luz <button class="btn sm help" data-goto="t2" title="Qual nível usar">?</button></h2>
+        <p class="desc">Quanto maior o nível, menos as áreas claras e os reflexos estouram — e a imagem fica um pouco mais escura.</p>
+        <div class="seg" id="evlSeg">
+          <button class="btn" data-evl="0">Desligado</button>
+          <button class="btn" data-evl="1">Baixo</button>
+          <button class="btn" data-evl="2">Médio</button>
+          <button class="btn" data-evl="3">Alto</button>
+        </div>
       </div>
 
       <details class="card">
@@ -332,7 +342,7 @@
 
       <div class="keys">
         <kbd>W</kbd> calibrar · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
-        <kbd>A</kbd> anti-vermelho · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>Esc</kbd> ao vivo
+        <kbd>A</kbd> anti-vermelho · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
       </div>
     </aside>
   </section>
@@ -346,7 +356,7 @@
       </div>
       <div class="tut-nav">
         <button class="btn sm" data-goto="t1">1 · Calibrar o branco</button>
-        <button class="btn sm" data-goto="t2">2 · Prioridade da calibração</button>
+        <button class="btn sm" data-goto="t2">2 · Evitar estouro de luz</button>
         <button class="btn sm" data-goto="t3">3 · Anti-vermelho</button>
         <button class="btn sm" data-goto="t4">4 · Ajustes de imagem</button>
         <button class="btn sm" data-goto="t5">5 · Congelar, foto e vídeo</button>
@@ -370,13 +380,14 @@
 
       <article class="lesson" id="t2">
         <div>
-          <h3><span class="num">2</span>Prioridade da calibração</h3>
-          <p>As duas opções deixam o branco igualmente correto. A diferença é como a correção é feita:</p>
+          <h3><span class="num">2</span>Evitar estouro de luz</h3>
+          <p>Para deixar o branco neutro, a calibração precisa mudar a força de cada cor. Isso pode ser feito <b>aumentando</b> as cores fracas (imagem mais clara, mas as áreas claras estouram) ou <b>reduzindo</b> as cores fortes (nada estoura, mas a imagem escurece um pouco). O nível escolhe o equilíbrio entre os dois — o branco fica correto em todos.</p>
           <ul>
-            <li><b>Preservar reflexos (recomendado):</b> a correção só reduz cores, nunca amplifica. Reflexos de luz no tecido continuam com detalhe. A imagem pode ficar um pouco mais escura — compense com <i>Brilho</i> ou com a fonte de luz.</li>
-            <li><b>Manter o brilho da imagem:</b> mantém a luminosidade original, mas amplifica a cor que estava fraca. Reflexos fortes podem estourar (aparecem listrados na demonstração).</li>
+            <li><b>Desligado:</b> imagem mais clara; reflexos e áreas muito claras podem estourar (ficar brancos sem detalhe).</li>
+            <li><b>Baixo / Médio:</b> meio-termo entre claridade e proteção.</li>
+            <li><b>Alto:</b> nenhuma área clara estoura e os reflexos ficam brancos, sem mancha de cor. A imagem fica um pouco mais escura.</li>
           </ul>
-          <div class="note">Na dúvida, use "Preservar reflexos". Prefira "Manter o brilho" só quando a imagem ficar escura e não houver reflexos fortes.</div>
+          <div class="note">Comece no <b>Alto</b>. Se a imagem ficar escura, desça um nível ou aumente a fonte de luz. A mudança vale na hora — não precisa calibrar de novo. Na demonstração, listras marcam onde a luz estourou.</div>
         </div>
         <div class="demo"><canvas data-demo="norm" width="480" height="320"></canvas><div class="cap"></div></div>
       </article>
@@ -419,6 +430,7 @@
             <li><b>Foto</b> (P): salva a imagem exatamente como está na tela, sem o quadrado amarelo.</li>
             <li><b>Vídeo</b> (V): inicia e para a gravação; o botão mostra o tempo.</li>
             <li>Cada captura aparece no <b>canto direito</b>. Toque nela para rever em tela grande; o vídeo ao vivo continua numa janela pequena. Toque na janela pequena (ou Esc) para voltar.</li>
+            <li>Para <b>excluir</b>, toque no ✕ da miniatura (ou em Excluir, com a captura aberta) e toque de novo em "Excluir?" para confirmar. Se a pasta foi escolhida em "Gravação", o arquivo também é apagado dela; se foi para Downloads, sai só da tela.</li>
           </ul>
           <div class="note">Em "Gravação", informe a identificação do exame (vai no nome do arquivo) e escolha a pasta onde salvar.</div>
         </div>
@@ -498,14 +510,22 @@
     return t;
   });
   // aplica LUTs + saturação + anti-vermelho seletivo, in-place
-  function applyPipeline(d, L, sat, arLevel) {
+  // proteção de reflexos: onde a câmera já entregou o pixel quase branco/estourado, a correção de cor
+  // não pode tingir o reflexo (ficaria azulado/rosado) — ele volta a ser branco neutro
+  const HP_W = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = Math.min(1, Math.max(0, (i - 175) / 55)); HP_W[i] = x * x * (3 - 2 * x); }  // pelo menor canal: só tons quase brancos
+  function applyPipeline(d, L, sat, arLevel, hp) {
     const lr = L[0], lg = L[1], lb = L[2], A = AR[arLevel || 0], K = KNEE_LUTS[arLevel || 0], BW = BLOOD_W[arLevel || 0], desat = A.desat, cut = A.cut;
-    if (sat === 1 && !desat) {
+    if (sat === 1 && !desat && !hp) {
       for (let i = 0; i < d.length; i += 4) { d[i] = lr[d[i]]; d[i + 1] = lg[d[i + 1]]; d[i + 2] = lb[d[i + 2]]; }
       return;
     }
     for (let i = 0; i < d.length; i += 4) {
-      let r = lr[d[i]]; const g = lg[d[i + 1]], b = lb[d[i + 2]];
+      const R0 = d[i], G0 = d[i + 1], B0 = d[i + 2];
+      let r = lr[R0], g = lg[G0], b = lb[B0];
+      if (hp) {
+        const w = HP_W[mn3(R0, G0, B0)] * hp;
+        if (w > 0) { const t = r > g ? (r > b ? r : b) : (g > b ? g : b); r += w * (t - r); g += w * (t - g); b += w * (t - b); }
+      }
       let s = sat;
       if (desat && r > 0) {
         const m = g > b ? g : b;
@@ -519,9 +539,14 @@
       d[i] = y + s * (r - y); d[i + 1] = y + s * (g - y); d[i + 2] = y + s * (b - y);
     }
   }
-  function gainsFrom(meanRgb, norm) {
+  function mn3(a, b, c) { return a < b ? (a < c ? a : c) : (b < c ? b : c); }
+  // Evitar estouro de luz: nível 0..3 → k 0..1. k=0 alvo no verde (pode amplificar e estourar);
+  // k=1 alvo na cor mais fraca (só reduz, nada estoura). Intermediários: média geométrica.
+  const EVL = [{ name: "Desligado", k: 0 }, { name: "Baixo", k: 0.35 }, { name: "Médio", k: 0.7 }, { name: "Alto", k: 1 }];
+  function gainsFrom(meanRgb, level) {
     const lin = meanRgb.map(v => Math.max(toLin(v), 1e-4));
-    const t = norm === "g" ? lin[1] : Math.min(...lin);
+    const k = typeof level === "number" ? EVL[level].k : (level === "g" ? 0 : 1);
+    const t = Math.pow(lin[1], 1 - k) * Math.pow(Math.min(...lin), k);
     return lin.map(v => t / v);
   }
 
@@ -691,6 +716,7 @@
     adj = { ...ADJ_DEF, ...(store.get("adj:" + camKey) || {}) }; renderAdj();
     const g = store.get("wb:" + camKey);
     if (Array.isArray(g) && g.length === 3 && !g.every(x => x === 1)) {
+      calRef = store.get("ref:" + camKey);
       wbDone = true; setGains(g); setStatus("Calibração anterior carregada. Recalibre se trocou ótica, cabo ou fonte.", "ok"); lockHw();
     } else { wbDone = false; setGains([1, 1, 1]); setStatus("Aponte para o branco e toque em Calibrar branco.", ""); }
     showCamState();
@@ -746,7 +772,7 @@
         const c = collect; for (let j = 0; j < 3; j++) { c.sum[j] += lastIn[j]; c.sat[j] += lastSat[j]; } c.k++;
         if (c.k >= c.n) { collect = null; c.res(c); }
       }
-      if (!showOriginal) applyPipeline(d, luts, adj.sat, arLevel);
+      if (!showOriginal) applyPipeline(d, luts, adj.sat, arLevel, EVL[evlLevel].k);
       ctx.putImageData(img, 0, 0);
 
       octx.clearRect(0, 0, w, h);
@@ -773,7 +799,16 @@
 
   // ----- calibração -----
   // mede a média de N quadros (reduz ruído); o laço de vídeo alimenta "collect"
-  let collect = null, calibrating = false;
+  let collect = null, calibrating = false, calRef = null;
+  // trocar o nível recalcula a correção a partir da mesma medição do branco (não precisa recalibrar)
+  let evlLevel = 3;
+  function setEVL(l, announce) {
+    evlLevel = l; store.set("evl", l);
+    document.querySelectorAll("#evlSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.evl === l));
+    if (calRef && wbDone) { setGains(gainsFrom(calRef, l)); store.set("wb:" + camKey, gains); }
+    if (announce) setStatus("Evitar estouro de luz: " + EVL[l].name + (calRef && wbDone ? " (correção recalculada)." : "."), "ok");
+  }
+  document.querySelectorAll("#evlSeg .btn").forEach(b => b.onclick = () => setEVL(+b.dataset.evl, true));
   function measureFrames(n) {
     return new Promise(res => { collect = { n, k: 0, sum: [0, 0, 0], sat: [0, 0, 0], res }; setTimeout(() => { if (collect) { const c = collect; collect = null; c.res(c.k ? c : null); } }, 3000); });
   }
@@ -799,8 +834,8 @@
       lastIn = mean;
       if (sat.some(x => x > 0.02)) { setStatus("Não calibrado: referência saturada (branco estourado). Afaste o alvo ou reduza a luz.", "bad"); return; }
       if (Math.max(...mean) < 40) { setStatus("Não calibrado: referência escura demais. Aproxime o alvo ou aumente a luz.", "bad"); return; }
-      const norm = document.querySelector('input[name="norm"]:checked').value;
-      setGains(gainsFrom(mean, norm)); store.set("wb:" + camKey, gains);
+      calRef = mean; store.set("ref:" + camKey, mean);
+      setGains(gainsFrom(mean, evlLevel)); store.set("wb:" + camKey, gains);
       wbDone = true; ok = true; setStatus("Branco calibrado e travado.", "ok"); showCamState();
     } finally {
       if (!ok) { setGains(prev); wbDone = prevDone; }        // recusado: mantém a calibração anterior
@@ -856,8 +891,30 @@
     const im = document.createElement("img"); im.src = it.thumb;
     const tg = document.createElement("span"); tg.className = "tag" + (it.type === "video" ? " v" : "");
     tg.textContent = it.type === "video" ? "▶ " + mmss(it.dur) : it.time;
-    el.append(im, tg); el.onclick = () => openItem(it); it.el = el;
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "Excluir";
+    del.onclick = e => { e.stopPropagation(); armDelete(del, "✕", () => removeItem(it)); };
+    el.append(im, tg, del); el.onclick = () => openItem(it); it.el = el;
     $("gallery").querySelector(".gtitle").after(el); $("gallery").classList.add("has"); $("gallery").scrollTop = 0; fit();
+  }
+  // excluir: 1º toque arma ("Excluir?"), 2º toque confirma (sem janelas do navegador)
+  function armDelete(btn, label, fn) {
+    if (btn.dataset.armed) { clearTimeout(+btn.dataset.armed); delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; fn(); return; }
+    btn.classList.add("armed"); btn.textContent = "Excluir?";
+    btn.dataset.armed = setTimeout(() => { delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; }, 3000);
+  }
+  async function removeItem(it) {
+    if (viewing === it) closeViewer();
+    const i = items.indexOf(it); if (i >= 0) items.splice(i, 1);
+    it.el.remove();
+    try { if (it.url && it.url.startsWith("blob:")) URL.revokeObjectURL(it.url); } catch (e) {}
+    if (!items.length) $("gallery").classList.remove("has");
+    fit();
+    const kind = it.type === "foto" ? "Foto" : "Vídeo", fem = it.type === "foto" ? "a" : "o";
+    if (dirHandle && it.where === dirHandle.name) {
+      try { await dirHandle.removeEntry(it.name); setStatus(kind + " excluíd" + fem + " da tela e da pasta " + dirHandle.name + ".", "ok"); return; }
+      catch (e) { setStatus(kind + " removid" + fem + " da tela, mas o arquivo não pôde ser apagado da pasta.", "bad"); return; }
+    }
+    setStatus(kind + " removid" + fem + " da tela. O arquivo já salvo em " + (it.where && it.where !== "…" ? it.where : "Downloads") + " precisa ser apagado por lá.", "");
   }
   function openItem(it) {
     viewing = it; items.forEach(x => x.el.classList.toggle("sel", x === it));
@@ -922,6 +979,7 @@
   // ----- ligações -----
   $("btnWB").onclick = doWB; $("btnReset").onclick = doReset; $("btnCmp").onclick = toggleCmp; $("btnFull").onclick = toggleFull;
   $("btnFreeze").onclick = toggleFreeze; $("btnFoto").onclick = takePhoto; $("btnVideo").onclick = toggleVideo; $("btnLive").onclick = closeViewer;
+  $("btnDel").onclick = () => { if (viewing) { const it = viewing; armDelete($("btnDel"), "Excluir", () => removeItem(it)); } };
   live.onclick = () => { if (viewing) closeViewer(); };
   $("showRoi").onchange = e => { showRoi = e.target.checked; };
   $("cam").onchange = startCam; $("res").onchange = startCam;
@@ -934,12 +992,13 @@
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
-                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer] }[k];
+                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()] }[k];
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
 
   setAR(+(store.get("ar") || 0));
+  { const e = store.get("evl"); setEVL(typeof e === "number" && e >= 0 && e <= 3 ? e : (store.get("norm") === "g" ? 0 : 3)); }
   renderAdj();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) setStatus("Este navegador não acessa a câmera. Use Edge ou Chrome.", "bad");
   else startCam().then(() => { if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame); });
@@ -1009,13 +1068,14 @@
     return s.map(v => v / n);
   }
   const CAL_MIN = gainsFrom(meanRect(SCENE_CAST, GAUZE), "min");
-  const CAL_G = gainsFrom(meanRect(SCENE_CAST, GAUZE), "g");
+  const SCENE_HOT = withCast(SCENE, CAST, 1.3);           // cena mais iluminada (demonstração de estouro)
+  const CAL_LV = [0, 1, 2, 3].map(l => gainsFrom(meanRect(SCENE_HOT, GAUZE), l));
   const lerp = (a, b, t) => a + (b - a) * t, ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
   const lerp3 = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
 
-  function render(c2, src, g, a, ar, region) {
+  function render(c2, src, g, a, ar, region, hp) {
     const out = new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
-    applyPipeline(out.data, makeLuts(g, a || ADJ_DEF), (a || ADJ_DEF).sat, ar || 0);
+    applyPipeline(out.data, makeLuts(g, a || ADJ_DEF), (a || ADJ_DEF).sat, ar || 0, !!hp);
     if (region) c2.putImageData(out, 0, 0, region[0], region[1], region[2], region[3]); else c2.putImageData(out, 0, 0);
     return out;
   }
@@ -1056,20 +1116,17 @@
         "Branco neutro: R = G = B — o tecido aparece com a <span class='tag-name'>cor real</span>";
     },
     norm(c2, t, cap) {
-      const T = t % 8, k = ease((T - 1.5) / 1.2), half = TW / 2;
-      render(c2, SCENE_CAST, lerp3([1, 1, 1], CAL_MIN, k), null, 0, [0, 0, half, TH]);
-      const R = render(c2, SCENE_CAST, lerp3([1, 1, 1], CAL_G, k), null, 0, [half, 0, half, TH]);
-      if (k > 0.5) {
-        const d = R.data, ph = Math.floor(t * 12); c2.fillStyle = "rgba(255,0,200,.9)";
-        for (let y = 0; y < TH; y++) for (let x = half; x < TW; x++) {
-          const p = (y * TW + x) * 4;
-          if ((d[p] >= 254 || d[p + 1] >= 254 || d[p + 2] >= 254) && ((x + y + ph) % 6) < 2) c2.fillRect(x, y, 1, 1);
-        }
+      const lvl = Math.floor((t % 10) / 2.5);
+      const out = render(c2, SCENE_HOT, CAL_LV[lvl], null, 0, null, EVL[lvl].k);
+      const d = out.data, ph = Math.floor(t * 12); c2.fillStyle = "rgba(255,0,200,.9)";
+      for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) {           // listras onde estourou
+        const p = (y * TW + x) * 4;
+        if ((d[p] >= 253 || d[p + 1] >= 253 || d[p + 2] >= 253) && ((x + y + ph) % 6) < 2) c2.fillRect(x, y, 1, 1);
       }
-      c2.fillStyle = "#000"; c2.fillRect(half - 1, 0, 2, TH);
-      label(c2, "Preservar reflexos", 8, 8, "#b9ecd0"); label(c2, "Manter o brilho", TW - 8, 8, "#ffd6a0", "right");
-      cap.innerHTML = k < 0.5 ? "Antes da calibração (mesma imagem nos dois lados)" :
-        "Esquerda: reflexos com detalhe · Direita: mais clara, reflexos <span class='tag-name'>estourados</span> (listras)";
+      ["Desligado", "Baixo", "Médio", "Alto"].forEach((n, i) => btnShape(c2, 14 + i * 84, TH - 76, 78, n, i === lvl, i === lvl));
+      cap.innerHTML = ["Desligado: imagem mais clara, mas a gaze e os reflexos ficam no limite de <span class='tag-name'>estourar</span>",
+        "Baixo: um pouco menos de estouro", "Médio: quase nada estoura, imagem levemente mais escura",
+        "Alto: nada estoura e os reflexos ficam brancos — imagem um pouco mais escura"][lvl];
     },
     antired(c2, t, cap) {
       const lvl = Math.floor((t % 10) / 2.5);
