@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- Balanço de Branco v1.5 — 2026-10-23: corrige indicação falsa "AWB desligado" (applyConstraints advanced não falha
+<!-- Balanço de Branco v1.6 — 2026-10-23: aviso do AWB depende do estado real (antes/depois do balanço, travou ou não);
+     tentativa de travar o AWB com alternativas (manual com/sem temperatura, single-shot)
+     v1.5 — 2026-10-23: corrige indicação falsa "AWB desligado" (applyConstraints advanced não falha
      quando ignorado); estado do AWB/exposição da câmera lido ao vivo; trava AWB (e opcionalmente exposição) do hardware
      na temperatura atual ao fazer o balanço; Reset devolve o automático; aviso quando a câmera segue em automático
      v1.4: botões Freeze/Foto/Vídeo sobre a imagem, galeria no canto com revisão
@@ -64,7 +66,7 @@
 </head>
 <body>
 <header>
-  <h1>Balanço de Branco <span style="color:var(--dim);font-weight:400;font-size:12px">v1.5</span></h1>
+  <h1>Balanço de Branco <span style="color:var(--dim);font-weight:400;font-size:12px">v1.6</span></h1>
   <select id="cam" title="Câmera"></select>
   <select id="res" title="Resolução">
     <option value="400x400" selected>400×400</option>
@@ -106,7 +108,7 @@
     <div id="status">Iniciando…</div>
     <div class="row" style="margin-top:6px"><span>AWB da câmera</span><span id="awb">–</span></div>
     <div class="row"><span>Exposição da câmera</span><span id="aex">–</span></div>
-    <div id="awbWarn" style="display:none;color:var(--bad);font-size:12px;margin-top:4px">A câmera está corrigindo a cor sozinha: a imagem muda com o ambiente mesmo com ganhos 1. Faça o balanço para travar.</div>
+    <div id="awbWarn" style="display:none;font-size:12px;margin-top:4px"></div>
 
     <h2>Opções</h2>
     <label><input type="radio" name="norm" value="min" checked> Ganhos ≤ 1 (não estoura)</label>
@@ -189,6 +191,7 @@
   let viewing = null;              // item aberto no visualizador
   let dirHandle = null;            // pasta escolhida (File System Access)
   let curTrack = null;             // trilha de vídeo atual
+  let wbDone = false;              // balanço feito (ou carregado) nesta câmera
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
   function showGains() { ["gR", "gG", "gB"].forEach((id, i) => $(id).textContent = gains[i].toFixed(3)); }
@@ -290,8 +293,8 @@
     adj = loadAdj(); renderAdj();
 
     const g = loadGains();
-    if (g) { setGains(g); setStatus("Ganhos salvos carregados", "ok"); }
-    else { setGains([1, 1, 1]); setStatus("Sem balanço — aponte para o branco e clique", ""); }
+    if (g) { wbDone = !g.every(x => x === 1); setGains(g); setStatus(wbDone ? "Ganhos salvos carregados" : "Sem balanço — aponte para o branco e clique", wbDone ? "ok" : ""); if (wbDone) lockHw(); }
+    else { wbDone = false; setGains([1, 1, 1]); setStatus("Sem balanço — aponte para o branco e clique", ""); }
   }
 
   // ---- loop de vídeo ----
@@ -388,7 +391,15 @@
     if (!c.exposureMode) { x.textContent = "não controlável"; x.style.color = ""; }
     else if (st.exposureMode === "continuous") { x.textContent = "automática"; x.style.color = ""; }
     else { x.textContent = "travada"; x.style.color = "var(--ok)"; }
-    $("awbWarn").style.display = (st.whiteBalanceMode === "continuous" && gains.every(g => g === 1)) ? "" : "none";
+    const w = $("awbWarn");
+    let msg = "", col = "var(--bad)";
+    if (st.whiteBalanceMode === "continuous") {
+      if (!wbDone) msg = "A câmera está corrigindo a cor sozinha (AWB automático): a imagem muda com o ambiente. Faça o balanço de branco para travar.";
+      else { msg = "Balanço de branco feito ✓, mas esta câmera não aceitou travar o AWB pelo navegador: a cor ainda pode variar com o ambiente. Desligue o \"Auto\" do balanço de branco no driver (OBS > Propriedades > Configurar vídeo)."; col = "#ffb347"; }
+    } else if (!c.whiteBalanceMode && wbDone) {
+      msg = "Balanço de branco feito ✓. O AWB desta câmera não é visível ao navegador; se a cor variar com o ambiente, desligue o \"Auto\" no driver (OBS > Configurar vídeo)."; col = "var(--dim)";
+    }
+    w.textContent = msg; w.style.color = col; w.style.display = msg ? "" : "none";
   }
   setInterval(showCamState, 1000);
 
@@ -403,7 +414,13 @@
       cons.exposureMode = "manual";
       if (typeof st.exposureTime === "number") cons.exposureTime = st.exposureTime;
     }
-    if (Object.keys(cons).length) { try { await curTrack.applyConstraints({ advanced: [cons] }); } catch (e) {} }
+    const tryC = async c2 => { try { await curTrack.applyConstraints({ advanced: [c2] }); } catch (e) {} };
+    if (Object.keys(cons).length) await tryC(cons);
+    // alternativas se o AWB continuou automático
+    if (cons.whiteBalanceMode && sets().whiteBalanceMode === "continuous") {
+      await tryC({ whiteBalanceMode: "manual" });
+      if (sets().whiteBalanceMode === "continuous" && c.whiteBalanceMode.includes("single-shot")) await tryC({ whiteBalanceMode: "single-shot" });
+    }
     showCamState(); renderHw(curTrack);
   }
   async function unlockHw() {
@@ -424,10 +441,11 @@
     const target = norm === "g" ? lin[1] : Math.min(...lin);
     setGains(lin.map(v => target / v));
     saveGains();
+    wbDone = true;
     setStatus("Balanço travado e salvo", "ok");
     lockHw();
   }
-  function doReset() { setGains([1, 1, 1]); saveGains(); unlockHw(); setStatus("Reset (ganhos = 1, câmera em automático)", ""); }
+  function doReset() { wbDone = false; setGains([1, 1, 1]); saveGains(); unlockHw(); setStatus("Reset (ganhos = 1, câmera em automático)", ""); }
   function toggleCmp() { showOriginal = !showOriginal; $("btnCmp").classList.toggle("on", showOriginal); }
   function toggleFreeze() {
     if (frozen || freezeReq) { frozen = null; freezeReq = false; } else { freezeReq = true; }
