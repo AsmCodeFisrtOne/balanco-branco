@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v2.7 — 2026-10-23: corrige "Alto" parecendo estourar — a proteção de reflexos clareava os brancos (agora só neutraliza a cor, sem clarear, e só no que já veio estourado)
+<!-- Ajuste de Imagem — Videoendoscopia  v2.8 — 2026-10-23: "Evitar estouro de luz" agora comprime os claros (roll-off) — Alto deixa reflexos sem ofuscar; neutralização só no que já veio estourado
+     v2.7: corrige "Alto" parecendo estourar — a proteção de reflexos clareava os brancos (agora só neutraliza a cor, sem clarear, e só no que já veio estourado)
      v2.6: "Evitar estouro de luz" em 4 níveis (substitui Preservar reflexos / Manter o brilho)
      v2.5: "Preservar reflexos" com proteção de reflexos (não ficam tingidos); trocar a prioridade recalcula sem recalibrar
      v2.4: excluir capturas (✕ na miniatura / Excluir no visualizador, com confirmação; apaga da pasta escolhida)
@@ -227,7 +228,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.7</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.8</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -487,11 +488,15 @@
     for (let i = 0; i < 256; i++) { let v = i / 255; if (knee < 1 && v > knee) v = knee + (v - knee) / (1 + (v - knee) / (1 - knee)); t[i] = Math.round(v * 255); }
     return t;
   });
-  function buildLut(gain, a) {
-    a = a || ADJ_DEF;
+  // roll-off dos claros (Evitar estouro de luz): acima do joelho, o claro é comprimido suavemente
+  // e o branco máximo nunca chega a 255 — reflexos deixam de "ofuscar" e mantêm gradação
+  function rolloff(v, knee) { return v <= knee ? v : knee + (1 - knee) * (1 - Math.exp(-(v - knee) / (1 - knee))); }
+  function buildLut(gain, a, knee) {
+    a = a || ADJ_DEF; knee = knee || 1;
     const lut = new Uint8ClampedArray(256);
     for (let i = 0; i < 256; i++) {
       let v = toSrgb(Math.min(1, LIN[i] * gain));
+      if (knee < 1) v = rolloff(v, knee);
       v = (v - a.black) / (1 - a.black);
       v = (v - 0.5) * a.contrast + 0.5;
       v = v + a.bright;
@@ -501,7 +506,7 @@
     }
     return lut;
   }
-  function makeLuts(gains, a) { return [buildLut(gains[0], a), buildLut(gains[1], a), buildLut(gains[2], a)]; }
+  function makeLuts(gains, a, evl) { const k = evl ? EVL[evl].knee : 1; return [buildLut(gains[0], a, k), buildLut(gains[1], a, k), buildLut(gains[2], a, k)]; }
   // peso "sangue": pureza do vermelho (r - max(g,b)) / r; tecido rosado ~0,4-0,5 fica de fora, sangue ~0,8-0,95 entra
   const BLOOD_W = AR.map(A => {                 // por nível; índice: r (0..255) e pureza quantizada (0..63)
     const t = new Float32Array(256 * 64);
@@ -513,7 +518,7 @@
   // aplica LUTs + saturação + anti-vermelho seletivo, in-place
   // proteção de reflexos: onde a câmera já entregou o pixel quase branco/estourado, a correção de cor
   // não pode tingir o reflexo (ficaria azulado/rosado) — ele volta a ser branco neutro
-  const HP_W = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = Math.min(1, Math.max(0, (i - 222) / 28)); HP_W[i] = x * x * (3 - 2 * x); }  // pelo menor canal: só o que a câmera já entregou quase estourado
+  const HP_W = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = Math.min(1, Math.max(0, (i - 238) / 14)); HP_W[i] = x * x * (3 - 2 * x); }  // pelo menor canal: só o que a câmera já entregou estourado
   function applyPipeline(d, L, sat, arLevel, hp) {
     const lr = L[0], lg = L[1], lb = L[2], A = AR[arLevel || 0], K = KNEE_LUTS[arLevel || 0], BW = BLOOD_W[arLevel || 0], desat = A.desat, cut = A.cut;
     if (sat === 1 && !desat && !hp) {
@@ -543,7 +548,8 @@
   function mn3(a, b, c) { return a < b ? (a < c ? a : c) : (b < c ? b : c); }
   // Evitar estouro de luz: nível 0..3 → k 0..1. k=0 alvo no verde (pode amplificar e estourar);
   // k=1 alvo na cor mais fraca (só reduz, nada estoura). Intermediários: média geométrica.
-  const EVL = [{ name: "Desligado", k: 0 }, { name: "Baixo", k: 0.35 }, { name: "Médio", k: 0.7 }, { name: "Alto", k: 1 }];
+  // k: quanto a calibração evita amplificar cores · knee: início da compressão dos claros
+  const EVL = [{ name: "Desligado", k: 0, knee: 1 }, { name: "Baixo", k: 0.35, knee: 0.82 }, { name: "Médio", k: 0.7, knee: 0.72 }, { name: "Alto", k: 1, knee: 0.62 }];
   function gainsFrom(meanRgb, level) {
     const lin = meanRgb.map(v => Math.max(toLin(v), 1e-4));
     const k = typeof level === "number" ? EVL[level].k : (level === "g" ? 0 : 1);
@@ -578,8 +584,9 @@
   const video = document.createElement("video"); video.muted = true; video.playsInline = true;
 
   let gains = [1, 1, 1], adj = { ...ADJ_DEF }, arLevel = 0;
-  let luts = makeLuts(gains, adj), wbLuts = makeLuts(gains);
-  function rebuildLuts() { luts = makeLuts(gains, adj); wbLuts = makeLuts(gains); }
+  let evlLevel = 3;
+  let luts = makeLuts(gains, adj, evlLevel), wbLuts = makeLuts(gains);
+  function rebuildLuts() { luts = makeLuts(gains, adj, evlLevel); wbLuts = makeLuts(gains); }
 
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25, outW = 400, outH = 400;
@@ -802,9 +809,8 @@
   // mede a média de N quadros (reduz ruído); o laço de vídeo alimenta "collect"
   let collect = null, calibrating = false, calRef = null;
   // trocar o nível recalcula a correção a partir da mesma medição do branco (não precisa recalibrar)
-  let evlLevel = 3;
   function setEVL(l, announce) {
-    evlLevel = l; store.set("evl", l);
+    evlLevel = l; store.set("evl", l); rebuildLuts();
     document.querySelectorAll("#evlSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.evl === l));
     if (calRef && wbDone) { setGains(gainsFrom(calRef, l)); store.set("wb:" + camKey, gains); }
     if (announce) setStatus("Evitar estouro de luz: " + EVL[l].name + (calRef && wbDone ? " (correção recalculada)." : "."), "ok");
@@ -1074,9 +1080,9 @@
   const lerp = (a, b, t) => a + (b - a) * t, ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
   const lerp3 = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
 
-  function render(c2, src, g, a, ar, region, hp) {
+  function render(c2, src, g, a, ar, region, hp, evl) {
     const out = new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
-    applyPipeline(out.data, makeLuts(g, a || ADJ_DEF), (a || ADJ_DEF).sat, ar || 0, !!hp);
+    applyPipeline(out.data, makeLuts(g, a || ADJ_DEF, evl || 0), (a || ADJ_DEF).sat, ar || 0, hp ? EVL[evl || 0].k : 0);
     if (region) c2.putImageData(out, 0, 0, region[0], region[1], region[2], region[3]); else c2.putImageData(out, 0, 0);
     return out;
   }
@@ -1118,7 +1124,7 @@
     },
     norm(c2, t, cap) {
       const lvl = Math.floor((t % 10) / 2.5);
-      const out = render(c2, SCENE_HOT, CAL_LV[lvl], null, 0, null, EVL[lvl].k);
+      const out = render(c2, SCENE_HOT, CAL_LV[lvl], null, 0, null, true, lvl);
       const d = out.data, ph = Math.floor(t * 12); c2.fillStyle = "rgba(255,0,200,.9)";
       for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) {           // listras onde estourou
         const p = (y * TW + x) * 4;
