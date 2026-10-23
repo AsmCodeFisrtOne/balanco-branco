@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v2.1 — 2026-10-23: fonte Bonnie Condensed (embutida, woff2)
+<!-- Ajuste de Imagem — Videoendoscopia  v2.3 — 2026-10-23: calibração trava a câmera ANTES de medir (a cor não "volta" mais após calibrar) e mede a média de 12 quadros
+     v2.2: anti-vermelho mais forte; galeria mostra a captura na hora (salvar nunca bloqueia a miniatura)
+     v2.1: fonte Bonnie Condensed (embutida, woff2)
      v2.0 — 2026-10-23:
      v2.0: novo visual (paleta tijolo/grafite), nomes para o médico, Anti-vermelho em 4 níveis, aba Tutorial com
            demonstrações animadas (usando o mesmo processamento do app), botões com efeito de pressionar, layout para celular
@@ -217,7 +219,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.1</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.3</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -458,10 +460,12 @@
   ];
   // Anti-vermelho: joelho do canal R (compressão do excesso) e dessaturação das áreas vermelhas
   const AR = [
-    { name: "Desligado", knee: 1.00, desat: 0.00 },
-    { name: "Baixo",     knee: 0.86, desat: 0.25 },
-    { name: "Médio",     knee: 0.76, desat: 0.45 },
-    { name: "Alto",      knee: 0.66, desat: 0.65 }
+    // knee: compressão do vermelho forte · cut: redução direta do vermelho · desat: perda de saturação
+    // p0..p1: faixa de "pureza do vermelho" em que atua (abaixo de p0 não atua; acima de p1 atua inteiro)
+    { name: "Desligado", knee: 1.00, cut: 0.00, desat: 0.00, p0: 1.00, p1: 1.00 },
+    { name: "Baixo",     knee: 0.82, cut: 0.15, desat: 0.40, p0: 0.48, p1: 0.75 },
+    { name: "Médio",     knee: 0.68, cut: 0.30, desat: 0.65, p0: 0.40, p1: 0.66 },
+    { name: "Alto",      knee: 0.55, cut: 0.45, desat: 0.85, p0: 0.32, p1: 0.58 }
   ];
 
   // curva de compressão do vermelho (joelho suave), aplicada só nas áreas de sangue
@@ -486,11 +490,16 @@
   }
   function makeLuts(gains, a) { return [buildLut(gains[0], a), buildLut(gains[1], a), buildLut(gains[2], a)]; }
   // peso "sangue": pureza do vermelho (r - max(g,b)) / r; tecido rosado ~0,4-0,5 fica de fora, sangue ~0,8-0,95 entra
-  const BLOOD_W = new Float32Array(256 * 64);   // índice: r (0..255) e pureza quantizada (0..63)
-  for (let q = 0; q < 64; q++) { const pur = q / 63, w = Math.min(1, Math.max(0, (pur - 0.55) / 0.3)); for (let r = 0; r < 256; r++) BLOOD_W[r * 64 + q] = w * Math.min(1, r / 90); }
+  const BLOOD_W = AR.map(A => {                 // por nível; índice: r (0..255) e pureza quantizada (0..63)
+    const t = new Float32Array(256 * 64);
+    if (A.p0 >= 1) return t;
+    for (let q = 0; q < 64; q++) { const pur = q / 63, x = Math.min(1, Math.max(0, (pur - A.p0) / (A.p1 - A.p0))), w = x * x * (3 - 2 * x);
+      for (let r = 0; r < 256; r++) t[r * 64 + q] = w * Math.min(1, r / 70); }
+    return t;
+  });
   // aplica LUTs + saturação + anti-vermelho seletivo, in-place
   function applyPipeline(d, L, sat, arLevel) {
-    const lr = L[0], lg = L[1], lb = L[2], A = AR[arLevel || 0], K = KNEE_LUTS[arLevel || 0], desat = A.desat;
+    const lr = L[0], lg = L[1], lb = L[2], A = AR[arLevel || 0], K = KNEE_LUTS[arLevel || 0], BW = BLOOD_W[arLevel || 0], desat = A.desat, cut = A.cut;
     if (sat === 1 && !desat) {
       for (let i = 0; i < d.length; i += 4) { d[i] = lr[d[i]]; d[i + 1] = lg[d[i + 1]]; d[i + 2] = lb[d[i + 2]]; }
       return;
@@ -501,8 +510,8 @@
       if (desat && r > 0) {
         const m = g > b ? g : b;
         if (r > m) {
-          const w = BLOOD_W[r * 64 + (((r - m) * 63 / r) | 0)];
-          if (w > 0) { r = r + w * (K[r] - r); s *= 1 - desat * w; }
+          const w = BW[r * 64 + (((r - m) * 63 / r) | 0)];
+          if (w > 0) { r = (r + w * (K[r] - r)) * (1 - cut * w); s *= 1 - desat * w; }
         }
       }
       if (s === 1) { d[i] = r; d[i + 1] = g; d[i + 2] = b; continue; }
@@ -733,6 +742,10 @@
         }
       }
       lastIn = [sr / n, sg / n, sb / n]; lastSat = [satR / n, satG / n, satB / n];
+      if (collect && !frozen) {
+        const c = collect; for (let j = 0; j < 3; j++) { c.sum[j] += lastIn[j]; c.sat[j] += lastSat[j]; } c.k++;
+        if (c.k >= c.n) { collect = null; c.res(c); }
+      }
       if (!showOriginal) applyPipeline(d, luts, adj.sat, arLevel);
       ctx.putImageData(img, 0, 0);
 
@@ -759,12 +772,40 @@
   }
 
   // ----- calibração -----
-  function doWB() {
-    if (lastSat.some(x => x > 0.02)) { setStatus("Não calibrado: referência saturada (branco estourado). Afaste o alvo ou reduza a luz.", "bad"); return; }
-    if (Math.max(...lastIn) < 40) { setStatus("Não calibrado: referência escura demais. Aproxime o alvo ou aumente a luz.", "bad"); return; }
-    const norm = document.querySelector('input[name="norm"]:checked').value;
-    setGains(gainsFrom(lastIn, norm)); store.set("wb:" + camKey, gains);
-    wbDone = true; setStatus("Branco calibrado e travado.", "ok"); lockHw();
+  // mede a média de N quadros (reduz ruído); o laço de vídeo alimenta "collect"
+  let collect = null, calibrating = false;
+  function measureFrames(n) {
+    return new Promise(res => { collect = { n, k: 0, sum: [0, 0, 0], sat: [0, 0, 0], res }; setTimeout(() => { if (collect) { const c = collect; collect = null; c.res(c.k ? c : null); } }, 3000); });
+  }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  // 1) trava a câmera  2) espera a imagem assentar  3) mede vários quadros  4) calcula os ganhos
+  // (antes media e só depois travava: a câmera mudava a cor ao travar e a correção "voltava")
+  async function doWB() {
+    if (calibrating) return;
+    if (frozen || freezeReq) { setStatus("Descongele a imagem antes de calibrar.", "bad"); return; }
+    calibrating = true; $("btnWB").disabled = true; $("btnWB").textContent = "Calibrando…";
+    const prev = gains.slice(), prevDone = wbDone; let ok = false;
+    try {
+      setGains([1, 1, 1]);
+      if (curTrack && ($("lockAwb").checked || $("lockAe").checked)) {
+        setStatus("Travando a câmera…", "");
+        await withTimeout(lockHw(), 2000);
+        await wait(900);                                   // deixa a câmera assentar na nova regulagem
+      }
+      setStatus("Medindo a referência…", "");
+      const m = await measureFrames(12);
+      if (!m) { setStatus("Não calibrado: sem imagem da câmera.", "bad"); return; }
+      const mean = m.sum.map(v => v / m.k), sat = m.sat.map(v => v / m.k);
+      lastIn = mean;
+      if (sat.some(x => x > 0.02)) { setStatus("Não calibrado: referência saturada (branco estourado). Afaste o alvo ou reduza a luz.", "bad"); return; }
+      if (Math.max(...mean) < 40) { setStatus("Não calibrado: referência escura demais. Aproxime o alvo ou aumente a luz.", "bad"); return; }
+      const norm = document.querySelector('input[name="norm"]:checked').value;
+      setGains(gainsFrom(mean, norm)); store.set("wb:" + camKey, gains);
+      wbDone = true; ok = true; setStatus("Branco calibrado e travado.", "ok"); showCamState();
+    } finally {
+      if (!ok) { setGains(prev); wbDone = prevDone; }        // recusado: mantém a calibração anterior
+      calibrating = false; $("btnWB").disabled = false; $("btnWB").textContent = "Calibrar branco";
+    }
   }
   function doReset() { wbDone = false; setGains([1, 1, 1]); store.set("wb:" + camKey, gains); unlockHw(); setStatus("Calibração desfeita. Câmera em automático.", ""); }
   function toggleCmp() { showOriginal = !showOriginal; $("btnCmp").classList.toggle("on", showOriginal); }
@@ -778,12 +819,18 @@
   async function idbGet(k) { try { const db = await IDB(); return await new Promise(r => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }); } catch (e) { return null; } }
   function showDir() { $("dirName").textContent = dirHandle ? dirHandle.name : "Downloads"; $("dirName").title = $("dirName").textContent; }
   async function chooseDir() { try { dirHandle = await window.showDirectoryPicker({ id: "bb-capture", mode: "readwrite" }); await idbSet("dir", dirHandle); showDir(); setStatus("Capturas serão salvas em: " + dirHandle.name, "ok"); } catch (e) {} }
-  async function ensurePerm() {
+  const withTimeout = (pr, ms, dflt) => Promise.race([pr, new Promise(r => setTimeout(() => r(dflt), ms))]);
+  // pede permissão da pasta — chamar só dentro do toque/clique do usuário
+  function askPerm() {
+    if (!dirHandle) return;
+    try { dirHandle.queryPermission({ mode: "readwrite" }).then(st => { if (st !== "granted") dirHandle.requestPermission({ mode: "readwrite" }).catch(() => {}); }).catch(() => {}); } catch (e) {}
+  }
+  async function hasPerm() {
     if (!dirHandle) return false;
-    try { if (await dirHandle.queryPermission({ mode: "readwrite" }) === "granted") return true; return (await dirHandle.requestPermission({ mode: "readwrite" })) === "granted"; } catch (e) { return false; }
+    try { return (await withTimeout(dirHandle.queryPermission({ mode: "readwrite" }), 1500, "timeout")) === "granted"; } catch (e) { return false; }
   }
   async function saveBlob(blob, name) {
-    if (dirHandle && await ensurePerm()) {
+    if (dirHandle && await hasPerm()) {
       try { const fh = await dirHandle.getFileHandle(name, { create: true }); const wr = await fh.createWritable(); await wr.write(blob); await wr.close(); return dirHandle.name; }
       catch (e) { setStatus("Falha ao gravar na pasta; arquivo enviado para Downloads.", "bad"); }
     }
@@ -799,9 +846,13 @@
   }
 
   // ----- galeria -----
+  function setWhere(it, where) {
+    it.where = where; if (it.el) it.el.title = it.name + "\nSalvo em: " + where;
+    if (viewing === it) $("vName").title = it.name + " — salvo em: " + where;
+  }
   function addItem(it) {
     items.unshift(it);
-    const el = document.createElement("div"); el.className = "thumb"; el.title = it.name + "\nSalvo em: " + it.where;
+    const el = document.createElement("div"); el.className = "thumb"; el.title = it.name + "\nSalvando…";
     const im = document.createElement("img"); im.src = it.thumb;
     const tg = document.createElement("span"); tg.className = "tag" + (it.type === "video" ? " v" : "");
     tg.textContent = it.type === "video" ? "▶ " + mmss(it.dur) : it.time;
@@ -821,12 +872,16 @@
   // ----- foto -----
   function flash() { const f = $("flash"); f.style.transition = "none"; f.style.opacity = .7; requestAnimationFrame(() => { f.style.transition = "opacity .3s"; f.style.opacity = 0; }); }
   function takePhoto() {
-    if (!cv.width) return; flash(); if (dirHandle) ensurePerm();
+    if (!cv.width) return; flash(); askPerm();
+    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName("foto", "png");
+    const thumb = cv.toDataURL("image/jpeg", 0.8);         // miniatura imediata
+    const it = { type: "foto", url: thumb, thumb, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
+    addItem(it);
     cv.toBlob(async blob => {
-      if (!blob) return;
-      const name = fileName("foto", "png"), where = await saveBlob(blob, name), d = new Date(), z = n => String(n).padStart(2, "0");
-      addItem({ type: "foto", url: URL.createObjectURL(blob), thumb: URL.createObjectURL(blob), name, where, time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) });
-      setStatus("Foto salva em " + where, "ok");
+      if (!blob) { setStatus("Falha ao gerar a foto.", "bad"); return; }
+      it.url = URL.createObjectURL(blob); if (viewing === it) $("vImg").src = it.url;
+      try { const where = await saveBlob(blob, name); setWhere(it, where); setStatus("Foto salva em " + where, "ok"); }
+      catch (e) { setWhere(it, "não salvo"); setStatus("Foto na galeria, mas não foi possível salvar o arquivo.", "bad"); }
     }, "image/png");
   }
 
@@ -838,7 +893,7 @@
   }
   async function startVideo() {
     if (!window.MediaRecorder || !cv.captureStream) { setStatus("Este navegador não grava vídeo. Use Edge ou Chrome.", "bad"); return; }
-    if (dirHandle) await ensurePerm();
+    askPerm();
     const mime = pickMime(), cs = cv.captureStream(30); let recorder;
     try { recorder = new MediaRecorder(cs, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 }); }
     catch (e) { setStatus("Erro ao iniciar a gravação: " + e.message, "bad"); return; }
@@ -848,9 +903,11 @@
     recorder.onstop = async () => {
       r.cs.getTracks().forEach(t => t.stop());
       const type = r.mime.split(";")[0] || "video/webm", blob = new Blob(r.chunks, { type });
-      const name = fileName("video", type.includes("mp4") ? "mp4" : "webm"), where = await saveBlob(blob, name);
-      addItem({ type: "video", url: URL.createObjectURL(blob), thumb: r.thumb, name, where, dur: r.dur });
-      setStatus("Vídeo salvo em " + where, "ok");
+      const name = fileName("video", type.includes("mp4") ? "mp4" : "webm");
+      const it = { type: "video", url: URL.createObjectURL(blob), thumb: r.thumb, name, where: "…", dur: r.dur };
+      addItem(it);
+      try { const where = await saveBlob(blob, name); setWhere(it, where); setStatus("Vídeo salvo em " + where, "ok"); }
+      catch (e) { setWhere(it, "não salvo"); setStatus("Vídeo na galeria, mas não foi possível salvar o arquivo.", "bad"); }
     };
     recorder.start(1000); $("btnVideo").classList.add("rec"); setStatus("Gravando vídeo…", "bad");
   }
