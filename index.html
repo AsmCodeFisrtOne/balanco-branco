@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.2 — 2026-10-23: aviso da calibração sem a palavra "gaze"
+<!-- Ajuste de Imagem — Videoendoscopia  v3.4 — 2026-10-23: travas da câmera explicadas e aplicadas na hora se já calibrado; sliders de hardware mostram "auto" em vez de valores falsos (-3 / 0)
+     v3.3: capturas ficam pendentes ("não salvo") até tocar em Salvar/Salvar todas — excluir antes não baixa nada; opção de salvar automaticamente
+     v3.2: aviso da calibração sem a palavra "gaze"
      v3.1: "Retornar aos parâmetros normais" também restaura os ajustes de hardware da câmera (valores de fábrica guardados no 1º uso)
      v3.0: botão "Retornar aos parâmetros normais" (com confirmação)
      v2.9: "Ver sem correção" mais claro (botão destacado com texto de volta) e desligado ao calibrar/desfazer
@@ -123,6 +125,7 @@
   .thumb img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
   .tag { position: absolute; left: 4px; bottom: 4px; font-size: 13px; background: rgba(0,0,0,.75); padding: 1px 6px; border-radius: 4px; }
   .tag.v { color: #ff9a9a; }
+  .thumb.unsaved::after { content: "não salvo"; position: absolute; left: 4px; top: 4px; font-size: 11px; padding: 0 5px; border-radius: 4px; background: var(--warn); color: #1a1205; }
   .del { position: absolute; top: 4px; right: 4px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; border: 1px solid rgba(255,255,255,.25);
     background: rgba(0,0,0,.72); color: #fff; font: inherit; font-size: 15px; line-height: 24px; cursor: pointer; box-shadow: 0 2px 0 #000; transition: transform .07s; }
   .del:active { transform: translateY(2px); box-shadow: none; }
@@ -232,7 +235,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.2</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.4</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -260,7 +263,7 @@
       <div id="live" title="Voltar ao vivo"><canvas id="cv"></canvas><canvas id="ov"></canvas></div>
       <div id="viewer" hidden>
         <img id="vImg" alt=""><video id="vVid" controls></video>
-        <div id="vbar"><span id="vName"></span><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
+        <div id="vbar"><span id="vName"></span><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
       </div>
       <div id="tools">
         <button class="btn big" id="btnFreeze" title="Congelar a imagem (Espaço)">
@@ -276,7 +279,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M5 5l14 14"/></svg>
           <span id="lblAR">Anti-verm.</span><span class="k">A</span></button>
       </div>
-      <div id="gallery"><div class="gtitle">Capturas</div></div>
+      <div id="gallery"><div class="gtitle">Capturas</div><button class="btn sm primary" id="btnSaveAll" style="width:100%;margin-bottom:8px;display:none">Salvar todas</button></div>
       <div id="flash"></div>
     </div>
 
@@ -332,6 +335,7 @@
         <div id="awbWarn" style="display:none"></div>
         <label class="sw"><span>Travar a cor da câmera ao calibrar</span><input type="checkbox" id="lockAwb" checked></label>
         <label class="sw"><span>Travar a exposição ao calibrar</span><input type="checkbox" id="lockAe"></label>
+        <p class="desc" style="margin:0 0 6px">As travas valem a partir do toque em <b>Calibrar branco</b>. Depois de calibrado, ligar ou desligar aplica na hora.</p>
         <div class="sl"><span class="name">Tamanho do quadrado de calibração</span><span class="val" id="roiTxt">25%</span>
           <input type="range" id="roi" min="10" max="50" value="25"></div>
         <label class="sw"><span>Mostrar quadrado de calibração</span><input type="checkbox" id="showRoi" checked></label>
@@ -343,6 +347,8 @@
         <div style="margin-bottom:8px"><input type="text" id="prefix" placeholder="Identificação do exame (opcional)" style="width:100%"></div>
         <div class="row"><span class="lbl">Salvar em</span><span id="dirName" style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Downloads</span></div>
         <div class="btnrow"><button class="btn sm" id="btnDir">Escolher pasta…</button></div>
+        <label class="sw" style="margin-top:8px"><span>Salvar cada captura automaticamente</span><input type="checkbox" id="autoSave"></label>
+        <p class="desc" style="margin:2px 0 0">Desligado: a captura fica só na tela até você tocar em <b>Salvar</b> — se excluir antes, nada é baixado. Com uma pasta escolhida, excluir também apaga o arquivo.</p>
         <p class="desc" style="margin:10px 0 0">Fotos e vídeos ficam só neste aparelho. Nada é enviado para a internet.</p>
       </details>
 
@@ -442,7 +448,8 @@
             <li><b>Foto</b> (P): salva a imagem exatamente como está na tela, sem o quadrado amarelo.</li>
             <li><b>Vídeo</b> (V): inicia e para a gravação; o botão mostra o tempo.</li>
             <li>Cada captura aparece no <b>canto direito</b>. Toque nela para rever em tela grande; o vídeo ao vivo continua numa janela pequena. Toque na janela pequena (ou Esc) para voltar.</li>
-            <li>Para <b>excluir</b>, toque no ✕ da miniatura (ou em Excluir, com a captura aberta) e toque de novo em "Excluir?" para confirmar. Se a pasta foi escolhida em "Gravação", o arquivo também é apagado dela; se foi para Downloads, sai só da tela.</li>
+            <li>Para <b>excluir</b>, toque no ✕ da miniatura (ou em Excluir, com a captura aberta) e toque de novo em "Excluir?" para confirmar. Se a pasta foi escolhida em "Gravação", o arquivo também é apagado dela.</li>
+            <li>Sem pasta escolhida, a captura fica marcada <b>não salvo</b> até você tocar em <b>Salvar</b> (ou "Salvar todas" no topo das miniaturas). Excluir antes de salvar não baixa nada. Para baixar tudo sozinho, ligue "Salvar cada captura automaticamente" em Gravação.</li>
           </ul>
           <div class="note">Em "Gravação", informe a identificação do exame (vai no nome do arquivo) e escolha a pasta onde salvar.</div>
         </div>
@@ -652,14 +659,18 @@
       row.innerHTML = '<span class="name"></span><span class="val"></span><input type="range">';
       row.querySelector(".name").textContent = label;
       const inp = row.querySelector("input"), val = row.querySelector(".val");
-      const cur = typeof st[k] === "number" ? st[k] : cc.min;
-      Object.assign(inp, { min: cc.min, max: cc.max, step: cc.step || 1, value: cur }); val.textContent = Math.round(cur);
+      // em modo automático a câmera às vezes não informa o valor (ou informa 0): mostra "auto" e deixa o cursor no meio
+      const autoNow = (k === "exposureTime" && st.exposureMode === "continuous") || (k === "colorTemperature" && st.whiteBalanceMode === "continuous");
+      const known = typeof st[k] === "number" && st[k] >= cc.min && st[k] <= cc.max && !(k === "colorTemperature" && st[k] === 0);
+      const cur = known ? st[k] : (k === "exposureCompensation" && cc.min <= 0 && cc.max >= 0 ? 0 : (cc.min + cc.max) / 2);
+      Object.assign(inp, { min: cc.min, max: cc.max, step: cc.step || 1, value: cur });
+      val.textContent = autoNow ? "auto" : (known || k === "exposureCompensation" ? (Math.round(cur * 10) / 10) : "–");
       inp.oninput = () => {
-        val.textContent = Math.round(+inp.value);
+        val.textContent = Math.round(+inp.value * 10) / 10;
         const cons = { [k]: +inp.value };
         if (k === "exposureTime") cons.exposureMode = "manual";
         if (k === "colorTemperature") cons.whiteBalanceMode = "manual";
-        curTrack.applyConstraints({ advanced: [cons] }).catch(() => {});
+        curTrack.applyConstraints({ advanced: [cons] }).then(showCamState).catch(() => {});
       };
       box.appendChild(row); any = true;
     });
@@ -931,6 +942,29 @@
   }
 
   // ----- galeria -----
+  function autoSaveOn() { return $("autoSave").checked; }
+  function unsavedCount() { return items.filter(x => !x.saved).length; }
+  function refreshSaveUi() {
+    const n = unsavedCount(), b = $("btnSaveAll");
+    b.style.display = n ? "" : "none"; b.textContent = n > 1 ? "Salvar todas (" + n + ")" : "Salvar";
+    if (viewing) $("btnSave").style.display = viewing.saved || !viewing.blob ? "none" : "";
+  }
+  async function saveItem(it) {
+    if (it.saved || !it.blob || it.saving) return;
+    it.saving = true;
+    try { const where = await saveBlob(it.blob, it.name); it.saved = true; setWhere(it, where); it.el.classList.remove("unsaved");
+      setStatus((it.type === "foto" ? "Foto salva em " : "Vídeo salvo em ") + where, "ok"); }
+    catch (e) { setStatus("Não foi possível salvar o arquivo.", "bad"); }
+    it.saving = false; refreshSaveUi();
+  }
+  async function saveAll() { askPerm(); for (const it of items.slice().reverse()) if (!it.saved) await saveItem(it); }
+  // captura pronta: salva na hora (automático ou pasta escolhida) ou fica pendente até "Salvar"
+  function captured(it, blob) {
+    it.blob = blob;
+    if (autoSaveOn() || dirHandle) saveItem(it);
+    else { it.el.classList.add("unsaved"); setWhere(it, "não salvo"); refreshSaveUi();
+      setStatus((it.type === "foto" ? "Foto" : "Vídeo") + " na galeria. Toque em Salvar para baixar, ou exclua se não quiser.", ""); }
+  }
   function setWhere(it, where) {
     it.where = where; if (it.el) it.el.title = it.name + "\nSalvo em: " + where;
     if (viewing === it) $("vName").title = it.name + " — salvo em: " + where;
@@ -944,7 +978,7 @@
     const del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "Excluir";
     del.onclick = e => { e.stopPropagation(); armDelete(del, "✕", () => removeItem(it)); };
     el.append(im, tg, del); el.onclick = () => openItem(it); it.el = el;
-    $("gallery").querySelector(".gtitle").after(el); $("gallery").classList.add("has"); $("gallery").scrollTop = 0; fit();
+    $("btnSaveAll").after(el); $("gallery").classList.add("has"); $("gallery").scrollTop = 0; fit();
   }
   // excluir: 1º toque arma ("Excluir?"), 2º toque confirma (sem janelas do navegador)
   function armDelete(btn, label, fn, ask) {
@@ -960,6 +994,8 @@
     if (!items.length) $("gallery").classList.remove("has");
     fit();
     const kind = it.type === "foto" ? "Foto" : "Vídeo", fem = it.type === "foto" ? "a" : "o";
+    it.blob = null; refreshSaveUi();
+    if (!it.saved) { setStatus(kind + " excluíd" + fem + ". Nenhum arquivo foi salvo.", "ok"); return; }
     if (dirHandle && it.where === dirHandle.name) {
       try { await dirHandle.removeEntry(it.name); setStatus(kind + " excluíd" + fem + " da tela e da pasta " + dirHandle.name + ".", "ok"); return; }
       catch (e) { setStatus(kind + " removid" + fem + " da tela, mas o arquivo não pôde ser apagado da pasta.", "bad"); return; }
@@ -972,7 +1008,7 @@
     if (it.type === "foto") { vv.pause(); vv.removeAttribute("src"); vv.style.display = "none"; vi.style.display = ""; vi.src = it.url; }
     else { vi.style.display = "none"; vv.style.display = ""; vv.src = it.url; vv.play().catch(() => {}); }
     $("vName").textContent = it.name; $("vName").title = it.name + " — salvo em: " + it.where;
-    $("viewer").hidden = false; fit();
+    $("viewer").hidden = false; refreshSaveUi(); fit();
   }
   function closeViewer() { if (!viewing) return; viewing = null; $("vVid").pause(); items.forEach(x => x.el.classList.remove("sel")); $("viewer").hidden = true; fit(); }
 
@@ -987,8 +1023,7 @@
     cv.toBlob(async blob => {
       if (!blob) { setStatus("Falha ao gerar a foto.", "bad"); return; }
       it.url = URL.createObjectURL(blob); if (viewing === it) $("vImg").src = it.url;
-      try { const where = await saveBlob(blob, name); setWhere(it, where); setStatus("Foto salva em " + where, "ok"); }
-      catch (e) { setWhere(it, "não salvo"); setStatus("Foto na galeria, mas não foi possível salvar o arquivo.", "bad"); }
+      captured(it, blob);
     }, "image/png");
   }
 
@@ -1013,8 +1048,7 @@
       const name = fileName("video", type.includes("mp4") ? "mp4" : "webm");
       const it = { type: "video", url: URL.createObjectURL(blob), thumb: r.thumb, name, where: "…", dur: r.dur };
       addItem(it);
-      try { const where = await saveBlob(blob, name); setWhere(it, where); setStatus("Vídeo salvo em " + where, "ok"); }
-      catch (e) { setWhere(it, "não salvo"); setStatus("Vídeo na galeria, mas não foi possível salvar o arquivo.", "bad"); }
+      captured(it, blob);
     };
     recorder.start(1000); $("btnVideo").classList.add("rec"); setStatus("Gravando vídeo…", "bad");
   }
@@ -1024,11 +1058,30 @@
     rec = null; $("btnVideo").classList.remove("rec"); $("lblVideo").textContent = "Vídeo";
   }
   const toggleVideo = () => rec ? stopVideo() : startVideo();
-  window.addEventListener("beforeunload", e => { if (rec) { e.preventDefault(); e.returnValue = ""; } });
+  window.addEventListener("beforeunload", e => { if (rec || unsavedCount()) { e.preventDefault(); e.returnValue = ""; } });
 
   // ----- ligações -----
   $("btnWB").onclick = doWB; $("btnReset").onclick = doReset; $("btnCmp").onclick = toggleCmp; $("btnFull").onclick = toggleFull;
   $("btnFreeze").onclick = toggleFreeze; $("btnFoto").onclick = takePhoto; $("btnVideo").onclick = toggleVideo; $("btnLive").onclick = closeViewer;
+  function onLockToggle() {
+    if (wbDone) {
+      const on = $("lockAwb").checked || $("lockAe").checked;
+      (on ? lockHw() : unlockHw()).then(() => {
+        if (!$("lockAwb").checked || !$("lockAe").checked) {           // destrava só o que foi desligado
+          const c = caps(), cons = {};
+          if (!$("lockAwb").checked && c.whiteBalanceMode && c.whiteBalanceMode.includes("continuous")) cons.whiteBalanceMode = "continuous";
+          if (!$("lockAe").checked && c.exposureMode && c.exposureMode.includes("continuous")) cons.exposureMode = "continuous";
+          if (Object.keys(cons).length) curTrack.applyConstraints({ advanced: [cons] }).catch(() => {}).then(() => { showCamState(); renderHw(); });
+        }
+      });
+      setStatus("Câmera atualizada.", "ok");
+    } else setStatus("A trava é aplicada quando você tocar em Calibrar branco.", "");
+  }
+  $("lockAwb").onchange = onLockToggle; $("lockAe").onchange = onLockToggle;
+  $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
+  $("btnSaveAll").onclick = saveAll;
+  $("autoSave").checked = !!store.get("autoSave");
+  $("autoSave").onchange = () => store.set("autoSave", $("autoSave").checked);
   $("btnDel").onclick = () => { if (viewing) { const it = viewing; armDelete($("btnDel"), "Excluir", () => removeItem(it)); } };
   live.onclick = () => { if (viewing) closeViewer(); };
   $("showRoi").onchange = e => { showRoi = e.target.checked; };
@@ -1042,7 +1095,7 @@
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
-                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()] }[k];
+                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
