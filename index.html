@@ -1,5 +1,9 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v2.8 — 2026-10-23: "Evitar estouro de luz" agora comprime os claros (roll-off) — Alto deixa reflexos sem ofuscar; neutralização só no que já veio estourado
+<!-- Ajuste de Imagem — Videoendoscopia  v3.2 — 2026-10-23: aviso da calibração sem a palavra "gaze"
+     v3.1: "Retornar aos parâmetros normais" também restaura os ajustes de hardware da câmera (valores de fábrica guardados no 1º uso)
+     v3.0: botão "Retornar aos parâmetros normais" (com confirmação)
+     v2.9: "Ver sem correção" mais claro (botão destacado com texto de volta) e desligado ao calibrar/desfazer
+     v2.8: "Evitar estouro de luz" agora comprime os claros (roll-off) — Alto deixa reflexos sem ofuscar; neutralização só no que já veio estourado
      v2.7: corrige "Alto" parecendo estourar — a proteção de reflexos clareava os brancos (agora só neutraliza a cor, sem clarear, e só no que já veio estourado)
      v2.6: "Evitar estouro de luz" em 4 níveis (substitui Preservar reflexos / Manter o brilho)
      v2.5: "Preservar reflexos" com proteção de reflexos (não ficam tingidos); trocar a prioridade recalcula sem recalibrar
@@ -122,7 +126,7 @@
   .del { position: absolute; top: 4px; right: 4px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; border: 1px solid rgba(255,255,255,.25);
     background: rgba(0,0,0,.72); color: #fff; font: inherit; font-size: 15px; line-height: 24px; cursor: pointer; box-shadow: 0 2px 0 #000; transition: transform .07s; }
   .del:active { transform: translateY(2px); box-shadow: none; }
-  .del.armed, #btnDel.armed { background: #c62828; border-color: #ff8c8c; color: #fff; font-size: 13px; }
+  .del.armed, #btnDel.armed, #btnResetAll.armed { background: #c62828; border-color: #ff8c8c; color: #fff; font-size: 13px; }
   #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 6; }
 
   /* ---------- painel lateral ---------- */
@@ -228,7 +232,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v2.8</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.2</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -279,7 +283,7 @@
     <aside>
       <div class="card">
         <h2>Calibração do branco <button class="btn sm help" data-goto="t1" title="Como fazer">?</button></h2>
-        <p class="desc">Aponte para a gaze ou alvo branco preenchendo o quadrado amarelo e calibre. Refaça ao trocar ótica, cabo de luz ou fonte.</p>
+        <p class="desc">Aponte para um alvo branco preenchendo o quadrado amarelo e calibre. Refaça ao trocar ótica, cabo de luz ou fonte.</p>
         <div class="row"><span class="lbl">Leitura no quadrado</span><span class="rgb"><span class="r" id="inR">–</span><span class="g" id="inG">–</span><span class="b" id="inB">–</span></span></div>
         <div class="row"><span class="lbl">Após calibração</span><span class="rgb"><span class="r" id="outR">–</span><span class="g" id="outG">–</span><span class="b" id="outB">–</span></span></div>
         <div class="row"><span class="lbl">Correção aplicada</span><span class="rgb"><span class="r" id="gR">1.00</span><span class="g" id="gG">1.00</span><span class="b" id="gB">1.00</span></span></div>
@@ -341,6 +345,12 @@
         <div class="btnrow"><button class="btn sm" id="btnDir">Escolher pasta…</button></div>
         <p class="desc" style="margin:10px 0 0">Fotos e vídeos ficam só neste aparelho. Nada é enviado para a internet.</p>
       </details>
+
+      <div class="card">
+        <h2>Parâmetros normais</h2>
+        <p class="desc">Volta tudo ao padrão: desfaz a calibração, desliga o anti-vermelho, zera os ajustes de imagem e devolve a câmera aos valores de fábrica (brilho, contraste, nitidez…) e ao automático. Fotos e vídeos não são apagados.</p>
+        <div class="btnrow"><button class="btn" id="btnResetAll">Retornar aos parâmetros normais</button></div>
+      </div>
 
       <div class="keys">
         <kbd>W</kbd> calibrar · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
@@ -614,6 +624,7 @@
       box.appendChild(row);
     });
   }
+  $("btnResetAll").onclick = () => armDelete($("btnResetAll"), "Retornar aos parâmetros normais", resetAll);
   $("btnAdjReset").onclick = () => { adj = { ...ADJ_DEF }; rebuildLuts(); store.set("adj:" + camKey, adj); renderAdj(); };
 
   // ----- anti-vermelho -----
@@ -719,6 +730,12 @@
     await listCams();
     curTrack = stream.getVideoTracks()[0];
     camKey = curTrack.label || id || "default";
+    // guarda os valores de fábrica da câmera na 1ª vez que ela é usada (para "Retornar aos parâmetros normais")
+    if (!store.get("hw0:" + camKey)) {
+      const st = sets(), snap = {};
+      HW.forEach(([k]) => { if (typeof st[k] === "number") snap[k] = st[k]; });
+      store.set("hw0:" + camKey, snap);
+    }
     $("cam").value = curTrack.getSettings().deviceId || $("cam").value;
     renderHw();
     adj = { ...ADJ_DEF, ...(store.get("adj:" + camKey) || {}) }; renderAdj();
@@ -797,7 +814,7 @@
         if ($("lblVideo").textContent !== mmss(t)) $("lblVideo").textContent = mmss(t); }
       if (frozen) tag("CONGELADO", "#7fd0ff");
       if (arLevel) tag("ANTI-VERMELHO " + AR[arLevel].name.toUpperCase(), "#ffb1a3");
-      if (showOriginal) tag("SEM CORREÇÃO", "#ffd400");
+      if (showOriginal) tag("SEM CORREÇÃO — só para comparar", "#ffd400");
 
       $("inR").textContent = lastIn[0].toFixed(0); $("inG").textContent = lastIn[1].toFixed(0); $("inB").textContent = lastIn[2].toFixed(0);
       $("outR").textContent = (cr / n).toFixed(0); $("outG").textContent = (cg / n).toFixed(0); $("outB").textContent = (cb / n).toFixed(0);
@@ -843,14 +860,40 @@
       if (Math.max(...mean) < 40) { setStatus("Não calibrado: referência escura demais. Aproxime o alvo ou aumente a luz.", "bad"); return; }
       calRef = mean; store.set("ref:" + camKey, mean);
       setGains(gainsFrom(mean, evlLevel)); store.set("wb:" + camKey, gains);
-      wbDone = true; ok = true; setStatus("Branco calibrado e travado.", "ok"); showCamState();
+      wbDone = true; ok = true; setCmp(false);              // ao calibrar, volta a mostrar a imagem corrigida
+      setStatus("Branco calibrado e travado.", "ok"); showCamState();
     } finally {
       if (!ok) { setGains(prev); wbDone = prevDone; }        // recusado: mantém a calibração anterior
       calibrating = false; $("btnWB").disabled = false; $("btnWB").textContent = "Calibrar branco";
     }
   }
-  function doReset() { wbDone = false; setGains([1, 1, 1]); store.set("wb:" + camKey, gains); unlockHw(); setStatus("Calibração desfeita. Câmera em automático.", ""); }
-  function toggleCmp() { showOriginal = !showOriginal; $("btnCmp").classList.toggle("on", showOriginal); }
+  // devolve brilho/contraste/saturação/nitidez/exposição/temperatura da câmera aos valores de fábrica guardados
+  async function restoreHw() {
+    if (!curTrack) return;
+    const snap = store.get("hw0:" + camKey) || {}, c = caps(), cons = {};
+    for (const [k] of HW) if (typeof snap[k] === "number" && c[k]) cons[k] = snap[k];
+    delete cons.exposureTime; delete cons.colorTemperature;   // estes voltam pelo modo automático
+    if (Object.keys(cons).length) { try { await curTrack.applyConstraints({ advanced: [cons] }); } catch (e) {} }
+    renderHw();
+  }
+  function resetAll() {
+    if (frozen || freezeReq) { frozen = null; freezeReq = false; setFreezeUi(); }
+    setCmp(false); setAR(0); setEVL(3);
+    adj = { ...ADJ_DEF }; store.set("adj:" + camKey, adj); renderAdj();
+    roiFrac = 0.25; $("roi").value = 25; $("roiTxt").textContent = "25%";
+    showRoi = true; $("showRoi").checked = true; $("lockAwb").checked = true; $("lockAe").checked = false;
+    calRef = null; store.set("ref:" + camKey, null);
+    restoreHw();
+    doReset();
+    setStatus("Parâmetros normais restaurados. Calibre o branco antes de usar.", "ok");
+  }
+  function doReset() { setCmp(false); wbDone = false; setGains([1, 1, 1]); store.set("wb:" + camKey, gains); unlockHw(); setStatus("Calibração desfeita. Câmera em automático.", ""); }
+  function setCmp(on) {
+    showOriginal = on; const b = $("btnCmp");
+    b.classList.toggle("on", on); b.classList.toggle("primary", on);
+    b.textContent = on ? "Mostrando SEM correção — toque para voltar" : "Ver sem correção";
+  }
+  function toggleCmp() { setCmp(!showOriginal); }
   function setFreezeUi() { const on = !!(frozen || freezeReq); $("btnFreeze").classList.toggle("on", on); $("lblFreeze").textContent = on ? "Descongelar" : "Congelar"; }
   function toggleFreeze() { if (frozen || freezeReq) { frozen = null; freezeReq = false; } else freezeReq = true; setFreezeUi(); }
   function toggleFull() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
@@ -904,9 +947,9 @@
     $("gallery").querySelector(".gtitle").after(el); $("gallery").classList.add("has"); $("gallery").scrollTop = 0; fit();
   }
   // excluir: 1º toque arma ("Excluir?"), 2º toque confirma (sem janelas do navegador)
-  function armDelete(btn, label, fn) {
+  function armDelete(btn, label, fn, ask) {
     if (btn.dataset.armed) { clearTimeout(+btn.dataset.armed); delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; fn(); return; }
-    btn.classList.add("armed"); btn.textContent = "Excluir?";
+    btn.classList.add("armed"); btn.textContent = ask || (btn.id === "btnResetAll" ? "Toque de novo para confirmar" : "Excluir?");
     btn.dataset.armed = setTimeout(() => { delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; }, 3000);
   }
   async function removeItem(it) {
