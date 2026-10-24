@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.4 — 2026-10-23: travas da câmera explicadas e aplicadas na hora se já calibrado; sliders de hardware mostram "auto" em vez de valores falsos (-3 / 0)
+<!-- Ajuste de Imagem — Videoendoscopia  v3.5 — 2026-10-24: saída ampliada para 1080 de altura (1080×1080 com entrada 400×400) por Lanczos-3 na GPU; fotos e vídeos em 1080 (opção de salvar na resolução da entrada); seletor renomeado para "Entrada"; mostra entrada, máximo da câmera e saída
+     v3.4 — 2026-10-23: travas da câmera explicadas e aplicadas na hora se já calibrado; sliders de hardware mostram "auto" em vez de valores falsos (-3 / 0)
      v3.3: capturas ficam pendentes ("não salvo") até tocar em Salvar/Salvar todas — excluir antes não baixa nada; opção de salvar automaticamente
      v3.2: aviso da calibração sem a palavra "gaze"
      v3.1: "Retornar aos parâmetros normais" também restaura os ajustes de hardware da câmera (valores de fábrica guardados no 1º uso)
@@ -235,7 +236,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.4</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.5</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -244,11 +245,11 @@
   <div class="spacer"></div>
   <div class="hdr-ctl">
     <select id="cam" title="Câmera"></select>
-    <select id="res" title="Resolução">
-      <option value="400x400" selected>400×400</option>
-      <option value="640x480">640×480</option>
-      <option value="1280x720">1280×720</option>
-      <option value="1920x1080">1920×1080</option>
+    <select id="res" title="Resolução de ENTRADA (o que é pedido à câmera). A saída é sempre ampliada para 1080 de altura (Lanczos-3).">
+      <option value="400x400" selected>Entrada 400×400</option>
+      <option value="640x480">Entrada 640×480</option>
+      <option value="1280x720">Entrada 1280×720</option>
+      <option value="1920x1080">Entrada 1920×1080</option>
     </select>
     <button class="btn ghost" id="btnFull" title="Tela cheia (F)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
@@ -260,7 +261,7 @@
   <!-- ================= IMAGEM ================= -->
   <section class="view active" id="imagem">
     <div id="stage">
-      <div id="live" title="Voltar ao vivo"><canvas id="cv"></canvas><canvas id="ov"></canvas></div>
+      <div id="live" title="Voltar ao vivo"><canvas id="cv" style="display:none"></canvas><canvas id="out"></canvas><canvas id="ov"></canvas></div>
       <div id="viewer" hidden>
         <img id="vImg" alt=""><video id="vVid" controls></video>
         <div id="vbar"><span id="vName"></span><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
@@ -339,6 +340,10 @@
         <div class="sl"><span class="name">Tamanho do quadrado de calibração</span><span class="val" id="roiTxt">25%</span>
           <input type="range" id="roi" min="10" max="50" value="25"></div>
         <label class="sw"><span>Mostrar quadrado de calibração</span><input type="checkbox" id="showRoi" checked></label>
+        <div class="row" style="margin-top:6px"><span class="lbl">Entrada (câmera)</span><span id="resIn">–</span></div>
+        <div class="row"><span class="lbl">Máximo da câmera</span><span id="resMax">–</span></div>
+        <div class="row"><span class="lbl">Saída (tela, Lanczos-3)</span><span id="resOut">–</span></div>
+        <p class="desc" style="margin:4px 0 0">A saída é ampliada para 1080 de altura. A ampliação deixa a imagem mais limpa na tela, mas o detalhe real é o da entrada — para mais detalhe, escolha uma entrada maior (se a câmera suportar).</p>
         <div id="hw" style="margin-top:6px"></div>
       </details>
 
@@ -347,7 +352,8 @@
         <div style="margin-bottom:8px"><input type="text" id="prefix" placeholder="Identificação do exame (opcional)" style="width:100%"></div>
         <div class="row"><span class="lbl">Salvar em</span><span id="dirName" style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Downloads</span></div>
         <div class="btnrow"><button class="btn sm" id="btnDir">Escolher pasta…</button></div>
-        <label class="sw" style="margin-top:8px"><span>Salvar cada captura automaticamente</span><input type="checkbox" id="autoSave"></label>
+        <label class="sw" style="margin-top:8px"><span>Salvar na resolução da entrada (sem ampliar)</span><input type="checkbox" id="saveNative"></label>
+        <label class="sw"><span>Salvar cada captura automaticamente</span><input type="checkbox" id="autoSave"></label>
         <p class="desc" style="margin:2px 0 0">Desligado: a captura fica só na tela até você tocar em <b>Salvar</b> — se excluir antes, nada é baixado. Com uma pasta escolhida, excluir também apaga o arquivo.</p>
         <p class="desc" style="margin:10px 0 0">Fotos e vídeos ficam só neste aparelho. Nada é enviado para a internet.</p>
       </details>
@@ -596,6 +602,48 @@
 
   // ================= estado =================
   const cv = $("cv"), ctx = cv.getContext("2d", { willReadFrequently: true });
+  // ===== saída ampliada: Lanczos-3 (janela a = 3, 6×6 amostras) na GPU; altura fixa de 1080 =====
+  const OUT_H = 1080;
+  const outCv = $("out");
+  const UP = (() => {
+    const gl = outCv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false });
+    if (!gl) {                                   // sem WebGL: cai para o redimensionamento de alta qualidade do navegador
+      const c2 = outCv.getContext("2d");
+      return { gl: false, draw(img, w, h) { c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = "high"; c2.drawImage(cv, 0, 0, outCv.width, outCv.height); } };
+    }
+    const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = p * 0.5 + 0.5; uv.y = 1.0 - uv.y; gl_Position = vec4(p, 0.0, 1.0); }";
+    const fs = `precision highp float;
+      uniform sampler2D t; uniform vec2 src; varying vec2 uv;
+      float L(float x){ x = abs(x); if (x < 1e-5) return 1.0; if (x >= 3.0) return 0.0;
+        float px = 3.14159265 * x; return 3.0 * sin(px) * sin(px / 3.0) / (px * px); }
+      void main(){
+        vec2 pos = uv * src - 0.5; vec2 f = floor(pos); vec2 fr = pos - f;
+        vec3 sum = vec3(0.0); float ws = 0.0;
+        for (int j = -2; j <= 3; j++) { float wy = L(float(j) - fr.y);
+          for (int i = -2; i <= 3; i++) { float w = L(float(i) - fr.x) * wy;
+            vec2 q = (clamp(f + vec2(float(i), float(j)), vec2(0.0), src - 1.0) + 0.5) / src;
+            sum += texture2D(t, q).rgb * w; ws += w; } }
+        gl_FragColor = vec4(clamp(sum / ws, 0.0, 1.0), 1.0); }`;
+    const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+    const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) {
+      const c2 = null; return { gl: false, draw() {} };
+    }
+    gl.useProgram(pr);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    const uSrc = gl.getUniformLocation(pr, "src");
+    return { gl: true, draw(img, w, h) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.uniform2f(uSrc, w, h); gl.viewport(0, 0, outCv.width, outCv.height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    } };
+  })();
+  function outSize(w, h) { const H = Math.max(h, OUT_H); return [Math.round(H * w / h), H]; }
   const ov = $("ov"), octx = ov.getContext("2d");
   const stage = $("stage"), live = $("live");
   const video = document.createElement("video"); video.muted = true; video.playsInline = true;
@@ -749,6 +797,7 @@
     }
     $("cam").value = curTrack.getSettings().deviceId || $("cam").value;
     renderHw();
+    { const c = caps(); $("resMax").textContent = c.width && c.height ? c.width.max + "×" + c.height.max : "não informado"; }
     adj = { ...ADJ_DEF, ...(store.get("adj:" + camKey) || {}) }; renderAdj();
     const g = store.get("wb:" + camKey);
     if (Array.isArray(g) && g.length === 3 && !g.every(x => x === 1)) {
@@ -764,7 +813,7 @@
     const gw = items.length ? (innerWidth <= 900 ? 84 : 116) : 0;
     const aw = Math.max(50, r.width - gw), ah = Math.max(50, r.height);
     $("viewer").style.right = gw + "px";
-    const ar = (cv.width && cv.height) ? cv.width / cv.height : 1;
+    const ar = (outCv.width && outCv.height) ? outCv.width / outCv.height : 1;
     let w, h, x, y;
     if (viewing) { w = Math.min(aw * 0.32, 280); h = w / ar; x = 12; y = 12; }
     else { w = aw; h = w / ar; if (h > ah) { h = ah; w = h * ar; } x = (aw - w) / 2; y = (ah - h) / 2; }
@@ -780,7 +829,11 @@
     const vw = video.videoWidth, vh = video.videoHeight;
     const w = frozen ? frozen.width : outW, h = frozen ? frozen.height : outH;
     if ((vw && vh) || frozen) {
-      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; ov.width = w; ov.height = h; fit(); }
+      if (cv.width !== w || cv.height !== h) {
+        cv.width = w; cv.height = h; const [OW, OH] = outSize(w, h);
+        outCv.width = OW; outCv.height = OH; ov.width = OW; ov.height = OH; fit();
+        $("resIn").textContent = w + "×" + h; $("resOut").textContent = OW + "×" + OH + (UP.gl ? "" : " (sem WebGL)");
+      }
       let img;
       if (frozen) img = new ImageData(new Uint8ClampedArray(frozen.data), w, h);
       else {
@@ -810,8 +863,10 @@
       }
       if (!showOriginal) applyPipeline(d, luts, adj.sat, arLevel, EVL[evlLevel].k);
       ctx.putImageData(img, 0, 0);
+      UP.draw(img, w, h);                                    // amplia para a saída com Lanczos-3
 
-      octx.clearRect(0, 0, w, h);
+      const sc = ov.width / w;                               // sobreposições desenhadas no espaço da entrada, escaladas
+      octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, ov.width, ov.height); octx.setTransform(sc, 0, 0, sc, 0, 0);
       const fs = Math.max(12, 15 * w / 640);
       octx.font = fs * 1.1 + "px Bonnie, Segoe UI, sans-serif";
       if (showRoi) { octx.strokeStyle = "#ffd400"; octx.lineWidth = Math.max(2, w / 640); octx.strokeRect(x0, y0, s, s); }
@@ -960,6 +1015,7 @@
   async function saveAll() { askPerm(); for (const it of items.slice().reverse()) if (!it.saved) await saveItem(it); }
   // captura pronta: salva na hora (automático ou pasta escolhida) ou fica pendente até "Salvar"
   function captured(it, blob) {
+    if (!items.includes(it)) return;                         // excluída antes de terminar de gerar o arquivo
     it.blob = blob;
     if (autoSaveOn() || dirHandle) saveItem(it);
     else { it.el.classList.add("unsaved"); setWhere(it, "não salvo"); refreshSaveUi();
@@ -1016,11 +1072,12 @@
   function flash() { const f = $("flash"); f.style.transition = "none"; f.style.opacity = .7; requestAnimationFrame(() => { f.style.transition = "opacity .3s"; f.style.opacity = 0; }); }
   function takePhoto() {
     if (!cv.width) return; flash(); askPerm();
+    const src = $("saveNative").checked ? cv : outCv;
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName("foto", "png");
-    const thumb = cv.toDataURL("image/jpeg", 0.8);         // miniatura imediata
+    const thumb = src.toDataURL("image/jpeg", 0.8);        // miniatura imediata
     const it = { type: "foto", url: thumb, thumb, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
     addItem(it);
-    cv.toBlob(async blob => {
+    src.toBlob(async blob => {
       if (!blob) { setStatus("Falha ao gerar a foto.", "bad"); return; }
       it.url = URL.createObjectURL(blob); if (viewing === it) $("vImg").src = it.url;
       captured(it, blob);
@@ -1034,12 +1091,13 @@
     return "";
   }
   async function startVideo() {
-    if (!window.MediaRecorder || !cv.captureStream) { setStatus("Este navegador não grava vídeo. Use Edge ou Chrome.", "bad"); return; }
+    const vsrc = $("saveNative").checked ? cv : outCv;
+    if (!window.MediaRecorder || !vsrc.captureStream) { setStatus("Este navegador não grava vídeo. Use Edge ou Chrome.", "bad"); return; }
     askPerm();
-    const mime = pickMime(), cs = cv.captureStream(30); let recorder;
+    const mime = pickMime(), cs = vsrc.captureStream(30); let recorder;
     try { recorder = new MediaRecorder(cs, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 }); }
     catch (e) { setStatus("Erro ao iniciar a gravação: " + e.message, "bad"); return; }
-    rec = { recorder, cs, chunks: [], start: performance.now(), mime: recorder.mimeType || mime, thumb: cv.toDataURL("image/jpeg", 0.7) };
+    rec = { recorder, cs, chunks: [], start: performance.now(), mime: recorder.mimeType || mime, thumb: vsrc.toDataURL("image/jpeg", 0.7), w: vsrc.width };
     const r = rec;
     recorder.ondataavailable = e => { if (e.data && e.data.size) r.chunks.push(e.data); };
     recorder.onstop = async () => {
@@ -1050,12 +1108,12 @@
       addItem(it);
       captured(it, blob);
     };
-    recorder.start(1000); $("btnVideo").classList.add("rec"); setStatus("Gravando vídeo…", "bad");
+    recorder.start(1000); $("btnVideo").classList.add("rec"); $("saveNative").disabled = true; $("res").disabled = true; setStatus("Gravando vídeo…", "bad");
   }
   function stopVideo() {
     if (!rec) return; rec.dur = (performance.now() - rec.start) / 1000;
     try { rec.recorder.stop(); } catch (e) {}
-    rec = null; $("btnVideo").classList.remove("rec"); $("lblVideo").textContent = "Vídeo";
+    rec = null; $("btnVideo").classList.remove("rec"); $("saveNative").disabled = false; $("res").disabled = false; $("lblVideo").textContent = "Vídeo";
   }
   const toggleVideo = () => rec ? stopVideo() : startVideo();
   window.addEventListener("beforeunload", e => { if (rec || unsavedCount()) { e.preventDefault(); e.returnValue = ""; } });
@@ -1081,6 +1139,8 @@
   $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
   $("btnSaveAll").onclick = saveAll;
   $("autoSave").checked = !!store.get("autoSave");
+  $("saveNative").checked = !!store.get("saveNative");
+  $("saveNative").onchange = () => store.set("saveNative", $("saveNative").checked);
   $("autoSave").onchange = () => store.set("autoSave", $("autoSave").checked);
   $("btnDel").onclick = () => { if (viewing) { const it = viewing; armDelete($("btnDel"), "Excluir", () => removeItem(it)); } };
   live.onclick = () => { if (viewing) closeViewer(); };
