@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.5 — 2026-10-24: saída ampliada para 1080 de altura (1080×1080 com entrada 400×400) por Lanczos-3 na GPU; fotos e vídeos em 1080 (opção de salvar na resolução da entrada); seletor renomeado para "Entrada"; mostra entrada, máximo da câmera e saída
+<!-- Ajuste de Imagem — Videoendoscopia  v3.6 — 2026-10-24: "Evitar estouro de luz" sempre abre Desligado (e o reset volta para Desligado)
+     v3.5 — 2026-10-24: saída ampliada para 1080 de altura (1080×1080 com entrada 400×400) por Lanczos-3 na GPU; fotos e vídeos em 1080 (opção de salvar na resolução da entrada); seletor renomeado para "Entrada"; mostra entrada, máximo da câmera e saída
      v3.4 — 2026-10-23: travas da câmera explicadas e aplicadas na hora se já calibrado; sliders de hardware mostram "auto" em vez de valores falsos (-3 / 0)
      v3.3: capturas ficam pendentes ("não salvo") até tocar em Salvar/Salvar todas — excluir antes não baixa nada; opção de salvar automaticamente
      v3.2: aviso da calibração sem a palavra "gaze"
@@ -236,7 +237,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.5</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.6</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -411,7 +412,7 @@
             <li><b>Baixo / Médio:</b> meio-termo entre claridade e proteção.</li>
             <li><b>Alto:</b> nenhuma área clara estoura e os reflexos ficam brancos, sem mancha de cor. A imagem fica um pouco mais escura.</li>
           </ul>
-          <div class="note">Comece no <b>Alto</b>. Se a imagem ficar escura, desça um nível ou aumente a fonte de luz. A mudança vale na hora — não precisa calibrar de novo. Na demonstração, listras marcam onde a luz estourou.</div>
+          <div class="note">O programa abre com o nível <b>Desligado</b>. Se reflexos ou áreas claras estourarem, suba o nível; se a imagem ficar escura, desça um nível ou aumente a fonte de luz. A mudança vale na hora — não precisa calibrar de novo. Na demonstração, listras marcam onde a luz estourou.</div>
         </div>
         <div class="demo"><canvas data-demo="norm" width="480" height="320"></canvas><div class="cap"></div></div>
       </article>
@@ -649,7 +650,7 @@
   const video = document.createElement("video"); video.muted = true; video.playsInline = true;
 
   let gains = [1, 1, 1], adj = { ...ADJ_DEF }, arLevel = 0;
-  let evlLevel = 3;
+  let evlLevel = 0;
   let luts = makeLuts(gains, adj, evlLevel), wbLuts = makeLuts(gains);
   function rebuildLuts() { luts = makeLuts(gains, adj, evlLevel); wbLuts = makeLuts(gains); }
 
@@ -944,7 +945,7 @@
   }
   function resetAll() {
     if (frozen || freezeReq) { frozen = null; freezeReq = false; setFreezeUi(); }
-    setCmp(false); setAR(0); setEVL(3);
+    setCmp(false); setAR(0); setEVL(0);
     adj = { ...ADJ_DEF }; store.set("adj:" + camKey, adj); renderAdj();
     roiFrac = 0.25; $("roi").value = 25; $("roiTxt").textContent = "25%";
     showRoi = true; $("showRoi").checked = true; $("lockAwb").checked = true; $("lockAe").checked = false;
@@ -1161,7 +1162,7 @@
   });
 
   setAR(+(store.get("ar") || 0));
-  { const e = store.get("evl"); setEVL(typeof e === "number" && e >= 0 && e <= 3 ? e : (store.get("norm") === "g" ? 0 : 3)); }
+  setEVL(0);                                               // sempre abre com "Evitar estouro de luz" desligado
   renderAdj();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) setStatus("Este navegador não acessa a câmera. Use Edge ou Chrome.", "bad");
   else startCam().then(() => { if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame); });
