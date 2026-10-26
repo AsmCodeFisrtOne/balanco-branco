@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.0 — 2026-10-26: "Comparar" liga realce e redução de ruído no Médio quando os dois estão desligados
+<!-- Ajuste de Imagem — Videoendoscopia  v4.1 — 2026-10-26: sem WebGL a comparação e a lupa passam a funcionar (e o app avisa que o Lanczos está inativo); "antes" da comparação sem redução de ruído também com a imagem congelada
+     v4.0 — 2026-10-26: "Comparar" liga realce e redução de ruído no Médio quando os dois estão desligados
      v3.9 — 2026-10-26: realce de bordas (máscara de nitidez na luminância com corte de ruído) e redução de ruído temporal adaptativa, 4 níveis cada; "Comparar" no topo agora é ANTES × DEPOIS (bilinear × Lanczos fica no cartão Câmera, tecla B); lição 7 no tutorial
      v3.8 — 2026-10-26: botões "Comparar" e "Lupa 3×" também na barra do topo
      v3.7 — 2026-10-26: teste da ampliação no próprio app — "Comparar ampliação" (bilinear × Lanczos-3 lado a lado, mesma região) e "Lupa 3×"
@@ -242,7 +243,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.0</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.1</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -646,14 +647,31 @@
   const cv = $("cv"), ctx = cv.getContext("2d", { willReadFrequently: true });
   // ===== saída ampliada: Lanczos-3 (janela a = 3, 6×6 amostras) na GPU; altura fixa de 1080 =====
   const OUT_H = 1080;
-  let cmpMode = 0, zoomF = 1;                         // 0 normal · 1 bilinear×Lanczos · 2 antes×depois (não entram nas capturas)
-  const outCv = $("out");
+  let cmpMode = 0, zoomF = 1, warnedGL = false;                         // 0 normal · 1 bilinear×Lanczos · 2 antes×depois (não entram nas capturas)
+  let outCv = $("out");
+  const beforeCv = document.createElement("canvas"), beforeCtx = beforeCv.getContext("2d");
+  // saída sem WebGL: ampliação do navegador (sem Lanczos), mas com comparação e lupa funcionando
+  function make2D(why) {
+    if (outCv.getContext("webgl") || outCv.getContext("experimental-webgl")) {     // canvas já preso ao WebGL: troca por um novo
+      const n = document.createElement("canvas"); n.id = "out"; n.width = outCv.width; n.height = outCv.height; outCv.replaceWith(n); outCv = n;
+    }
+    const c2 = outCv.getContext("2d");
+    console.warn("Saída sem WebGL:", why);
+    return { gl: false, why, draw(img, w, h, before) {
+      const OW = outCv.width, OH = outCv.height, z = zoomF;
+      c2.imageSmoothingEnabled = true;
+      if (!cmpMode) { c2.imageSmoothingQuality = "high";
+        c2.drawImage(cv, w * (0.5 - 0.5 / z), h * (0.5 - 0.5 / z), w / z, h / z, 0, 0, OW, OH); return; }
+      const sx = w * (0.5 - 0.25 / z), sw = w * 0.5 / z, sy = h * (0.5 - 0.5 / z), sh = h / z;
+      let left = cv;
+      if (cmpMode === 2 && before) { if (beforeCv.width !== w || beforeCv.height !== h) { beforeCv.width = w; beforeCv.height = h; } beforeCtx.putImageData(before, 0, 0); left = beforeCv; }
+      c2.imageSmoothingQuality = cmpMode === 1 ? "low" : "high"; c2.drawImage(left, sx, sy, sw, sh, 0, 0, OW / 2, OH);
+      c2.imageSmoothingQuality = "high"; c2.drawImage(cv, sx, sy, sw, sh, OW / 2, 0, OW / 2, OH);
+    } };
+  }
   const UP = (() => {
     const gl = outCv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false });
-    if (!gl) {                                   // sem WebGL: cai para o redimensionamento de alta qualidade do navegador
-      const c2 = outCv.getContext("2d");
-      return { gl: false, draw(img, w, h) { c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = "high"; c2.drawImage(cv, 0, 0, outCv.width, outCv.height); } };
-    }
+    if (!gl) return make2D("WebGL indisponível (aceleração de hardware desligada?)");
     const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = p * 0.5 + 0.5; uv.y = 1.0 - uv.y; gl_Position = vec4(p, 0.0, 1.0); }";
     // cmp: 0 = normal · 1 = bilinear × Lanczos-3 (mesma imagem) · 2 = antes × depois (t2 = sem realce/redução de ruído)
     const fs = `precision highp float;
@@ -679,7 +697,7 @@
         gl_FragColor = vec4(lanczos(t, f, fr), 1.0); }`;
     const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
     const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
-    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(pr)); return { gl: false, draw() {} }; }
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return make2D("shader não compilou: " + gl.getProgramInfoLog(pr));
     gl.useProgram(pr);
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -763,7 +781,7 @@
 
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25, outW = 400, outH = 400;
-  let frozen = null, freezeReq = false, showRoi = true;
+  let frozen = null, frozenRaw = null, freezeReq = false, showRoi = true;
   let rec = null; const items = []; let viewing = null, dirHandle = null, curTrack = null, wbDone = false;
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
@@ -940,7 +958,8 @@
       if (cv.width !== w || cv.height !== h) {
         cv.width = w; cv.height = h; const [OW, OH] = outSize(w, h);
         outCv.width = OW; outCv.height = OH; ov.width = OW; ov.height = OH; fit();
-        $("resIn").textContent = w + "×" + h; $("resOut").textContent = OW + "×" + OH + (UP.gl ? "" : " (sem WebGL)");
+        $("resIn").textContent = w + "×" + h; $("resOut").textContent = OW + "×" + OH + (UP.gl ? "" : " (sem WebGL — ampliação simples)");
+        if (!UP.gl && !warnedGL) { warnedGL = true; setStatus("Atenção: o navegador está sem WebGL, então a ampliação Lanczos-3 não está ativa. No Edge: Configurações › Sistema › ligue \"Usar aceleração de gráficos quando disponível\" e reinicie.", "bad"); }
       }
       let img;
       if (frozen) img = new ImageData(new Uint8ClampedArray(frozen.data), w, h);
@@ -951,9 +970,10 @@
         img = ctx.getImageData(0, 0, w, h);
       }
       const d = img.data;
-      const raw = cmpMode === 2 ? new Uint8ClampedArray(d) : null;   // cópia "antes" para a comparação
+      const raw = cmpMode === 2 ? new Uint8ClampedArray(frozen && frozenRaw ? frozenRaw : d) : null;   // "antes": sem redução de ruído
+      const rawFrame = freezeReq && !frozen ? new Uint8ClampedArray(d) : null;
       if (!frozen && !showOriginal) temporalNR(d, w, h, nrLevel, nrLive); else if (frozen) nrLive.buf = null;
-      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); freezeReq = false; }   // congela já com o ruído reduzido
+      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; }   // congela já com o ruído reduzido
       const s = Math.max(4, Math.floor(Math.min(w, h) * roiFrac)), x0 = (w - s) >> 1, y0 = (h - s) >> 1;
       let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0, cr = 0, cg = 0, cb = 0;
       const wr = wbLuts[0], wg = wbLuts[1], wb = wbLuts[2];
@@ -986,7 +1006,7 @@
         const OW = ov.width, OH = ov.height, f2 = Math.round(OH / 40);
         octx.font = f2 + "px Bonnie, Segoe UI, sans-serif";
         const lab = (t, x, al) => { octx.textAlign = al; const tw = octx.measureText(t).width + f2;
-          const bx = al === "left" ? x : x - tw; const by = al === "center" ? f2 * 2.8 : f2 * 0.6; octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(al === "center" ? x - tw / 2 : bx, by, tw, f2 * 1.7);
+          const bx = al === "left" ? x : x - tw; const by = al === "center" ? f2 * 0.6 : f2 * 2.6 + (frozen || rec || arLevel || showOriginal ? f2 * 2.2 : 0); octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(al === "center" ? x - tw / 2 : bx, by, tw, f2 * 1.7);
           octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
         if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
           if (cmpMode === 1) { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); }
