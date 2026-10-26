@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.9 — 2026-10-26: realce de bordas (máscara de nitidez na luminância com corte de ruído) e redução de ruído temporal adaptativa, 4 níveis cada; "Comparar" no topo agora é ANTES × DEPOIS (bilinear × Lanczos fica no cartão Câmera, tecla B); lição 7 no tutorial
+<!-- Ajuste de Imagem — Videoendoscopia  v4.0 — 2026-10-26: "Comparar" liga realce e redução de ruído no Médio quando os dois estão desligados
+     v3.9 — 2026-10-26: realce de bordas (máscara de nitidez na luminância com corte de ruído) e redução de ruído temporal adaptativa, 4 níveis cada; "Comparar" no topo agora é ANTES × DEPOIS (bilinear × Lanczos fica no cartão Câmera, tecla B); lição 7 no tutorial
      v3.8 — 2026-10-26: botões "Comparar" e "Lupa 3×" também na barra do topo
      v3.7 — 2026-10-26: teste da ampliação no próprio app — "Comparar ampliação" (bilinear × Lanczos-3 lado a lado, mesma região) e "Lupa 3×"
      v3.6 — 2026-10-24: "Evitar estouro de luz" sempre abre Desligado (e o reset volta para Desligado)
@@ -241,7 +242,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.9</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.0</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -1266,7 +1267,13 @@
   }
   $("lockAwb").onchange = onLockToggle; $("lockAe").onchange = onLockToggle;
   $("btnCmpUp").onclick = () => setCmpMode(cmpMode === 1 ? 0 : 1);
-  $("hdrCmp").onclick = () => setCmpMode(cmpMode === 2 ? 0 : 2);
+  // Comparar antes × depois: se nada estiver ligado, liga realce e redução de ruído no Médio para haver o que comparar
+  function toggleAntesDepois() {
+    if (cmpMode === 2) { setCmpMode(0); return; }
+    if (!shpLevel && !nrLevel) { setSHP(2); setNR(2); setStatus("Para comparar, realce de bordas e redução de ruído foram ligados no Médio (ajuste em \"Nitidez e ruído\").", "ok"); }
+    setCmpMode(2);
+  }
+  $("hdrCmp").onclick = toggleAntesDepois;
   function setSHP(l) { shpLevel = l; document.querySelectorAll("#shpSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.shp === l)); }
   function setNR(l) { nrLevel = l; nrLive.buf = null; document.querySelectorAll("#nrSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.nr === l)); }
   document.querySelectorAll("#shpSeg .btn").forEach(b => b.onclick = () => setSHP(+b.dataset.shp));
@@ -1293,7 +1300,7 @@
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
-                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", () => setCmpMode(cmpMode === 2 ? 0 : 2)], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
+                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", toggleAntesDepois], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
