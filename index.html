@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.7 — 2026-10-26: teste da ampliação no próprio app — "Comparar ampliação" (bilinear × Lanczos-3 lado a lado, mesma região) e "Lupa 3×"
+<!-- Ajuste de Imagem — Videoendoscopia  v3.8 — 2026-10-26: botões "Comparar" e "Lupa 3×" também na barra do topo
+     v3.7 — 2026-10-26: teste da ampliação no próprio app — "Comparar ampliação" (bilinear × Lanczos-3 lado a lado, mesma região) e "Lupa 3×"
      v3.6 — 2026-10-24: "Evitar estouro de luz" sempre abre Desligado (e o reset volta para Desligado)
      v3.5 — 2026-10-24: saída ampliada para 1080 de altura (1080×1080 com entrada 400×400) por Lanczos-3 na GPU; fotos e vídeos em 1080 (opção de salvar na resolução da entrada); seletor renomeado para "Entrada"; mostra entrada, máximo da câmera e saída
      v3.4 — 2026-10-23: travas da câmera explicadas e aplicadas na hora se já calibrado; sliders de hardware mostram "auto" em vez de valores falsos (-3 / 0)
@@ -219,6 +220,7 @@
     .spacer { display: none; }
     .hdr-ctl { width: 100%; }
     .hdr-ctl select { flex: 1; }
+    #hdrCmp span, #hdrZoom span { display: none; }
     main, .view.active { flex-direction: column; }
     #imagem.active { overflow-y: auto; }
     #stage { flex: none; height: min(100vw, 62vh); }
@@ -238,7 +240,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.7</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.8</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -253,6 +255,10 @@
       <option value="1280x720">Entrada 1280×720</option>
       <option value="1920x1080">Entrada 1920×1080</option>
     </select>
+    <button class="btn ghost" id="hdrCmp" title="Comparar ampliação: esquerda esticada pelo navegador × direita Lanczos-3 (C)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
+    <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
     <button class="btn ghost" id="btnFull" title="Tela cheia (F)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
     </button>
@@ -1095,8 +1101,8 @@
 
   // ----- foto -----
   function flash() { const f = $("flash"); f.style.transition = "none"; f.style.opacity = .7; requestAnimationFrame(() => { f.style.transition = "opacity .3s"; f.style.opacity = 0; }); }
-  function setCmpUp(on) { cmpMode = on; $("btnCmpUp").classList.toggle("on", on); }
-  function setZoom(on) { zoomF = on ? 3 : 1; $("btnZoom").classList.toggle("on", on); }
+  function setCmpUp(on) { cmpMode = on; $("btnCmpUp").classList.toggle("on", on); $("hdrCmp").classList.toggle("on", on); }
+  function setZoom(on) { zoomF = on ? 3 : 1; $("btnZoom").classList.toggle("on", on); $("hdrZoom").classList.toggle("on", on); }
   function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue \"Comparar ampliação\" e a lupa para capturar.", "bad"); return true; } return false; }
   function takePhoto() {
     if (testView()) return;
@@ -1167,6 +1173,8 @@
   }
   $("lockAwb").onchange = onLockToggle; $("lockAe").onchange = onLockToggle;
   $("btnCmpUp").onclick = () => setCmpUp(!cmpMode);
+  $("hdrCmp").onclick = () => setCmpUp(!cmpMode);
+  $("hdrZoom").onclick = () => setZoom(zoomF === 1);
   $("btnZoom").onclick = () => setZoom(zoomF === 1);
   $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
   $("btnSaveAll").onclick = saveAll;
