@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.8 — 2026-10-26: botões "Comparar" e "Lupa 3×" também na barra do topo
+<!-- Ajuste de Imagem — Videoendoscopia  v3.9 — 2026-10-26: realce de bordas (máscara de nitidez na luminância com corte de ruído) e redução de ruído temporal adaptativa, 4 níveis cada; "Comparar" no topo agora é ANTES × DEPOIS (bilinear × Lanczos fica no cartão Câmera, tecla B); lição 7 no tutorial
+     v3.8 — 2026-10-26: botões "Comparar" e "Lupa 3×" também na barra do topo
      v3.7 — 2026-10-26: teste da ampliação no próprio app — "Comparar ampliação" (bilinear × Lanczos-3 lado a lado, mesma região) e "Lupa 3×"
      v3.6 — 2026-10-24: "Evitar estouro de luz" sempre abre Desligado (e o reset volta para Desligado)
      v3.5 — 2026-10-24: saída ampliada para 1080 de altura (1080×1080 com entrada 400×400) por Lanczos-3 na GPU; fotos e vídeos em 1080 (opção de salvar na resolução da entrada); seletor renomeado para "Entrada"; mostra entrada, máximo da câmera e saída
@@ -124,13 +125,13 @@
   #gallery .gtitle { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 0 2px 6px; }
   .thumb { position: relative; margin-bottom: 8px; border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer;
     background: #222; box-shadow: 0 2px 0 #000; transition: transform .07s; }
-  .thumb:active { transform: translateY(2px) scale(.98); }
+  .thumb:active:not(:has(.del:active)) { filter: brightness(.85); }
   .thumb:hover { border-color: #555; } .thumb.sel { border-color: var(--brand-tint); }
   .thumb img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
   .tag { position: absolute; left: 4px; bottom: 4px; font-size: 13px; background: rgba(0,0,0,.75); padding: 1px 6px; border-radius: 4px; }
   .tag.v { color: #ff9a9a; }
-  .thumb.unsaved::after { content: "não salvo"; position: absolute; left: 4px; top: 4px; font-size: 11px; padding: 0 5px; border-radius: 4px; background: var(--warn); color: #1a1205; }
-  .del { position: absolute; top: 4px; right: 4px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; border: 1px solid rgba(255,255,255,.25);
+  .thumb.unsaved::after { content: "não salvo"; position: absolute; left: 4px; top: 4px; pointer-events: none; z-index: 1; font-size: 11px; padding: 0 5px; border-radius: 4px; background: var(--warn); color: #1a1205; }
+  .del { position: absolute; z-index: 2; top: 4px; right: 4px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; border: 1px solid rgba(255,255,255,.25);
     background: rgba(0,0,0,.72); color: #fff; font: inherit; font-size: 15px; line-height: 24px; cursor: pointer; box-shadow: 0 2px 0 #000; transition: transform .07s; }
   .del:active { transform: translateY(2px); box-shadow: none; }
   .del.armed, #btnDel.armed, #btnResetAll.armed { background: #c62828; border-color: #ff8c8c; color: #fff; font-size: 13px; }
@@ -240,7 +241,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.8</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.9</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -255,7 +256,7 @@
       <option value="1280x720">Entrada 1280×720</option>
       <option value="1920x1080">Entrada 1920×1080</option>
     </select>
-    <button class="btn ghost" id="hdrCmp" title="Comparar ampliação: esquerda esticada pelo navegador × direita Lanczos-3 (C)">
+    <button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
     <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
@@ -321,6 +322,22 @@
       </div>
 
       <div class="card">
+        <h2>Nitidez e ruído <button class="btn sm help" data-goto="t7" title="Como funciona">?</button></h2>
+        <div class="row"><span class="name">Realce de bordas</span></div>
+        <p class="desc" style="margin:0 0 8px">Acentua o relevo de vasos, dobras e textura. Não cria estruturas — só aumenta o contraste das que existem.</p>
+        <div class="seg" id="shpSeg">
+          <button class="btn" data-shp="0">Desligado</button><button class="btn" data-shp="1">Baixo</button>
+          <button class="btn" data-shp="2">Médio</button><button class="btn" data-shp="3">Alto</button>
+        </div>
+        <div class="row" style="margin-top:12px"><span class="name">Redução de ruído</span></div>
+        <p class="desc" style="margin:0 0 8px">Tira o "chuvisco" do sensor somando quadros seguidos. Em movimento rápido usa menos quadros para não deixar rastro.</p>
+        <div class="seg" id="nrSeg">
+          <button class="btn" data-nr="0">Desligado</button><button class="btn" data-nr="1">Baixo</button>
+          <button class="btn" data-nr="2">Médio</button><button class="btn" data-nr="3">Alto</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>Ajustes de imagem <button class="btn sm help" data-goto="t4" title="O que cada um faz">?</button></h2>
         <div id="adj"></div>
         <div class="btnrow"><button class="btn sm" id="btnAdjReset">Restaurar padrão</button></div>
@@ -351,7 +368,7 @@
         <div class="row" style="margin-top:6px"><span class="lbl">Entrada (câmera)</span><span id="resIn">–</span></div>
         <div class="row"><span class="lbl">Máximo da câmera</span><span id="resMax">–</span></div>
         <div class="row"><span class="lbl">Saída (tela, Lanczos-3)</span><span id="resOut">–</span></div>
-        <div class="btnrow"><button class="btn sm" id="btnCmpUp" title="C">Comparar ampliação</button><button class="btn sm" id="btnZoom" title="Z">Lupa 3×</button></div>
+        <div class="btnrow"><button class="btn sm" id="btnCmpUp" title="B">Comparar ampliação</button><button class="btn sm" id="btnZoom" title="Z">Lupa 3×</button></div>
         <p class="desc" style="margin:6px 0 0">Teste: lado a lado, a mesma região — esquerda <b>esticada pelo navegador</b> (bilinear), direita <b>Lanczos-3</b>. Use com a lupa para ver a diferença nas bordas.</p>
         <p class="desc" style="margin:4px 0 0">A saída é ampliada para 1080 de altura. A ampliação deixa a imagem mais limpa na tela, mas o detalhe real é o da entrada — para mais detalhe, escolha uma entrada maior (se a câmera suportar).</p>
         <div id="hw" style="margin-top:6px"></div>
@@ -376,7 +393,7 @@
 
       <div class="keys">
         <kbd>W</kbd> calibrar · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
-        <kbd>A</kbd> anti-vermelho · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
+        <kbd>A</kbd> anti-vermelho · <kbd>C</kbd> antes×depois · <kbd>B</kbd> bilinear×Lanczos · <kbd>Z</kbd> lupa · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
       </div>
     </aside>
   </section>
@@ -395,6 +412,7 @@
         <button class="btn sm" data-goto="t4">4 · Ajustes de imagem</button>
         <button class="btn sm" data-goto="t5">5 · Congelar, foto e vídeo</button>
         <button class="btn sm" data-goto="t6">6 · Correção automática da câmera</button>
+        <button class="btn sm" data-goto="t7">7 · Nitidez e ruído</button>
       </div>
 
       <article class="lesson" id="t1">
@@ -482,6 +500,19 @@
           </ul>
         </div>
         <div class="demo"><canvas data-demo="lock" width="480" height="320"></canvas><div class="cap"></div></div>
+      </article>
+
+      <article class="lesson" id="t7">
+        <div>
+          <h3><span class="num">7</span>Nitidez e ruído</h3>
+          <ul>
+            <li><b>Realce de bordas:</b> aumenta o contraste das bordas que já existem — vasos, dobras, textura da mucosa — e a imagem parece mais nítida. Não cria estruturas novas. Detalhes muito finos de ruído não são realçados.</li>
+            <li><b>Redução de ruído:</b> soma quadros seguidos para tirar o "chuvisco" do sensor, principalmente com pouca luz. Onde a imagem se move, usa menos quadros para não deixar rastro.</li>
+            <li>Em <b>Comparar</b> (no topo, tecla C), a tela mostra a mesma região <b>antes</b> e <b>depois</b>; com a <b>Lupa 3×</b> (tecla Z) a diferença fica clara.</li>
+          </ul>
+          <div class="note">Comece em <b>Baixo</b> nos dois. No <b>Alto</b>, o realce pode criar contornos claros ("halos") em bordas fortes, e a redução de ruído pode deixar leve rastro em movimentos rápidos. As fotos e os vídeos saem com o que estiver ligado.</div>
+        </div>
+        <div class="demo"><canvas data-demo="enh" width="480" height="320"></canvas><div class="cap"></div></div>
       </article>
     </div>
   </section>
@@ -614,7 +645,7 @@
   const cv = $("cv"), ctx = cv.getContext("2d", { willReadFrequently: true });
   // ===== saída ampliada: Lanczos-3 (janela a = 3, 6×6 amostras) na GPU; altura fixa de 1080 =====
   const OUT_H = 1080;
-  let cmpMode = false, zoomF = 1;                     // teste visual da ampliação (não entra nas capturas)
+  let cmpMode = 0, zoomF = 1;                         // 0 normal · 1 bilinear×Lanczos · 2 antes×depois (não entram nas capturas)
   const outCv = $("out");
   const UP = (() => {
     const gl = outCv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false });
@@ -623,46 +654,102 @@
       return { gl: false, draw(img, w, h) { c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = "high"; c2.drawImage(cv, 0, 0, outCv.width, outCv.height); } };
     }
     const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = p * 0.5 + 0.5; uv.y = 1.0 - uv.y; gl_Position = vec4(p, 0.0, 1.0); }";
+    // cmp: 0 = normal · 1 = bilinear × Lanczos-3 (mesma imagem) · 2 = antes × depois (t2 = sem realce/redução de ruído)
     const fs = `precision highp float;
-      uniform sampler2D t; uniform vec2 src; uniform float cmp; uniform float zoom; varying vec2 uv;
+      uniform sampler2D t; uniform sampler2D t2; uniform vec2 src; uniform float cmp; uniform float zoom; varying vec2 uv;
       float L(float x){ x = abs(x); if (x < 1e-5) return 1.0; if (x >= 3.0) return 0.0;
         float px = 3.14159265 * x; return 3.0 * sin(px) * sin(px / 3.0) / (px * px); }
-      vec3 px(vec2 c){ return texture2D(t, (clamp(c, vec2(0.0), src - 1.0) + 0.5) / src).rgb; }
-      void main(){
-        // modo comparação: cada metade mostra a MESMA faixa central da imagem — esquerda bilinear, direita Lanczos-3
-        vec2 u = uv; bool left = false;
-        if (cmp > 0.5) { left = uv.x < 0.5; u = vec2(0.25 + (left ? uv.x : uv.x - 0.5), uv.y); }
-        u = 0.5 + (u - 0.5) / zoom;                        // lupa (centro)
-        vec2 pos = u * src - 0.5; vec2 f = floor(pos); vec2 fr = pos - f;
-        if (left) {
-          vec3 c = mix(mix(px(f), px(f + vec2(1.0, 0.0)), fr.x), mix(px(f + vec2(0.0, 1.0)), px(f + vec2(1.0, 1.0)), fr.x), fr.y);
-          gl_FragColor = vec4(c, 1.0); return;
-        }
+      vec3 tap(sampler2D s, vec2 c){ return texture2D(s, (clamp(c, vec2(0.0), src - 1.0) + 0.5) / src).rgb; }
+      vec3 lanczos(sampler2D s, vec2 f, vec2 fr){
         vec3 sum = vec3(0.0); float ws = 0.0;
         for (int j = -2; j <= 3; j++) { float wy = L(float(j) - fr.y);
           for (int i = -2; i <= 3; i++) { float w = L(float(i) - fr.x) * wy;
-            vec2 q = (clamp(f + vec2(float(i), float(j)), vec2(0.0), src - 1.0) + 0.5) / src;
-            sum += texture2D(t, q).rgb * w; ws += w; } }
-        gl_FragColor = vec4(clamp(sum / ws, 0.0, 1.0), 1.0); }`;
+            sum += tap(s, f + vec2(float(i), float(j))) * w; ws += w; } }
+        return clamp(sum / ws, 0.0, 1.0); }
+      void main(){
+        vec2 u = uv; bool left = false;
+        if (cmp > 0.5) { left = uv.x < 0.5; u = vec2(0.25 + (left ? uv.x : uv.x - 0.5), uv.y); }  // mesma faixa central nas duas metades
+        u = 0.5 + (u - 0.5) / zoom;                        // lupa (centro)
+        vec2 pos = u * src - 0.5; vec2 f = floor(pos); vec2 fr = pos - f;
+        if (left && cmp < 1.5) {
+          vec3 c = mix(mix(tap(t, f), tap(t, f + vec2(1.0, 0.0)), fr.x), mix(tap(t, f + vec2(0.0, 1.0)), tap(t, f + vec2(1.0, 1.0)), fr.x), fr.y);
+          gl_FragColor = vec4(c, 1.0); return; }
+        if (left) { gl_FragColor = vec4(lanczos(t2, f, fr), 1.0); return; }
+        gl_FragColor = vec4(lanczos(t, f, fr), 1.0); }`;
     const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
     const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
-    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) {
-      const c2 = null; return { gl: false, draw() {} };
-    }
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(pr)); return { gl: false, draw() {} }; }
     gl.useProgram(pr);
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const mk = unit => { gl.activeTexture(gl.TEXTURE0 + unit); const tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return tx; };
+    const tex = mk(0), tex2 = mk(1);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.uniform1i(gl.getUniformLocation(pr, "t"), 0); gl.uniform1i(gl.getUniformLocation(pr, "t2"), 1);
     const uSrc = gl.getUniformLocation(pr, "src"), uCmp = gl.getUniformLocation(pr, "cmp"), uZoom = gl.getUniformLocation(pr, "zoom");
-    return { gl: true, draw(img, w, h) {
+    return { gl: true, draw(img, w, h, before) {
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-      gl.uniform2f(uSrc, w, h); gl.uniform1f(uCmp, cmpMode ? 1 : 0); gl.uniform1f(uZoom, zoomF); gl.viewport(0, 0, outCv.width, outCv.height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (before) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex2); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, before); }
+      gl.uniform2f(uSrc, w, h); gl.uniform1f(uCmp, cmpMode); gl.uniform1f(uZoom, zoomF);
+      gl.viewport(0, 0, outCv.width, outCv.height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     } };
   })();
+  // ===== realce de bordas (máscara de nitidez na luminância, com corte de ruído) =====
+  const SHP = [{ name: "Desligado", amt: 0 }, { name: "Baixo", amt: 0.6, core: 1.5 }, { name: "Médio", amt: 1.1, core: 2 }, { name: "Alto", amt: 1.8, core: 2.5 }];
+  let shpLevel = 0, shpY = null, shpT = null;
+  function sharpen(d, w, h, lvl) {
+    const A = SHP[lvl]; if (!A.amt) return;
+    const n = w * h;
+    if (!shpY || shpY.length !== n) { shpY = new Float32Array(n); shpT = new Float32Array(n); }
+    const Y = shpY, T = shpT;
+    for (let i = 0, p = 0; i < n; i++, p += 4) Y[i] = 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2];
+    // desfoque gaussiano separável [1 4 6 4 1]/16 (σ ≈ 1 px)
+    for (let y = 0; y < h; y++) { const o = y * w;
+      for (let x = 0; x < w; x++) { const a = x > 1 ? x - 2 : 0, b = x > 0 ? x - 1 : 0, c = x < w - 1 ? x + 1 : w - 1, e = x < w - 2 ? x + 2 : w - 1;
+        T[o + x] = (Y[o + a] + 4 * Y[o + b] + 6 * Y[o + x] + 4 * Y[o + c] + Y[o + e]) * 0.0625; } }
+    const amt = A.amt, core = A.core;
+    for (let y = 0; y < h; y++) { const a = (y > 1 ? y - 2 : 0) * w, b = (y > 0 ? y - 1 : 0) * w, c = (y < h - 1 ? y + 1 : h - 1) * w, e = (y < h - 2 ? y + 2 : h - 1) * w, o = y * w;
+      for (let x = 0; x < w; x++) {
+        const bl = (T[a + x] + 4 * T[b + x] + 6 * T[o + x] + 4 * T[c + x] + T[e + x]) * 0.0625;
+        let det = Y[o + x] - bl;
+        if (det > core) det -= core; else if (det < -core) det += core; else continue;   // corte: ruído fino não é realçado
+        const add = amt * det, p = (o + x) * 4;
+        d[p] += add; d[p + 1] += add; d[p + 2] += add;          // Uint8ClampedArray já limita 0..255
+      } }
+  }
+  // ===== redução de ruído temporal, adaptativa ao movimento =====
+  // O movimento é detectado pela diferença de luminância média numa vizinhança 3×3: o ruído (aleatório) se cancela
+  // na média, o movimento (coerente) não. a = peso mínimo do quadro novo (menor = mais suavização);
+  // t0..t1 = faixa da diferença média em que passa gradualmente a usar só o quadro novo (sem rastro).
+  const NR = [{ name: "Desligado" }, { name: "Baixo", a: 0.45, t0: 3, t1: 9 }, { name: "Médio", a: 0.28, t0: 4, t1: 12 }, { name: "Alto", a: 0.16, t0: 6, t1: 16 }];
+  let nrLevel = 0; const nrLive = { buf: null };
+  function temporalNR(d, w, h, lvl, st) {
+    const A = NR[lvl]; if (!A.a) { st.buf = null; return; }
+    const n = w * h, n3 = n * 3;
+    if (!st.buf || st.buf.length !== n3) {
+      st.buf = new Float32Array(n3); st.S = new Float32Array(n); st.M = new Float32Array(n);
+      for (let i = 0, p = 0; i < n3; i += 3, p += 4) { st.buf[i] = d[p]; st.buf[i + 1] = d[p + 1]; st.buf[i + 2] = d[p + 2]; }
+      return;
+    }
+    const B = st.buf, S = st.S, M = st.M;
+    for (let i = 0, j = 0, p = 0; i < n; i++, j += 3, p += 4)        // diferença de luminância (com sinal)
+      S[i] = 0.2126 * (d[p] - B[j]) + 0.7152 * (d[p + 1] - B[j + 1]) + 0.0722 * (d[p + 2] - B[j + 2]);
+    for (let y = 0; y < h; y++) { const o = y * w;                  // média 3×3 (separável)
+      for (let x = 0; x < w; x++) { const l = x > 0 ? x - 1 : 0, r = x < w - 1 ? x + 1 : x; M[o + x] = (S[o + l] + S[o + x] + S[o + r]) / 3; } }
+    const a = A.a, t0 = A.t0, k = 1 / (A.t1 - A.t0);
+    for (let y = 0; y < h; y++) { const u = (y > 0 ? y - 1 : 0) * w, o = y * w, dn = (y < h - 1 ? y + 1 : y) * w;
+      for (let x = 0; x < w; x++) {
+        const mv = Math.abs((M[u + x] + M[o + x] + M[dn + x]) / 3);
+        let m = (mv - t0) * k; m = m < 0 ? 0 : m > 1 ? 1 : m;
+        const wgt = a + (1 - a) * m, i = o + x, j = i * 3, p = i * 4;
+        B[j] += wgt * (d[p] - B[j]); B[j + 1] += wgt * (d[p + 1] - B[j + 1]); B[j + 2] += wgt * (d[p + 2] - B[j + 2]);
+        d[p] = B[j]; d[p + 1] = B[j + 1]; d[p + 2] = B[j + 2];
+      } }
+  }
   function outSize(w, h) { const H = Math.max(h, OUT_H); return [Math.round(H * w / h), H]; }
   const ov = $("ov"), octx = ov.getContext("2d");
   const stage = $("stage"), live = $("live");
@@ -799,7 +886,7 @@
   async function startCam() {
     if (rec) stopVideo();
     if (stream) stream.getTracks().forEach(t => t.stop());
-    frozen = null; freezeReq = false; setFreezeUi();
+    frozen = null; freezeReq = false; setFreezeUi(); nrLive.buf = null;
     const [w, h] = $("res").value.split("x").map(Number); outW = w; outH = h;
     const id = $("cam").value;
     try {
@@ -861,9 +948,11 @@
         if (vw / vh > a) { sw = vh * a; sx = (vw - sw) / 2; } else { sh = vw / a; sy = (vh - sh) / 2; }
         ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
         img = ctx.getImageData(0, 0, w, h);
-        if (freezeReq) { frozen = new ImageData(new Uint8ClampedArray(img.data), w, h); freezeReq = false; }
       }
       const d = img.data;
+      const raw = cmpMode === 2 ? new Uint8ClampedArray(d) : null;   // cópia "antes" para a comparação
+      if (!frozen && !showOriginal) temporalNR(d, w, h, nrLevel, nrLive); else if (frozen) nrLive.buf = null;
+      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); freezeReq = false; }   // congela já com o ruído reduzido
       const s = Math.max(4, Math.floor(Math.min(w, h) * roiFrac)), x0 = (w - s) >> 1, y0 = (h - s) >> 1;
       let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0, cr = 0, cg = 0, cb = 0;
       const wr = wbLuts[0], wg = wbLuts[1], wb = wbLuts[2];
@@ -881,9 +970,11 @@
         const c = collect; for (let j = 0; j < 3; j++) { c.sum[j] += lastIn[j]; c.sat[j] += lastSat[j]; } c.k++;
         if (c.k >= c.n) { collect = null; c.res(c); }
       }
-      if (!showOriginal) applyPipeline(d, luts, adj.sat, arLevel, EVL[evlLevel].k);
+      if (!showOriginal) { applyPipeline(d, luts, adj.sat, arLevel, EVL[evlLevel].k); sharpen(d, w, h, shpLevel); }
+      let before = null;
+      if (raw) { if (!showOriginal) applyPipeline(raw, luts, adj.sat, arLevel, EVL[evlLevel].k); before = new ImageData(raw, w, h); }
       ctx.putImageData(img, 0, 0);
-      UP.draw(img, w, h);                                    // amplia para a saída com Lanczos-3
+      UP.draw(img, w, h, before);                            // amplia para a saída com Lanczos-3
 
       const sc = ov.width / w;                               // sobreposições desenhadas no espaço da entrada, escaladas
       octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, ov.width, ov.height); octx.setTransform(sc, 0, 0, sc, 0, 0);
@@ -897,7 +988,8 @@
           const bx = al === "left" ? x : x - tw; const by = al === "center" ? f2 * 2.8 : f2 * 0.6; octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(al === "center" ? x - tw / 2 : bx, by, tw, f2 * 1.7);
           octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
         if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
-          lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); }
+          if (cmpMode === 1) { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); }
+          else { lab("ANTES", 12, "left"); lab("DEPOIS · realce " + SHP[shpLevel].name.toLowerCase() + " · ruído " + NR[nrLevel].name.toLowerCase(), OW - 12, "right"); } }
         if (zoomF > 1) lab("LUPA " + zoomF + "×", OW / 2, "center");
         octx.setTransform(sc, 0, 0, sc, 0, 0);
       } else if (showRoi) { octx.strokeStyle = "#ffd400"; octx.lineWidth = Math.max(2, w / 640); octx.strokeRect(x0, y0, s, s); }
@@ -975,7 +1067,7 @@
   }
   function resetAll() {
     if (frozen || freezeReq) { frozen = null; freezeReq = false; setFreezeUi(); }
-    setCmp(false); setAR(0); setEVL(0);
+    setCmp(false); setAR(0); setEVL(0); setSHP(0); setNR(0); setCmpMode(0); setZoom(false);
     adj = { ...ADJ_DEF }; store.set("adj:" + camKey, adj); renderAdj();
     roiFrac = 0.25; $("roi").value = 25; $("roiTxt").textContent = "25%";
     showRoi = true; $("showRoi").checked = true; $("lockAwb").checked = true; $("lockAe").checked = false;
@@ -1071,7 +1163,7 @@
   function armDelete(btn, label, fn, ask) {
     if (btn.dataset.armed) { clearTimeout(+btn.dataset.armed); delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; fn(); return; }
     btn.classList.add("armed"); btn.textContent = ask || (btn.id === "btnResetAll" ? "Toque de novo para confirmar" : "Excluir?");
-    btn.dataset.armed = setTimeout(() => { delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; }, 3000);
+    btn.dataset.armed = setTimeout(() => { delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; }, 4000);
   }
   async function removeItem(it) {
     if (viewing === it) closeViewer();
@@ -1101,9 +1193,10 @@
 
   // ----- foto -----
   function flash() { const f = $("flash"); f.style.transition = "none"; f.style.opacity = .7; requestAnimationFrame(() => { f.style.transition = "opacity .3s"; f.style.opacity = 0; }); }
-  function setCmpUp(on) { cmpMode = on; $("btnCmpUp").classList.toggle("on", on); $("hdrCmp").classList.toggle("on", on); }
+  function setCmpMode(m) { cmpMode = m; $("btnCmpUp").classList.toggle("on", m === 1); $("hdrCmp").classList.toggle("on", m === 2); }
+  function setCmpUp(on) { setCmpMode(on ? 1 : 0); }
   function setZoom(on) { zoomF = on ? 3 : 1; $("btnZoom").classList.toggle("on", on); $("hdrZoom").classList.toggle("on", on); }
-  function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue \"Comparar ampliação\" e a lupa para capturar.", "bad"); return true; } return false; }
+  function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue a comparação e a lupa para capturar.", "bad"); return true; } return false; }
   function takePhoto() {
     if (testView()) return;
     if (!cv.width) return; flash(); askPerm();
@@ -1172,8 +1265,13 @@
     } else setStatus("A trava é aplicada quando você tocar em Calibrar branco.", "");
   }
   $("lockAwb").onchange = onLockToggle; $("lockAe").onchange = onLockToggle;
-  $("btnCmpUp").onclick = () => setCmpUp(!cmpMode);
-  $("hdrCmp").onclick = () => setCmpUp(!cmpMode);
+  $("btnCmpUp").onclick = () => setCmpMode(cmpMode === 1 ? 0 : 1);
+  $("hdrCmp").onclick = () => setCmpMode(cmpMode === 2 ? 0 : 2);
+  function setSHP(l) { shpLevel = l; document.querySelectorAll("#shpSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.shp === l)); }
+  function setNR(l) { nrLevel = l; nrLive.buf = null; document.querySelectorAll("#nrSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.nr === l)); }
+  document.querySelectorAll("#shpSeg .btn").forEach(b => b.onclick = () => setSHP(+b.dataset.shp));
+  document.querySelectorAll("#nrSeg .btn").forEach(b => b.onclick = () => setNR(+b.dataset.nr));
+  setSHP(0); setNR(0);
   $("hdrZoom").onclick = () => setZoom(zoomF === 1);
   $("btnZoom").onclick = () => setZoom(zoomF === 1);
   $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
@@ -1195,7 +1293,7 @@
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
-                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["btnCmpUp", () => setCmpUp(!cmpMode)], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
+                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", () => setCmpMode(cmpMode === 2 ? 0 : 2)], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
@@ -1303,6 +1401,16 @@
     c2.fillStyle = "#cfd3d8"; c2.font = "12px Bonnie, Segoe UI, sans-serif"; ["R", "G", "B"].forEach((t, i) => c2.fillText(t, x + 3 + i * 18, y + 14));
   }
 
+  const demoNR = { buf: null, lvl: 0 };
+  const SCENE_SOFT = (() => {                                // cena levemente desfocada (câmera de baixa resolução)
+    const o = new ImageData(new Uint8ClampedArray(SCENE.data), TW, TH), d = o.data, s = SCENE.data, k = [1, 4, 6, 4, 1];
+    for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) for (let c = 0; c < 3; c++) {
+      let acc = 0, ws = 0;
+      for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const xx = Math.min(TW - 1, Math.max(0, x + i)), yy = Math.min(TH - 1, Math.max(0, y + j)), w = k[i + 2] * k[j + 2];
+        acc += s[(yy * TW + xx) * 4 + c] * w; ws += w; }
+      d[(y * TW + x) * 4 + c] = acc / ws; }
+    return o;
+  })();
   const sceneCanvas = document.createElement("canvas"); sceneCanvas.width = TW; sceneCanvas.height = TH;
   sceneCanvas.getContext("2d").putImageData(SCENE, 0, 0);
 
@@ -1384,6 +1492,18 @@
       cap.innerHTML = T < 2.6 ? "<span class='tag-name'>Foto</span>: a captura vai para o canto direito" :
         T < 6.3 ? "<span class='tag-name'>Congelar</span>: a imagem para; toque de novo para voltar ao vivo" :
         T < 9.3 ? "<span class='tag-name'>Vídeo</span>: o botão mostra o tempo; toque de novo para parar" : "Toque numa miniatura para rever em tela grande";
+    },
+    enh(c2, t, cap) {
+      const lvl = 1 + Math.floor((t % 9) / 3), half = TW / 2;
+      const noisy = new ImageData(new Uint8ClampedArray(SCENE_SOFT.data), TW, TH), d = noisy.data;
+      for (let i = 0; i < d.length; i += 4) { const nz = (Math.random() - 0.5) * 34; d[i] += nz; d[i + 1] += nz; d[i + 2] += nz; }
+      const left = new ImageData(new Uint8ClampedArray(d), TW, TH);
+      temporalNR(d, TW, TH, lvl, demoNR); sharpen(d, TW, TH, lvl);
+      c2.putImageData(left, 0, 0, 0, 0, half, TH); c2.putImageData(noisy, 0, 0, half, 0, half, TH);
+      c2.fillStyle = "#ffd400"; c2.fillRect(half - 1, 0, 2, TH);
+      label(c2, "Desligado", 8, 8, "#fff"); label(c2, "Realce + ruído: " + SHP[lvl].name, TW - 8, 8, "#b9ecd0", "right");
+      cap.innerHTML = "Esquerda: imagem suave e com <span class='tag-name'>chuvisco</span> · Direita: bordas realçadas e ruído reduzido (" + SHP[lvl].name + ")";
+      if (demoNR.lvl !== lvl) { demoNR.lvl = lvl; demoNR.buf = null; }
     },
     lock(c2, t, cap) {
       const half = TW / 2, s = Math.sin(t * 1.1) * 0.5 + 0.5;
