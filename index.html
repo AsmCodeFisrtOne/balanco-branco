@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v3.6 — 2026-10-24: "Evitar estouro de luz" sempre abre Desligado (e o reset volta para Desligado)
+<!-- Ajuste de Imagem — Videoendoscopia  v3.7 — 2026-10-26: teste da ampliação no próprio app — "Comparar ampliação" (bilinear × Lanczos-3 lado a lado, mesma região) e "Lupa 3×"
+     v3.6 — 2026-10-24: "Evitar estouro de luz" sempre abre Desligado (e o reset volta para Desligado)
      v3.5 — 2026-10-24: saída ampliada para 1080 de altura (1080×1080 com entrada 400×400) por Lanczos-3 na GPU; fotos e vídeos em 1080 (opção de salvar na resolução da entrada); seletor renomeado para "Entrada"; mostra entrada, máximo da câmera e saída
      v3.4 — 2026-10-23: travas da câmera explicadas e aplicadas na hora se já calibrado; sliders de hardware mostram "auto" em vez de valores falsos (-3 / 0)
      v3.3: capturas ficam pendentes ("não salvo") até tocar em Salvar/Salvar todas — excluir antes não baixa nada; opção de salvar automaticamente
@@ -237,7 +238,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.6</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v3.7</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -344,6 +345,8 @@
         <div class="row" style="margin-top:6px"><span class="lbl">Entrada (câmera)</span><span id="resIn">–</span></div>
         <div class="row"><span class="lbl">Máximo da câmera</span><span id="resMax">–</span></div>
         <div class="row"><span class="lbl">Saída (tela, Lanczos-3)</span><span id="resOut">–</span></div>
+        <div class="btnrow"><button class="btn sm" id="btnCmpUp" title="C">Comparar ampliação</button><button class="btn sm" id="btnZoom" title="Z">Lupa 3×</button></div>
+        <p class="desc" style="margin:6px 0 0">Teste: lado a lado, a mesma região — esquerda <b>esticada pelo navegador</b> (bilinear), direita <b>Lanczos-3</b>. Use com a lupa para ver a diferença nas bordas.</p>
         <p class="desc" style="margin:4px 0 0">A saída é ampliada para 1080 de altura. A ampliação deixa a imagem mais limpa na tela, mas o detalhe real é o da entrada — para mais detalhe, escolha uma entrada maior (se a câmera suportar).</p>
         <div id="hw" style="margin-top:6px"></div>
       </details>
@@ -605,6 +608,7 @@
   const cv = $("cv"), ctx = cv.getContext("2d", { willReadFrequently: true });
   // ===== saída ampliada: Lanczos-3 (janela a = 3, 6×6 amostras) na GPU; altura fixa de 1080 =====
   const OUT_H = 1080;
+  let cmpMode = false, zoomF = 1;                     // teste visual da ampliação (não entra nas capturas)
   const outCv = $("out");
   const UP = (() => {
     const gl = outCv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false, premultipliedAlpha: false });
@@ -614,11 +618,20 @@
     }
     const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = p * 0.5 + 0.5; uv.y = 1.0 - uv.y; gl_Position = vec4(p, 0.0, 1.0); }";
     const fs = `precision highp float;
-      uniform sampler2D t; uniform vec2 src; varying vec2 uv;
+      uniform sampler2D t; uniform vec2 src; uniform float cmp; uniform float zoom; varying vec2 uv;
       float L(float x){ x = abs(x); if (x < 1e-5) return 1.0; if (x >= 3.0) return 0.0;
         float px = 3.14159265 * x; return 3.0 * sin(px) * sin(px / 3.0) / (px * px); }
+      vec3 px(vec2 c){ return texture2D(t, (clamp(c, vec2(0.0), src - 1.0) + 0.5) / src).rgb; }
       void main(){
-        vec2 pos = uv * src - 0.5; vec2 f = floor(pos); vec2 fr = pos - f;
+        // modo comparação: cada metade mostra a MESMA faixa central da imagem — esquerda bilinear, direita Lanczos-3
+        vec2 u = uv; bool left = false;
+        if (cmp > 0.5) { left = uv.x < 0.5; u = vec2(0.25 + (left ? uv.x : uv.x - 0.5), uv.y); }
+        u = 0.5 + (u - 0.5) / zoom;                        // lupa (centro)
+        vec2 pos = u * src - 0.5; vec2 f = floor(pos); vec2 fr = pos - f;
+        if (left) {
+          vec3 c = mix(mix(px(f), px(f + vec2(1.0, 0.0)), fr.x), mix(px(f + vec2(0.0, 1.0)), px(f + vec2(1.0, 1.0)), fr.x), fr.y);
+          gl_FragColor = vec4(c, 1.0); return;
+        }
         vec3 sum = vec3(0.0); float ws = 0.0;
         for (int j = -2; j <= 3; j++) { float wy = L(float(j) - fr.y);
           for (int i = -2; i <= 3; i++) { float w = L(float(i) - fr.x) * wy;
@@ -638,10 +651,10 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    const uSrc = gl.getUniformLocation(pr, "src");
+    const uSrc = gl.getUniformLocation(pr, "src"), uCmp = gl.getUniformLocation(pr, "cmp"), uZoom = gl.getUniformLocation(pr, "zoom");
     return { gl: true, draw(img, w, h) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-      gl.uniform2f(uSrc, w, h); gl.viewport(0, 0, outCv.width, outCv.height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.uniform2f(uSrc, w, h); gl.uniform1f(uCmp, cmpMode ? 1 : 0); gl.uniform1f(uZoom, zoomF); gl.viewport(0, 0, outCv.width, outCv.height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     } };
   })();
   function outSize(w, h) { const H = Math.max(h, OUT_H); return [Math.round(H * w / h), H]; }
@@ -870,7 +883,18 @@
       octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, ov.width, ov.height); octx.setTransform(sc, 0, 0, sc, 0, 0);
       const fs = Math.max(12, 15 * w / 640);
       octx.font = fs * 1.1 + "px Bonnie, Segoe UI, sans-serif";
-      if (showRoi) { octx.strokeStyle = "#ffd400"; octx.lineWidth = Math.max(2, w / 640); octx.strokeRect(x0, y0, s, s); }
+      if (cmpMode || zoomF > 1) {
+        octx.setTransform(1, 0, 0, 1, 0, 0);
+        const OW = ov.width, OH = ov.height, f2 = Math.round(OH / 40);
+        octx.font = f2 + "px Bonnie, Segoe UI, sans-serif";
+        const lab = (t, x, al) => { octx.textAlign = al; const tw = octx.measureText(t).width + f2;
+          const bx = al === "left" ? x : x - tw; const by = al === "center" ? f2 * 2.8 : f2 * 0.6; octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(al === "center" ? x - tw / 2 : bx, by, tw, f2 * 1.7);
+          octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
+        if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
+          lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); }
+        if (zoomF > 1) lab("LUPA " + zoomF + "×", OW / 2, "center");
+        octx.setTransform(sc, 0, 0, sc, 0, 0);
+      } else if (showRoi) { octx.strokeStyle = "#ffd400"; octx.lineWidth = Math.max(2, w / 640); octx.strokeRect(x0, y0, s, s); }
       let ty = 8;
       const tag = (txt, color) => {
         const tw = octx.measureText(txt).width + fs;
@@ -1071,7 +1095,11 @@
 
   // ----- foto -----
   function flash() { const f = $("flash"); f.style.transition = "none"; f.style.opacity = .7; requestAnimationFrame(() => { f.style.transition = "opacity .3s"; f.style.opacity = 0; }); }
+  function setCmpUp(on) { cmpMode = on; $("btnCmpUp").classList.toggle("on", on); }
+  function setZoom(on) { zoomF = on ? 3 : 1; $("btnZoom").classList.toggle("on", on); }
+  function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue \"Comparar ampliação\" e a lupa para capturar.", "bad"); return true; } return false; }
   function takePhoto() {
+    if (testView()) return;
     if (!cv.width) return; flash(); askPerm();
     const src = $("saveNative").checked ? cv : outCv;
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName("foto", "png");
@@ -1092,6 +1120,7 @@
     return "";
   }
   async function startVideo() {
+    if (testView()) return;
     const vsrc = $("saveNative").checked ? cv : outCv;
     if (!window.MediaRecorder || !vsrc.captureStream) { setStatus("Este navegador não grava vídeo. Use Edge ou Chrome.", "bad"); return; }
     askPerm();
@@ -1137,6 +1166,8 @@
     } else setStatus("A trava é aplicada quando você tocar em Calibrar branco.", "");
   }
   $("lockAwb").onchange = onLockToggle; $("lockAe").onchange = onLockToggle;
+  $("btnCmpUp").onclick = () => setCmpUp(!cmpMode);
+  $("btnZoom").onclick = () => setZoom(zoomF === 1);
   $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
   $("btnSaveAll").onclick = saveAll;
   $("autoSave").checked = !!store.get("autoSave");
@@ -1156,7 +1187,7 @@
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
-                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
+                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["btnCmpUp", () => setCmpUp(!cmpMode)], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
