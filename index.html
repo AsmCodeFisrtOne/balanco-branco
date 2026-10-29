@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.6 — 2026-10-29: congelar não perde o foco — referência = quadro mais nítido, descarta quadros borrados, alinhamento com rotação/escala, máscara por bloco e diversidade por bloco
+<!-- Ajuste de Imagem — Videoendoscopia  v4.7 — 2026-10-29: redução de ruído com compensação de movimento (acompanha o endoscópio, sem arrasto)
+     v4.6 — 2026-10-29: congelar não perde o foco — referência = quadro mais nítido, descarta quadros borrados, alinhamento com rotação/escala, máscara por bloco e diversidade por bloco
      v4.5 — 2026-10-29: melhoria de resolução ~3× mais rápida (pesos fixos por quadro, tabelas, sem combinação quando a câmera está parada)
      v4.4 — 2026-10-29: corrige "escada" na melhoria de resolução com a câmera parada (base = média alinhada + Lanczos-3; combinação sub-pixel só quando há diversidade de deslocamentos)
      v4.3 — 2026-10-29: teste isolado "formato da câmera" (detecta MJPEG × sem compressão pelos blocos 8×8 e pela subamostragem de cor)
@@ -251,7 +252,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.6</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.7</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -340,7 +341,7 @@
           <button class="btn" data-shp="2">Médio</button><button class="btn" data-shp="3">Alto</button>
         </div>
         <div class="row" style="margin-top:12px"><span class="name">Redução de ruído</span></div>
-        <p class="desc" style="margin:0 0 8px">Tira o "chuvisco" do sensor somando quadros seguidos. Em movimento rápido usa menos quadros para não deixar rastro.</p>
+        <p class="desc" style="margin:0 0 8px">Tira o "chuvisco" do sensor somando quadros seguidos. Acompanha o movimento do endoscópio antes de somar, e onde algo se move sozinho (instrumento, tecido) usa só o quadro atual — sem arrasto.</p>
         <div class="seg" id="nrSeg" style="margin-bottom:12px">
           <button class="btn" data-nr="0">Desligado</button><button class="btn" data-nr="1">Baixo</button>
           <button class="btn" data-nr="2">Médio</button><button class="btn" data-nr="3">Alto</button>
@@ -534,10 +535,10 @@
           <h3><span class="num">7</span>Nitidez e ruído</h3>
           <ul>
             <li><b>Realce de bordas:</b> aumenta o contraste das bordas que já existem — vasos, dobras, textura da mucosa — e a imagem parece mais nítida. Não cria estruturas novas. Detalhes muito finos de ruído não são realçados.</li>
-            <li><b>Redução de ruído:</b> soma quadros seguidos para tirar o "chuvisco" do sensor, principalmente com pouca luz. Onde a imagem se move, usa menos quadros para não deixar rastro.</li>
+            <li><b>Redução de ruído:</b> soma quadros seguidos para tirar o "chuvisco" do sensor, principalmente com pouca luz. Antes de somar, acompanha o movimento do endoscópio; onde algo se move sozinho, usa só o quadro atual.</li>
             <li>Em <b>Comparar</b> (no topo, tecla C), a tela mostra a mesma região <b>antes</b> e <b>depois</b>; com a <b>Lupa 3×</b> (tecla Z) a diferença fica clara.</li>
           </ul>
-          <div class="note">Comece em <b>Baixo</b> nos dois. No <b>Alto</b>, o realce pode criar contornos claros ("halos") em bordas fortes, e a redução de ruído pode deixar leve rastro em movimentos rápidos. As fotos e os vídeos saem com o que estiver ligado.</div>
+          <div class="note">Comece em <b>Baixo</b> nos dois. No <b>Alto</b>, o realce pode criar contornos claros ("halos") em bordas fortes, e a redução de ruído pode suavizar um pouco instrumentos em movimento muito rápido. As fotos e os vídeos saem com o que estiver ligado.</div>
         </div>
         <div class="demo"><canvas data-demo="enh" width="480" height="320"></canvas><div class="cap"></div></div>
       </article>
@@ -771,28 +772,69 @@
   // t0..t1 = faixa da diferença média em que passa gradualmente a usar só o quadro novo (sem rastro).
   const NR = [{ name: "Desligado" }, { name: "Baixo", a: 0.45, t0: 3, t1: 9 }, { name: "Médio", a: 0.28, t0: 4, t1: 12 }, { name: "Alto", a: 0.16, t0: 6, t1: 16 }];
   let nrLevel = 0; const nrLive = { buf: null };
+  // v4.7: COMPENSAÇÃO DE MOVIMENTO — antes de misturar, o histórico é deslocado para onde a imagem foi (busca do deslocamento
+  // global, em pixels inteiros para não borrar o histórico). Assim, quando o endoscópio se move, o que se soma é o MESMO
+  // ponto do tecido, e não o que estava ali antes (era isso que criava o arrasto). O que se move por conta própria
+  // (instrumento, tecido) é detectado pela diferença local (média com sinal + média absoluta acima do ruído) e usa só o quadro novo.
+  function nrShift(LN, LB, w, h, st) {
+    const q = 4, W = (w / q) | 0, H = (h / q) | 0;
+    if (!st.dn || st.dn.length !== W * H) { st.dn = new Float32Array(W * H); st.db = new Float32Array(W * H); }
+    const a = st.dn, b = st.db;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let A = 0, B = 0;
+      for (let j = 0; j < q; j++) { const o = (y * q + j) * w + x * q; for (let i = 0; i < q; i++) { A += LN[o + i]; B += LB[o + i]; } }
+      a[y * W + x] = A / 16; b[y * W + x] = B / 16; }
+    const S = 6, m = S + 1; let best = 1e30, bx = 0, by = 0, sad0 = 0;
+    for (let sy = -S; sy <= S; sy++) for (let sx = -S; sx <= S; sx++) { let e = 0;
+      for (let y = m; y < H - m; y += 2) { const o = y * W, ob = (y + sy) * W + sx; for (let x = m + (y & 2 ? 1 : 0); x < W - m; x += 2) e += Math.abs(a[o + x] - b[ob + x]); }
+      if (!sx && !sy) sad0 = e; if (e < best) { best = e; bx = sx; by = sy; } }
+    if (best > 0.97 * sad0) { bx = 0; by = 0; }                       // parado: não "treme" atrás do ruído
+    // refino em resolução cheia (±3 px em torno da busca grosseira)
+    const cx = bx * q, cy = by * q, R = 2, mg = Math.abs(cx) + Math.abs(cy) + R + 8; let b2 = 1e30, fx = cx, fy = cy, e0 = 0;
+    if (mg * 2 >= Math.min(w, h)) return [cx, cy];
+    for (let dy = cy - R; dy <= cy + R; dy++) for (let dx = cx - R; dx <= cx + R; dx++) { let e = 0;
+      for (let y = mg; y < h - mg; y += 4) { const o = y * w, ob = (y + dy) * w + dx; for (let x = mg + (y & 4 ? 2 : 0); x < w - mg; x += 4) e += Math.abs(LN[o + x] - LB[ob + x]); }
+      if (dx === cx && dy === cy) e0 = e; if (e < b2) { b2 = e; fx = dx; fy = dy; } }
+    if (!cx && !cy && b2 > 0.97 * e0) { fx = 0; fy = 0; }
+    return [fx, fy];
+  }
   function temporalNR(d, w, h, lvl, st) {
     const A = NR[lvl]; if (!A.a) { st.buf = null; return; }
     const n = w * h, n3 = n * 3;
     if (!st.buf || st.buf.length !== n3) {
-      st.buf = new Float32Array(n3); st.S = new Float32Array(n); st.M = new Float32Array(n);
+      st.buf = new Float32Array(n3); st.nb = new Float32Array(n3); st.S = new Float32Array(n); st.M = new Float32Array(n);
+      st.Sa = new Float32Array(n); st.Ma = new Float32Array(n); st.LN = new Float32Array(n); st.LB = new Float32Array(n); st.H = new Uint8Array(n); st.nf = 2;
       for (let i = 0, p = 0; i < n3; i += 3, p += 4) { st.buf[i] = d[p]; st.buf[i + 1] = d[p + 1]; st.buf[i + 2] = d[p + 2]; }
       return;
     }
-    const B = st.buf, S = st.S, M = st.M;
-    for (let i = 0, j = 0, p = 0; i < n; i++, j += 3, p += 4)        // diferença de luminância (com sinal)
-      S[i] = 0.2126 * (d[p] - B[j]) + 0.7152 * (d[p + 1] - B[j + 1]) + 0.0722 * (d[p + 2] - B[j + 2]);
-    for (let y = 0; y < h; y++) { const o = y * w;                  // média 3×3 (separável)
-      for (let x = 0; x < w; x++) { const l = x > 0 ? x - 1 : 0, r = x < w - 1 ? x + 1 : x; M[o + x] = (S[o + l] + S[o + x] + S[o + r]) / 3; } }
+    const B = st.buf, S = st.S, M = st.M, Sa = st.Sa, Ma = st.Ma, LN = st.LN, LB = st.LB, Hh = st.H;
+    for (let i = 0, j = 0, p = 0; i < n; i++, j += 3, p += 4) {
+      LN[i] = 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2]; LB[i] = 0.2126 * B[j] + 0.7152 * B[j + 1] + 0.0722 * B[j + 2]; }
+    const [sx, sy] = nrShift(LN, LB, w, h, st); st.shift = [sx, sy];
+    // histórico alinhado: NB(x) = B(x + s); fora da borda não há histórico (usa o quadro novo)
+    const NB = st.nb;
+    for (let y = 0; y < h; y++) { const yy = y + sy, okY = yy >= 0 && yy < h;
+      for (let x = 0; x < w; x++) { const i = y * w + x, xx = x + sx, j = i * 3;
+        if (okY && xx >= 0 && xx < w) { const k = (yy * w + xx) * 3; NB[j] = B[k]; NB[j + 1] = B[k + 1]; NB[j + 2] = B[k + 2]; Hh[i] = 1; }
+        else { const p = i * 4; NB[j] = d[p]; NB[j + 1] = d[p + 1]; NB[j + 2] = d[p + 2]; Hh[i] = 0; } } }
+    for (let i = 0, j = 0, p = 0; i < n; i++, j += 3, p += 4) {
+      const v = 0.2126 * (d[p] - NB[j]) + 0.7152 * (d[p + 1] - NB[j + 1]) + 0.0722 * (d[p + 2] - NB[j + 2]); S[i] = v; Sa[i] = v < 0 ? -v : v; }
+    // nível de ruído da cena (mediana de |diferença|, suavizada no tempo)
+    const smp = []; for (let i = 7; i < n; i += 61) smp.push(Sa[i]); smp.sort((x, y) => x - y);
+    st.nf = 0.85 * st.nf + 0.15 * Math.min(8, smp[smp.length >> 1] || 0); const nf = 1.6 * st.nf;
+    for (let y = 0; y < h; y++) { const o = y * w;                  // médias 3×3 (separáveis): com sinal e absoluta
+      for (let x = 0; x < w; x++) { const l = o + (x > 0 ? x - 1 : 0), c = o + x, r = o + (x < w - 1 ? x + 1 : x);
+        M[c] = (S[l] + S[c] + S[r]) / 3; Ma[c] = (Sa[l] + Sa[c] + Sa[r]) / 3; } }
     const a = A.a, t0 = A.t0, k = 1 / (A.t1 - A.t0);
     for (let y = 0; y < h; y++) { const u = (y > 0 ? y - 1 : 0) * w, o = y * w, dn = (y < h - 1 ? y + 1 : y) * w;
       for (let x = 0; x < w; x++) {
-        const mv = Math.abs((M[u + x] + M[o + x] + M[dn + x]) / 3);
+        const ms = Math.abs((M[u + x] + M[o + x] + M[dn + x]) / 3), ma = (Ma[u + x] + Ma[o + x] + Ma[dn + x]) / 3 - nf;
+        const mv = ms > ma ? ms : ma;
         let m = (mv - t0) * k; m = m < 0 ? 0 : m > 1 ? 1 : m;
-        const wgt = a + (1 - a) * m, i = o + x, j = i * 3, p = i * 4;
-        B[j] += wgt * (d[p] - B[j]); B[j + 1] += wgt * (d[p + 1] - B[j + 1]); B[j + 2] += wgt * (d[p + 2] - B[j + 2]);
-        d[p] = B[j]; d[p + 1] = B[j + 1]; d[p + 2] = B[j + 2];
+        const i = o + x, wgt = Hh[i] ? a + (1 - a) * m : 1, j = i * 3, p = i * 4;
+        NB[j] += wgt * (d[p] - NB[j]); NB[j + 1] += wgt * (d[p + 1] - NB[j + 1]); NB[j + 2] += wgt * (d[p + 2] - NB[j + 2]);
+        d[p] = NB[j]; d[p + 1] = NB[j + 1]; d[p + 2] = NB[j + 2];
       } }
+    st.buf = NB; st.nb = B;                                           // troca os buffers (sem alocar)
   }
   // ===== MELHORIA DE RESOLUÇÃO (super-resolução multiquadro, sem IA) =====
   // 1) junta N quadros crus  2) alinha cada um ao 1º com precisão de fração de pixel (busca grosseira + Lucas-Kanade)
