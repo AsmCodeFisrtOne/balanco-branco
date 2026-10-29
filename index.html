@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.9 — 2026-10-29: IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
+<!-- Ajuste de Imagem — Videoendoscopia  v4.9 — 2026-10-29: quadro Original (pixels da câmera) em Ver todos os métodos; IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
      v4.8 — 2026-10-29: bancada de ampliação — Lanczos-3 × FSR 1.0 (EASU+RCAS) × IA (FSRCNN ×2) na GPU (WebGL2), com comparação lado a lado
      v4.7 — 2026-10-29: redução de ruído com compensação de movimento (acompanha o endoscópio, sem arrasto)
      v4.6 — 2026-10-29: congelar não perde o foco — referência = quadro mais nítido, descarta quadros borrados, alinhamento com rotação/escala, máscara por bloco e diversidade por bloco
@@ -363,7 +363,7 @@
         <p class="desc" id="upDesc" style="margin:0 0 6px"></p>
         <div class="btnrow"><button class="btn sm" id="btnCmpUp" title="B">Comparar ampliação</button><button class="btn sm" id="btnCmp3" title="N">Ver todos os métodos</button><button class="btn sm" id="btnZoom" title="Z">Lupa 3×</button></div>
         <p class="desc" id="cmpUpDesc" style="margin:6px 0 0"></p>
-        <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — Lanczos-3 · FSR · IA leve, e com a imagem congelada também a IA forte.</p>
+        <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — <b>Original</b> (pixels da câmera, sem interpolar) · Lanczos-3 · FSR · IA leve, e com a imagem congelada também a IA forte.</p>
         <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="btnTrio">Salvar as imagens de cada método (PNG)</button></div>
         <p class="desc" style="margin:4px 0 0">Salva a imagem inteira de saída feita por cada método, em arquivos separados (mais a entrada da câmera), com o mesmo horário no nome. Congele antes: assim todas são do mesmo quadro e a IA forte entra junto.</p>
       </div>
@@ -738,11 +738,13 @@
       vec3 bilin(sampler2D s, ivec2 sz, vec2 pos){ vec2 f = floor(pos), fr = pos - f; ivec2 fi = ivec2(f);
         return mix(mix(tp(s, sz, fi), tp(s, sz, fi + ivec2(1, 0)), fr.x), mix(tp(s, sz, fi + ivec2(0, 1)), tp(s, sz, fi + ivec2(1, 1)), fr.x), fr.y); }\n`;
     // tela: cmp 0 normal · 1 lado a lado (esq. tL, dir. tR) · 2 antes × depois. Textura: linha 0 = topo da imagem.
-    const FS_DISP = HD + LZ + `uniform sampler2D tL; uniform sampler2D tR; uniform sampler2D tC; uniform sampler2D tD; uniform ivec2 sL; uniform ivec2 sR; uniform ivec2 sC; uniform ivec2 sD; uniform vec2 vO; uniform float cmp; uniform float zoom; uniform int bilL; uniform float nP;
+    const FS_DISP = HD + LZ + `uniform sampler2D tL; uniform sampler2D tR; uniform sampler2D tC; uniform sampler2D tD; uniform sampler2D tE; uniform ivec2 sL; uniform ivec2 sR; uniform ivec2 sC; uniform ivec2 sD; uniform ivec2 sE; uniform vec2 vO; uniform float cmp; uniform float zoom; uniform int bilL; uniform float nP;
+      vec3 near(sampler2D s, ivec2 sz, vec2 pos){ return tp(s, sz, ivec2(floor(pos + 0.5))); }   // pixel original, sem interpolar
       void main(){ vec2 uv = gl_FragCoord.xy / vO; uv.y = 1.0 - uv.y; vec2 u = uv; bool left = false;
         if (cmp > 2.5) { float k = floor(uv.x * nP); u = vec2((1.0 - 1.0 / nP) * 0.5 + (uv.x * nP - k) / nP, uv.y); u = 0.5 + (u - 0.5) / zoom;   // faixa central em todos
-          if (k < 0.5) o = vec4(lanczos(tL, sL, u * vec2(sL) - 0.5), 1.0); else if (k < 1.5) o = vec4(lanczos(tR, sR, u * vec2(sR) - 0.5), 1.0);
-          else if (k < 2.5) o = vec4(lanczos(tC, sC, u * vec2(sC) - 0.5), 1.0); else o = vec4(lanczos(tD, sD, u * vec2(sD) - 0.5), 1.0);
+          if (k < 0.5) o = vec4(near(tL, sL, u * vec2(sL) - 0.5), 1.0); else if (k < 1.5) o = vec4(lanczos(tR, sR, u * vec2(sR) - 0.5), 1.0);
+          else if (k < 2.5) o = vec4(lanczos(tC, sC, u * vec2(sC) - 0.5), 1.0); else if (k < 3.5) o = vec4(lanczos(tD, sD, u * vec2(sD) - 0.5), 1.0);
+          else o = vec4(lanczos(tE, sE, u * vec2(sE) - 0.5), 1.0);
           return; }
         if (cmp > 0.5) { left = uv.x < 0.5; u = vec2(0.25 + (left ? uv.x : uv.x - 0.5), uv.y); }
         u = 0.5 + (u - 0.5) / zoom;
@@ -947,20 +949,20 @@
       const esrB = fz && sel === 3 && before && esrA ? esrNeed(B) : false;
       api.esrReady = esrA; api.esrBusy = !!E.job; api.esrStep = E.step; api.esrN = E.layers ? E.layers.length : 34; api.esrMsg = E.msg;
       const src = (S, ok) => sel === 3 ? (ok ? S.x4 : S.inp) : (m ? S.x2[m] : S.inp);
-      let L = src(A, esrA), R = L, C = A.inp, D = A.inp, bilL = 0, nP = 3;
+      let L = src(A, esrA), R = L, C = A.inp, D = A.inp, E5 = A.inp, bilL = 0, nP = 3;
       if (cmp === 1) { L = A.inp; bilL = sel ? 0 : 1; } else if (cmp === 2 && before) L = src(B, esrB);
-      else if (cmp === 3) { L = A.inp; R = A.x2[1]; C = pConv ? A.x2[2] : A.inp; if (fz && pShuf) { nP = 4; D = esrA ? A.x4 : A.inp; } }
+      else if (cmp === 3) { L = A.inp; R = A.inp; C = A.x2[1]; D = pConv ? A.x2[2] : A.inp; nP = 4; if (fz && pShuf) { nP = 5; E5 = esrA ? A.x4 : A.inp; } }   // original · Lanczos · FSR · IA leve · IA forte
       api.panels = nP;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, outCv.width, outCv.height); gl.useProgram(pDisp.pr);
-      bind(0, L); bind(1, R); bind(2, C); bind(3, D); gl.uniform1i(pDisp.u("tL"), 0); gl.uniform1i(pDisp.u("tR"), 1); gl.uniform1i(pDisp.u("tC"), 2); gl.uniform1i(pDisp.u("tD"), 3);
-      gl.uniform2i(pDisp.u("sL"), L.w, L.h); gl.uniform2i(pDisp.u("sR"), R.w, R.h); gl.uniform2i(pDisp.u("sC"), C.w, C.h); gl.uniform2i(pDisp.u("sD"), D.w, D.h); gl.uniform1f(pDisp.u("nP"), nP); gl.uniform2f(pDisp.u("vO"), outCv.width, outCv.height);
+      bind(0, L); bind(1, R); bind(2, C); bind(3, D); bind(4, E5); gl.uniform1i(pDisp.u("tL"), 0); gl.uniform1i(pDisp.u("tR"), 1); gl.uniform1i(pDisp.u("tC"), 2); gl.uniform1i(pDisp.u("tD"), 3); gl.uniform1i(pDisp.u("tE"), 4);
+      gl.uniform2i(pDisp.u("sL"), L.w, L.h); gl.uniform2i(pDisp.u("sR"), R.w, R.h); gl.uniform2i(pDisp.u("sC"), C.w, C.h); gl.uniform2i(pDisp.u("sD"), D.w, D.h); gl.uniform2i(pDisp.u("sE"), E5.w, E5.h); gl.uniform1f(pDisp.u("nP"), nP); gl.uniform2f(pDisp.u("vO"), outCv.width, outCv.height);
       gl.uniform1f(pDisp.u("cmp"), cmp); gl.uniform1f(pDisp.u("zoom"), zoomF); gl.uniform1i(pDisp.u("bilL"), bilL); quad();
     }, renderFull(k, OW, OH) {                                  // imagem de saída inteira (OW×OH) com o método k, para salvar
       const A = slots[0]; if (!A.inp.w || (k === 2 && !pConv)) return null;
       if (k === 3 && A.k4 !== A.inKey + "|" + esrStrength) return null;
       if (k && k < 3 && A.key[k] !== A.inKey) { run2x(A, A.inp.w, A.inp.h, k); A.key[k] = A.inKey; }
       const S = k === 3 ? A.x4 : k ? A.x2[k] : A.inp; alloc(full, OW, OH, 0); target(full); gl.useProgram(pDisp.pr);
-      bind(0, S); bind(1, S); bind(2, S); bind(3, S); gl.uniform1i(pDisp.u("tL"), 0); gl.uniform1i(pDisp.u("tR"), 1); gl.uniform1i(pDisp.u("tC"), 2); gl.uniform1i(pDisp.u("tD"), 3); gl.uniform2i(pDisp.u("sD"), S.w, S.h); gl.uniform1f(pDisp.u("nP"), 3);
+      bind(0, S); bind(1, S); bind(2, S); bind(3, S); bind(4, S); gl.uniform1i(pDisp.u("tL"), 0); gl.uniform1i(pDisp.u("tR"), 1); gl.uniform1i(pDisp.u("tC"), 2); gl.uniform1i(pDisp.u("tD"), 3); gl.uniform1i(pDisp.u("tE"), 4); gl.uniform2i(pDisp.u("sD"), S.w, S.h); gl.uniform2i(pDisp.u("sE"), S.w, S.h); gl.uniform1f(pDisp.u("nP"), 3);
       gl.uniform2i(pDisp.u("sL"), S.w, S.h); gl.uniform2i(pDisp.u("sR"), S.w, S.h); gl.uniform2i(pDisp.u("sC"), S.w, S.h); gl.uniform2f(pDisp.u("vO"), OW, OH);
       gl.uniform1f(pDisp.u("cmp"), 0); gl.uniform1f(pDisp.u("zoom"), 1); gl.uniform1i(pDisp.u("bilL"), 0); quad();
       const px = new Uint8Array(OW * OH * 4); gl.readPixels(0, 0, OW, OH, gl.RGBA, gl.UNSIGNED_BYTE, px); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1541,7 +1543,7 @@
           octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
         if (cmpMode === 3) { const nP = UP.panels || 3; octx.fillStyle = "#ffd400"; for (let k = 1; k < nP; k++) octx.fillRect(k * OW / nP - 2, 0, 4, OH);
           const esrLab = UP.esrReady ? "IA forte" : UP.esrMsg ? "IA forte: erro" : "IA forte: calculando…";
-          [["Lanczos-3"], ["FSR 1.0"], [UP.ia ? "IA leve" : "IA indisponível"], [esrLab]].slice(0, nP).forEach(([t], k) => lab(t, k * OW / nP + 12, "left")); }
+          [["Original"], ["Lanczos-3"], ["FSR 1.0"], [UP.ia ? "IA leve" : "IA indisponível"], [esrLab]].slice(0, nP).forEach(([t], k) => lab(t, k * OW / nP + 8, "left")); }
         else if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
           if (cmpMode === 1) { const m = curUp(); if (m) { lab("Lanczos-3", 12, "left"); lab(m === 3 && !(frozen && UP.esrReady) ? (frozen ? "IA forte: calculando…" : "IA forte: congele a imagem") : UPM[m].tag, OW - 12, "right"); } else { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); } }
           else if (frozen && frozenSR) { lab("ANTES · 1 quadro (Lanczos-3)", 12, "left"); lab("DEPOIS · melhoria de resolução (" + frozenSR.used + " quadros)", OW - 12, "right"); }
