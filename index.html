@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.3 — 2026-10-29: teste isolado "formato da câmera" (detecta MJPEG × sem compressão pelos blocos 8×8 e pela subamostragem de cor)
+<!-- Ajuste de Imagem — Videoendoscopia  v4.4 — 2026-10-29: corrige "escada" na melhoria de resolução com a câmera parada (base = média alinhada + Lanczos-3; combinação sub-pixel só quando há diversidade de deslocamentos)
+     v4.3 — 2026-10-29: teste isolado "formato da câmera" (detecta MJPEG × sem compressão pelos blocos 8×8 e pela subamostragem de cor)
      v4.2 — 2026-10-29: Congelar com MELHORIA DE RESOLUÇÃO (super-resolução multiquadro: alinhamento sub-pixel Lucas-Kanade, descarte de quadros em movimento, shift-and-add robusto em grade 2×, leve deconvolução); Normal 0,5 s / Longa 1 s / Desligado; foto "MR" + quadro original
      v4.1 — 2026-10-26: sem WebGL a comparação e a lupa passam a funcionar (e o app avisa que o Lanczos está inativo); "antes" da comparação sem redução de ruído também com a imagem congelada
      v4.0 — 2026-10-26: "Comparar" liga realce e redução de ruído no Médio quando os dois estão desligados
@@ -248,7 +249,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.3</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.4</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -842,6 +843,18 @@
         if (det > core) det -= core; else if (det < -core) det += core; else continue;
         const p = (o + x) * 4, add = amt * det; d[p] += add; d[p + 1] += add; d[p + 2] += add; } }
   }
+  // Lanczos-3 2× em CPU (separável): base da reconstrução quando faltam deslocamentos sub-pixel
+  const LZ = (() => { const L = x => { x = Math.abs(x); if (x < 1e-6) return 1; if (x >= 3) return 0; const p = Math.PI * x; return 3 * Math.sin(p) * Math.sin(p / 3) / (p * p); };
+    return [0.25, 0.75].map(fr => { const w = []; let s = 0; for (let i = -2; i <= 3; i++) { const v = L(i - fr); w.push(v); s += v; } return w.map(v => v / s); }); })();
+  function lanczos2x(src, w, h) {                            // src: Float32Array RGB (w*h*3) → Float32Array RGB (2w*2h*3)
+    const W2 = w * 2, H2 = h * 2, tmp = new Float32Array(W2 * h * 3), out = new Float32Array(W2 * H2 * 3);
+    for (let y = 0; y < h; y++) for (let X = 0; X < W2; X++) {
+      const pos = (X + 0.5) / 2 - 0.5, f = Math.floor(pos), wt = LZ[pos - f < 0.5 ? 0 : 1];
+      for (let c = 0; c < 3; c++) { let a = 0; for (let i = 0; i < 6; i++) { const xx = Math.min(w - 1, Math.max(0, f - 2 + i)); a += wt[i] * src[(y * w + xx) * 3 + c]; } tmp[(y * W2 + X) * 3 + c] = a; } }
+    for (let Y = 0; Y < H2; Y++) { const pos = (Y + 0.5) / 2 - 0.5, f = Math.floor(pos), wt = LZ[pos - f < 0.5 ? 0 : 1];
+      for (let X = 0; X < W2; X++) for (let c = 0; c < 3; c++) { let a = 0; for (let i = 0; i < 6; i++) { const yy = Math.min(h - 1, Math.max(0, f - 2 + i)); a += wt[i] * tmp[(yy * W2 + X) * 3 + c]; } out[(Y * W2 + X) * 3 + c] = a; } }
+    return out;
+  }
   const SR_OPT = { sig: 0.45, tau: 45, amt: 0.8, core: 1.0 };   // ajustado contra imagem de referência (teste com tremor + ruído)
   async function superResolve(frames, w, h, onStep, opt) {
     opt = Object.assign({}, SR_OPT, opt || {});
@@ -877,14 +890,29 @@
       }
       onStep("combinando", k); await yieldUI();
     }
+    // BASE: média dos quadros alinhados (tira ruído mesmo sem deslocamento) ampliada com Lanczos-3
+    const mean = new Float32Array(n * 3), mw = new Float32Array(n);
+    for (let k = 0; k < frames.length; k++) { const r = regs[k]; if (!r.ok) continue; const F = frames[k];
+      const FL = [new Float32Array(n), new Float32Array(n), new Float32Array(n)];
+      for (let i = 0, p = 0; i < n; i++, p += 4) { FL[0][i] = F[p]; FL[1][i] = F[p + 1]; FL[2][i] = F[p + 2]; }
+      const FY = k === 0 ? R : lumaOf(F, n);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, xs = x + r.dx, ys = y + r.dy;
+        const dl = k === 0 ? 0 : bil(FY, w, h, xs, ys) - R[i], wgt = k === 0 ? 1 : Math.exp(-(dl * dl) / tau2);
+        mean[i * 3] += wgt * bil(FL[0], w, h, xs, ys); mean[i * 3 + 1] += wgt * bil(FL[1], w, h, xs, ys); mean[i * 3 + 2] += wgt * bil(FL[2], w, h, xs, ys); mw[i] += wgt; }
+      if (k % 4 === 0) await yieldUI(); }
+    for (let i = 0; i < n; i++) { mean[i * 3] /= mw[i]; mean[i * 3 + 1] /= mw[i]; mean[i * 3 + 2] /= mw[i]; }
+    const base = lanczos2x(mean, w, h);
+    // DIVERSIDADE dos deslocamentos sub-pixel: sem ela (câmera parada) a combinação vira "escada" → usa só a base
+    const fx = [], fy = []; regs.forEach(r => { if (r.ok) { fx.push(r.dx - Math.round(r.dx)); fy.push(r.dy - Math.round(r.dy)); } });
+    const sd = a => { const m = a.reduce((s, v) => s + v, 0) / a.length; return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / a.length); };
+    const div = Math.min(sd(fx), sd(fy)), dmix = Math.max(0, Math.min(1, (div - 0.10) / 0.12));
     const out = new ImageData(W2, H2), o4 = out.data;
     for (let j = 0, o = 0, p = 0; j < W2 * H2; j++, o += 3, p += 4) {
-      const wt = ws[j], blend = Math.min(1, wt / 0.6);            // poucos quadros cobrindo o ponto: mistura com a referência
-      for (let c = 0; c < 3; c++) o4[p + c] = wt > 1e-6 ? blend * (acc[o + c] / wt) + (1 - blend) * up[o + c] : up[o + c];
+      const wt = ws[j], cov = Math.min(1, wt / 0.6) * dmix;   // pouca cobertura ou pouca diversidade → base Lanczos
+      for (let c = 0; c < 3; c++) o4[p + c] = wt > 1e-6 ? cov * (acc[o + c] / wt) + (1 - cov) * base[o + c] : base[o + c];
       o4[p + 3] = 255; }
-    if (opt.amt) sharpenAmt(o4, W2, H2, opt.amt, opt.core);                         // compensa o desfoque do pixel do sensor e da combinação
-    const sh = regs.filter(r => r.ok).map(r => [((r.dx % 1) + 1) % 1, ((r.dy % 1) + 1) % 1]);
-    return { ok: true, img: out, used, total: frames.length, spread: sh.length };
+    if (opt.amt) sharpenAmt(o4, W2, H2, opt.amt * (0.5 + 0.5 * dmix), opt.core);                         // compensa o desfoque do pixel do sensor e da combinação
+    return { ok: true, img: out, used, total: frames.length, div, dmix };
   }
   function setSR(l) { srLevel = l; store.set("sr", l); document.querySelectorAll("#srSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.sr === l)); setFreezeUi(); }
   function outSize(w, h) { const H = Math.max(h, OUT_H); return [Math.round(H * w / h), H]; }
@@ -1092,7 +1120,9 @@
         img = ctx.getImageData(0, 0, w, h);
       }
       const d = img.data;
-      const raw = cmpMode === 2 ? new Uint8ClampedArray(frozen && frozenRaw ? frozenRaw : d) : null;   // "antes": sem redução de ruído
+      const srCmp = cmpMode === 2 && frozen && frozenSR && frozenSR.origUp && frozenSR.origUp.length === d.length;
+      // "antes": congelado melhorado → 1 quadro original ampliado (Lanczos-3); demais casos → sem redução de ruído
+      const raw = cmpMode === 2 ? new Uint8ClampedArray(srCmp ? frozenSR.origUp : (frozen && frozenRaw ? frozenRaw : d)) : null;
       const rawFrame = freezeReq && !frozen ? new Uint8ClampedArray(d) : null;
       if (!frozen && !showOriginal) temporalNR(d, w, h, nrLevel, nrLive); else if (frozen) nrLive.buf = null;
       if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; frozenSR = null; }   // congela já com o ruído reduzido
@@ -1115,7 +1145,7 @@
       }
       if (!showOriginal) { applyPipeline(d, luts, adj.sat, arLevel, EVL[evlLevel].k); sharpen(d, w, h, shpLevel); }
       let before = null;
-      if (raw) { if (!showOriginal) applyPipeline(raw, luts, adj.sat, arLevel, EVL[evlLevel].k); before = new ImageData(raw, w, h); }
+      if (raw) { if (!showOriginal) { applyPipeline(raw, luts, adj.sat, arLevel, EVL[evlLevel].k); if (srCmp) sharpen(raw, w, h, shpLevel); } before = new ImageData(raw, w, h); }
       ctx.putImageData(img, 0, 0);
       UP.draw(img, w, h, before);                            // amplia para a saída com Lanczos-3
 
@@ -1132,6 +1162,7 @@
           octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
         if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
           if (cmpMode === 1) { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); }
+          else if (frozen && frozenSR) { lab("ANTES · 1 quadro (Lanczos-3)", 12, "left"); lab("DEPOIS · melhoria de resolução (" + frozenSR.used + " quadros)", OW - 12, "right"); }
           else { lab("ANTES", 12, "left"); lab("DEPOIS · realce " + SHP[shpLevel].name.toLowerCase() + " · ruído " + NR[nrLevel].name.toLowerCase(), OW - 12, "right"); } }
         if (zoomF > 1) lab("LUPA " + zoomF + "×", OW / 2, "center");
         octx.setTransform(sc, 0, 0, sc, 0, 0);
@@ -1270,6 +1301,11 @@
     srBusy = false;
     if (r && r.ok) {
       frozen = r.img; frozenRaw = null; frozenSR = { used: r.used, total: r.total, orig: new ImageData(cap.frames[0], cap.w, cap.h) };
+      { const n0 = cap.w * cap.h, f0 = new Float32Array(n0 * 3), F = cap.frames[0];       // 1 quadro ampliado, para a comparação
+        for (let i = 0, p = 0; i < n0; i++, p += 4) { f0[i * 3] = F[p]; f0[i * 3 + 1] = F[p + 1]; f0[i * 3 + 2] = F[p + 2]; }
+        const up = lanczos2x(f0, cap.w, cap.h), u8 = new Uint8ClampedArray(n0 * 16);
+        for (let j = 0; j < n0 * 4; j++) { u8[j * 4] = up[j * 3]; u8[j * 4 + 1] = up[j * 3 + 1]; u8[j * 4 + 2] = up[j * 3 + 2]; u8[j * 4 + 3] = 255; }
+        frozenSR.origUp = u8; }
       setStatus("Congelado com melhoria de resolução (" + r.used + " de " + r.total + " quadros, " + r.img.width + "×" + r.img.height + ").", "ok");
     } else if (cap.frames.length) {
       frozen = new ImageData(cap.frames[0], cap.w, cap.h); frozenRaw = null; frozenSR = null;
@@ -1472,7 +1508,7 @@
   // Comparar antes × depois: se nada estiver ligado, liga realce e redução de ruído no Médio para haver o que comparar
   function toggleAntesDepois() {
     if (cmpMode === 2) { setCmpMode(0); return; }
-    if (!shpLevel && !nrLevel) { setSHP(2); setNR(2); setStatus("Para comparar, realce de bordas e redução de ruído foram ligados no Médio (ajuste em \"Nitidez e ruído\").", "ok"); }
+    if (!shpLevel && !nrLevel && !(frozen && frozenSR)) { setSHP(2); setNR(2); setStatus("Para comparar, realce de bordas e redução de ruído foram ligados no Médio (ajuste em \"Nitidez e ruído\").", "ok"); }
     setCmpMode(2);
   }
   $("hdrCmp").onclick = toggleAntesDepois;
