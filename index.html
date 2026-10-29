@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.5 — 2026-10-29: melhoria de resolução ~3× mais rápida (pesos fixos por quadro, tabelas, sem combinação quando a câmera está parada)
+<!-- Ajuste de Imagem — Videoendoscopia  v4.6 — 2026-10-29: congelar não perde o foco — referência = quadro mais nítido, descarta quadros borrados, alinhamento com rotação/escala, máscara por bloco e diversidade por bloco
+     v4.5 — 2026-10-29: melhoria de resolução ~3× mais rápida (pesos fixos por quadro, tabelas, sem combinação quando a câmera está parada)
      v4.4 — 2026-10-29: corrige "escada" na melhoria de resolução com a câmera parada (base = média alinhada + Lanczos-3; combinação sub-pixel só quando há diversidade de deslocamentos)
      v4.3 — 2026-10-29: teste isolado "formato da câmera" (detecta MJPEG × sem compressão pelos blocos 8×8 e pela subamostragem de cor)
      v4.2 — 2026-10-29: Congelar com MELHORIA DE RESOLUÇÃO (super-resolução multiquadro: alinhamento sub-pixel Lucas-Kanade, descarte de quadros em movimento, shift-and-add robusto em grade 2×, leve deconvolução); Normal 0,5 s / Longa 1 s / Desligado; foto "MR" + quadro original
@@ -250,7 +251,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.5</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.6</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -806,33 +807,48 @@
     const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, i = yi * w + xi;
     return (L[i] * (1 - fx) + L[i + 1] * fx) * (1 - fy) + (L[i + w] * (1 - fx) + L[i + w + 1] * fx) * fy;
   }
-  // deslocamento (dx, dy) tal que frame(x + d) ≈ ref(x)
+  // Alinhamento por SEMELHANÇA (translação + rotação + escala), pois a mão gira e aproxima a ótica:
+  // ponto (x, y) da referência ↦ (X, Y) no quadro:  X = cx + (1+a)·xc − b·yc + tx,  Y = cy + b·xc + (1+a)·yc + ty
   function register(R, F, w, h) {
-    // busca grosseira em 1/4 da resolução (±24 px)
+    // 1) busca grosseira de translação em 1/4 da resolução (±24 px)
     const q = 4, W = (w / q) | 0, H = (h / q) | 0, rs = new Float32Array(W * H), fs = new Float32Array(W * H);
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let a = 0, b = 0;
-      for (let j = 0; j < q; j++) for (let i = 0; i < q; i++) { const k = (y * q + j) * w + x * q + i; a += R[k]; b += F[k]; }
-      rs[y * W + x] = a; fs[y * W + x] = b; }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let A = 0, B = 0;
+      for (let j = 0; j < q; j++) for (let i = 0; i < q; i++) { const k = (y * q + j) * w + x * q + i; A += R[k]; B += F[k]; }
+      rs[y * W + x] = A; fs[y * W + x] = B; }
     let best = 1e30, bx = 0, by = 0; const m = 8, S = 6;
     for (let sy = -S; sy <= S; sy++) for (let sx = -S; sx <= S; sx++) { let e = 0;
-      for (let y = m; y < H - m; y += 1) for (let x = m; x < W - m; x += 1) e += Math.abs(fs[(y + sy) * W + x + sx] - rs[y * W + x]);
+      for (let y = m; y < H - m; y++) for (let x = m; x < W - m; x++) e += Math.abs(fs[(y + sy) * W + x + sx] - rs[y * W + x]);
       if (e < best) { best = e; bx = sx; by = sy; } }
-    let dx = bx * q, dy = by * q;
-    // refinamento Lucas-Kanade (sub-pixel) na região central
-    const b0 = 36, x0 = b0, x1 = w - b0, y0 = b0, y1 = h - b0;
-    for (let it = 0; it < 8; it++) {
-      let sxx = 0, sxy = 0, syy = 0, sxe = 0, sye = 0;
-      for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) {
-        const i = y * w + x, gx = (R[i + 1] - R[i - 1]) * 0.5, gy = (R[i + w] - R[i - w]) * 0.5;
-        const e = bil(F, w, h, x + dx, y + dy) - R[i];
-        sxx += gx * gx; sxy += gx * gy; syy += gy * gy; sxe += gx * e; sye += gy * e; }
-      const det = sxx * syy - sxy * sxy; if (Math.abs(det) < 1e-6) break;
-      const ux = -(syy * sxe - sxy * sye) / det, uy = -(sxx * sye - sxy * sxe) / det;
-      dx += ux; dy += uy; if (Math.abs(ux) < 0.005 && Math.abs(uy) < 0.005) break;
+    // 2) refinamento Lucas-Kanade com 4 parâmetros (tx, ty, a, b)
+    const cx = (w - 1) / 2, cy = (h - 1) / 2, b0 = 30;
+    let tx = bx * q, ty = by * q, a = 0, b = 0;
+    const samp = (X, Y) => { if (X < 0) X = 0; else if (X > w - 1.001) X = w - 1.001; if (Y < 0) Y = 0; else if (Y > h - 1.001) Y = h - 1.001;
+      const xi = X | 0, yi = Y | 0, fx = X - xi, fy = Y - yi, i = yi * w + xi;
+      return (F[i] * (1 - fx) + F[i + 1] * fx) * (1 - fy) + (F[i + w] * (1 - fx) + F[i + w + 1] * fx) * fy; };
+    for (let it = 0; it < 12; it++) {
+      const H4 = new Float64Array(16), g4 = new Float64Array(4);
+      for (let y = b0; y < h - b0; y += 2) { const yc = y - cy;
+        for (let x = b0; x < w - b0; x += 2) { const xc = x - cx, i = y * w + x;
+          const gx = (R[i + 1] - R[i - 1]) * 0.5, gy = (R[i + w] - R[i - w]) * 0.5;
+          const e = samp(cx + (1 + a) * xc - b * yc + tx, cy + b * xc + (1 + a) * yc + ty) - R[i];
+          const J0 = gx, J1 = gy, J2 = gx * xc + gy * yc, J3 = -gx * yc + gy * xc, J = [J0, J1, J2, J3];
+          for (let r = 0; r < 4; r++) { g4[r] += J[r] * e; for (let c = r; c < 4; c++) H4[r * 4 + c] += J[r] * J[c]; } } }
+      for (let r = 0; r < 4; r++) for (let c = 0; c < r; c++) H4[r * 4 + c] = H4[c * 4 + r];
+      const d = solve4(H4, g4); if (!d) break;
+      tx -= d[0]; ty -= d[1]; a -= d[2]; b -= d[3];
+      if (Math.abs(d[0]) < 0.004 && Math.abs(d[1]) < 0.004 && Math.abs(d[2]) * 200 < 0.004 && Math.abs(d[3]) * 200 < 0.004) break;
     }
-    let res = 0, cnt = 0;                                     // erro residual após alinhar
-    for (let y = y0; y < y1; y += 3) for (let x = x0; x < x1; x += 3) { res += Math.abs(bil(F, w, h, x + dx, y + dy) - R[y * w + x]); cnt++; }
-    return { dx, dy, res: res / cnt };
+    let res = 0, cnt = 0;
+    for (let y = b0; y < h - b0; y += 3) { const yc = y - cy; for (let x = b0; x < w - b0; x += 3) { const xc = x - cx;
+      res += Math.abs(samp(cx + (1 + a) * xc - b * yc + tx, cy + b * xc + (1 + a) * yc + ty) - R[y * w + x]); cnt++; } }
+    return { tx, ty, a, b, cx, cy, res: res / cnt, dx: tx, dy: ty };
+  }
+  function solve4(A, g) {                                      // resolve A·x = g (4×4) por eliminação de Gauss
+    const M = [0, 1, 2, 3].map(r => [A[r * 4], A[r * 4 + 1], A[r * 4 + 2], A[r * 4 + 3], g[r]]);
+    for (let c = 0; c < 4; c++) { let p = c; for (let r = c + 1; r < 4; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-9) return null; [M[c], M[p]] = [M[p], M[c]];
+      for (let r = 0; r < 4; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k < 5; k++) M[r][k] -= f * M[c][k]; } }
+    return M.map((row, i) => row[4] / row[i]);
   }
   function sharpenAmt(d, w, h, amt, core) {                  // máscara de nitidez genérica (luminância)
     const n = w * h, Y = lumaOf(d, n), T = new Float32Array(n);
@@ -859,73 +875,98 @@
   const SR_OPT = { sig: 0.45, tau: 45, amt: 0.8, core: 1.0 };   // ajustado contra imagem de referência (teste com tremor + ruído)
   async function superResolve(frames, w, h, onStep, opt) {
     opt = Object.assign({}, SR_OPT, opt || {});
-    const n = w * h, S = 2, W2 = w * S, H2 = h * S, ref = frames[0], R = lumaOf(ref, n);
-    const regs = [{ dx: 0, dy: 0, res: 0, ok: true }];
-    for (let k = 1; k < frames.length; k++) { regs.push(register(R, lumaOf(frames[k], n), w, h)); if (k % 3 === 0) { onStep("alinhando", k); await yieldUI(); } }
-    // descarta quadros com movimento grande ou deformação (residual muito acima do típico)
-    const rr = regs.slice(1).map(r => r.res).sort((a, b) => a - b), med = rr.length ? rr[rr.length >> 1] : 0;
-    for (let k = 1; k < regs.length; k++) { const r = regs[k];
-      r.ok = Math.abs(r.dx) < 40 && Math.abs(r.dy) < 40 && r.res <= Math.max(1.6 * med, med + 3) && r.res < 18; }
+    const n = w * h, S = 2, W2 = w * S, H2 = h * S;
+    // NITIDEZ de cada quadro: o mais nítido vira a referência; quadros borrados (movimento no instante) ficam de fora
+    const Ls = frames.map(f => lumaOf(f, n)), sharp = Ls.map(L => { let s2 = 0, c = 0;
+      for (let y = 40; y < h - 40; y += 2) for (let x = 40; x < w - 40; x += 2) { const i = y * w + x; s2 += Math.abs(4 * L[i] - L[i - 1] - L[i + 1] - L[i - w] - L[i + w]); c++; } return s2 / c; });
+    const refIdx = opt.ref != null ? opt.ref : sharp.indexOf(Math.max(...sharp));   // opt.ref: só para testes
+    const order = [refIdx, ...frames.map((_, i) => i).filter(i => i !== refIdx)];
+    frames = order.map(i => frames[i]); const Lo = order.map(i => Ls[i]), sh = order.map(i => sharp[i]);
+    const ref = frames[0], R = Lo[0], cx = (w - 1) / 2, cy = (h - 1) / 2;
+    const regs = [{ tx: 0, ty: 0, a: 0, b: 0, res: 0, ok: true }];
+    for (let k = 1; k < frames.length; k++) {
+      if (sh[k] < 0.75 * sh[0]) { regs.push({ ok: false, res: 1e9 }); continue; }        // borrado: nem alinha
+      regs.push(register(R, Lo[k], w, h)); if (k % 3 === 0) { onStep("alinhando", k); await yieldUI(); } }
+    const rr = regs.slice(1).filter(r => r.res < 1e9).map(r => r.res).sort((x, y) => x - y), med = rr.length ? rr[rr.length >> 1] : 0;
+    for (let k = 1; k < regs.length; k++) { const r = regs[k]; if (r.res >= 1e9) continue;
+      r.ok = Math.abs(r.tx) < 40 && Math.abs(r.ty) < 40 && Math.abs(r.a) < 0.05 && Math.abs(r.b) < 0.05 && r.res <= Math.max(1.6 * med, med + 3) && r.res < 30; }
     const used = regs.filter(r => r.ok).length;
-    if (used < 4) return { ok: false, used, total: frames.length };
-    const tau2 = opt.tau * opt.tau;
-    // tabela do peso de robustez exp(-(Δ/τ)²) por |Δ| inteiro (evita Math.exp por pixel)
-    const RW = new Float32Array(256); for (let i = 0; i < 256; i++) RW[i] = Math.exp(-(i * i) / tau2);
-    // DIVERSIDADE dos deslocamentos sub-pixel (calculada antes): sem ela (câmera parada) não vale combinar — usa só a base
-    const fx = [], fy = []; regs.forEach(r => { if (r.ok) { fx.push(r.dx - Math.round(r.dx)); fy.push(r.dy - Math.round(r.dy)); } });
-    const sd = a => { const m = a.reduce((s, v) => s + v, 0) / a.length; return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / a.length); };
-    const div = Math.min(sd(fx), sd(fy)), dmix = Math.max(0, Math.min(1, (div - 0.10) / 0.12));
-    // Em translação pura, a fração do deslocamento é a MESMA para todos os pixels do quadro:
-    // os pesos (bilinear e gaussiano) são calculados uma vez por quadro, sem exp/funções no laço interno.
+    if (used < 4) return { ok: false, used, total: frames.length, refFrame: ref };
+    const map = (r, x, y) => { const xc = x - cx, yc = y - cy; return [cx + (1 + r.a) * xc - r.b * yc + r.tx, cy + r.b * xc + (1 + r.a) * yc + r.ty]; };
+    // MÁSCARA POR BLOCO 16×16: onde o quadro não casa com a referência (tecido que se mexeu, borda que saiu do campo), ele não entra
+    const BS = 16, BW = Math.ceil(w / BS), BH = Math.ceil(h / BS);
+    const sampL = (F, X, Y) => { if (X < 0 || Y < 0 || X > w - 1.001 || Y > h - 1.001) return -1;
+      const xi = X | 0, yi = Y | 0, fx = X - xi, fy = Y - yi, i = yi * w + xi;
+      return (F[i] * (1 - fx) + F[i + 1] * fx) * (1 - fy) + (F[i + w] * (1 - fx) + F[i + w + 1] * fx) * fy; };
+    const bres = regs.map((r, k) => { if (!k || !r.ok) return null; const F = Lo[k], B = new Float32Array(BW * BH), C = new Float32Array(BW * BH);
+      for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) { const [X, Y] = map(r, x, y), v = sampL(F, X, Y); if (v < 0) continue;
+        const bi = ((y / BS) | 0) * BW + ((x / BS) | 0); B[bi] += Math.abs(v - R[y * w + x]); C[bi]++; }
+      for (let bi = 0; bi < B.length; bi++) B[bi] = C[bi] ? B[bi] / C[bi] : 1e9; return B; });
+    const allB = []; bres.forEach(B => { if (B) for (const v of B) if (v < 1e9) allB.push(v); }); allB.sort((x, y) => x - y);
+    const bmed = allB.length ? allB[allB.length >> 1] : 1;
+    const bmask = bres.map(B => { if (!B) return null; const M = new Float32Array(B.length);
+      for (let bi = 0; bi < B.length; bi++) { const t = (B[bi] - 1.3 * bmed) / (0.8 * bmed + 0.5); M[bi] = t <= 0 ? 1 : t >= 1 ? 0 : 1 - t; } return M; });
+    // DIVERSIDADE sub-pixel POR BLOCO (fase do deslocamento no centro de cada bloco): sem ela, só a média + Lanczos (sem "escada")
+    const dmixB = new Float32Array(BW * BH);
+    for (let by = 0; by < BH; by++) for (let bx = 0; bx < BW; bx++) { const px = bx * BS + BS / 2, py = by * BS + BS / 2, fxs = [], fys = [];
+      regs.forEach((r, k) => { if (!r.ok || (k && bmask[k][by * BW + bx] < 0.5)) return; const [X, Y] = map(r, px, py);
+        fxs.push(X - px - Math.round(X - px)); fys.push(Y - py - Math.round(Y - py)); });
+      if (fxs.length < 4) { dmixB[by * BW + bx] = 0; continue; }
+      const sd = arr => { const m = arr.reduce((p, v) => p + v, 0) / arr.length; return Math.sqrt(arr.reduce((p, v) => p + (v - m) * (v - m), 0) / arr.length); };
+      const dv = Math.min(sd(fxs), sd(fys)); dmixB[by * BW + bx] = Math.max(0, Math.min(1, (dv - 0.10) / 0.12)); }
+    const anyMix = dmixB.some(v => v > 0);
+    const tau2 = opt.tau * opt.tau, RW = new Float32Array(256); for (let i = 0; i < 256; i++) RW[i] = Math.exp(-(i * i) / tau2);
+    const sig2 = 2 * opt.sig * opt.sig, GL = new Float32Array(513); for (let i = 0; i <= 512; i++) GL[i] = Math.exp(-(i / 256) / sig2);   // exp(-d²/2σ²), d² em 1/256
     const mean = new Float32Array(n * 3), mw = new Float32Array(n);
-    const acc = dmix > 0 ? new Float32Array(W2 * H2 * 3) : null, ws = dmix > 0 ? new Float32Array(W2 * H2) : null;
-    const sig2 = 2 * opt.sig * opt.sig;
+    const acc = anyMix ? new Float32Array(W2 * H2 * 3) : null, ws = anyMix ? new Float32Array(W2 * H2) : null;
     for (let k = 0; k < frames.length; k++) {
-      const r = regs[k]; if (!r.ok) continue; const F = frames[k];
-      // --- média alinhada (amostra o quadro em x + d, bilinear com pesos fixos) ---
-      const ix = Math.floor(r.dx), iy = Math.floor(r.dy), ax = r.dx - ix, ay = r.dy - iy;
-      const w00 = (1 - ax) * (1 - ay), w10 = ax * (1 - ay), w01 = (1 - ax) * ay, w11 = ax * ay;
-      for (let y = 0; y < h; y++) { let ys = y + iy; if (ys < 0) ys = 0; else if (ys > h - 2) ys = h - 2;
-        for (let x = 0; x < w; x++) { let xs = x + ix; if (xs < 0) xs = 0; else if (xs > w - 2) xs = w - 2;
-          const p = (ys * w + xs) * 4, q = p + w * 4, i = y * w + x;
+      const r = regs[k]; if (!r.ok) continue; const F = frames[k], BMk = bmask[k];
+      const A = 1 + r.a, Bb = r.b;
+      // --- média alinhada: para cada pixel da referência, amostra o quadro na posição transformada ---
+      for (let y = 0; y < h; y++) { const yc = y - cy; let X = cx + A * (-cx) - Bb * yc + r.tx, Y = cy + Bb * (-cx) + A * yc + r.ty;
+        for (let x = 0; x < w; x++, X += A, Y += Bb) {
+          if (X < 0 || Y < 0 || X > w - 1.001 || Y > h - 1.001) continue;
+          const i = y * w + x; let bm = 1; if (k) { bm = BMk[((y / BS) | 0) * BW + ((x / BS) | 0)]; if (!bm) continue; }
+          const xi = X | 0, yi = Y | 0, fx = X - xi, fy = Y - yi, p = (yi * w + xi) * 4, q = p + w * 4;
+          const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
           const cr = w00 * F[p] + w10 * F[p + 4] + w01 * F[q] + w11 * F[q + 4];
           const cg = w00 * F[p + 1] + w10 * F[p + 5] + w01 * F[q + 1] + w11 * F[q + 5];
           const cb = w00 * F[p + 2] + w10 * F[p + 6] + w01 * F[q + 2] + w11 * F[q + 6];
-          let wt = 1; if (k) { const dl = 0.2126 * cr + 0.7152 * cg + 0.0722 * cb - R[i]; wt = RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)]; }
+          let wt = bm; if (k) { const dl = 0.2126 * cr + 0.7152 * cg + 0.0722 * cb - R[i]; wt *= RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)]; }
           mean[i * 3] += wt * cr; mean[i * 3 + 1] += wt * cg; mean[i * 3 + 2] += wt * cb; mw[i] += wt; } }
-      // --- combinação sub-pixel na grade 2× (só se houver diversidade) ---
+      // --- combinação sub-pixel: cada pixel do quadro vai para a sua posição na referência (transformação inversa) ---
       if (acc) {
-        const cU = 0.5 - S * r.dx, cV = 0.5 - S * r.dy;            // Uc = S·x + cU  (idem V)
-        const bU = Math.floor(cU - 1.0), bV = Math.floor(cV - 1.0), tu = [], tv = [];
-        const jx = Math.floor(-r.dx), jy = Math.floor(-r.dy), bx = -r.dx - jx, by = -r.dy - jy;   // amostra da referência em x − d (pesos fixos)
-        const v00 = (1 - bx) * (1 - by), v10 = bx * (1 - by), v01 = (1 - bx) * by, v11 = bx * by;
-        for (let t = 0; t < 4; t++) { const du = bU + t - cU; tu.push(Math.abs(du) <= 1.0 ? Math.exp(-(du * du) / sig2) : 0);
-                                     const dv = bV + t - cV; tv.push(Math.abs(dv) <= 1.0 ? Math.exp(-(dv * dv) / sig2) : 0); }
-        for (let y = 0; y < h; y++) { const V0 = S * y + bV;
-          for (let x = 0; x < w; x++) {
-            const p = (y * w + x) * 4, pr = F[p], pg = F[p + 1], pb = F[p + 2];
-            let rw = 1; if (k) { let xs = x + jx, ys = y + jy; if (xs < 0) xs = 0; else if (xs > w - 2) xs = w - 2; if (ys < 0) ys = 0; else if (ys > h - 2) ys = h - 2;
-              const q = ys * w + xs, rv = v00 * R[q] + v10 * R[q + 1] + v01 * R[q + w] + v11 * R[q + w + 1];
-              const dl = 0.2126 * pr + 0.7152 * pg + 0.0722 * pb - rv;
-              rw = RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)]; if (rw < 0.01) continue; }
-            const U0 = S * x + bU;
-            for (let b = 0; b < 4; b++) { const wv = tv[b]; if (!wv) continue; const V = V0 + b; if (V < 0 || V >= H2) continue;
-              for (let a = 0; a < 4; a++) { const wu = tu[a]; if (!wu) continue; const U = U0 + a; if (U < 0 || U >= W2) continue;
-                const wgt = wu * wv * rw, j = V * W2 + U, o = j * 3;
-                acc[o] += wgt * pr; acc[o + 1] += wgt * pg; acc[o + 2] += wgt * pb; ws[j] += wgt; } }
-          } }
+        const det = A * A + Bb * Bb, iA = A / det, iB = Bb / det;          // inversa de [[A, −B], [B, A]]
+        for (let v = 0; v < h; v++) for (let u = 0; u < w; u++) {
+          const ux = u - cx - r.tx, vy = v - cy - r.ty, xr = cx + iA * ux + iB * vy, yr = cy - iB * ux + iA * vy;
+          if (xr < 0 || yr < 0 || xr > w - 1.001 || yr > h - 1.001) continue;
+          const bi = ((yr / BS) | 0) * BW + ((xr / BS) | 0); if (!dmixB[bi]) continue;
+          let rw = 1; const p = (v * w + u) * 4, pr = F[p], pg = F[p + 1], pb = F[p + 2];
+          if (k) { const bm = BMk[bi]; if (!bm) continue;
+            const xi = xr | 0, yi = yr | 0, fx = xr - xi, fy = yr - yi, i = yi * w + xi;
+            const rv = (R[i] * (1 - fx) + R[i + 1] * fx) * (1 - fy) + (R[i + w] * (1 - fx) + R[i + w + 1] * fx) * fy;
+            const dl = 0.2126 * pr + 0.7152 * pg + 0.0722 * pb - rv; rw = bm * RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)]; if (rw < 0.01) continue; }
+          const Uc = (xr + 0.5) * S - 0.5, Vc = (yr + 0.5) * S - 0.5, U0 = Math.ceil(Uc - 1), V0 = Math.ceil(Vc - 1);
+          for (let V = V0; V <= V0 + 2; V++) { if (V < 0 || V >= H2) continue; const dv = V - Vc; if (dv > 1 || dv < -1) continue;
+            for (let U = U0; U <= U0 + 2; U++) { if (U < 0 || U >= W2) continue; const du = U - Uc; if (du > 1 || du < -1) continue;
+              const wgt = GL[((du * du + dv * dv) * 256) | 0] * rw, j = V * W2 + U, o = j * 3;
+              acc[o] += wgt * pr; acc[o + 1] += wgt * pg; acc[o + 2] += wgt * pb; ws[j] += wgt; } }
+        }
       }
       onStep("combinando", k); if (k % 3 === 0) await yieldUI();
     }
-    for (let i = 0; i < n; i++) { mean[i * 3] /= mw[i]; mean[i * 3 + 1] /= mw[i]; mean[i * 3 + 2] /= mw[i]; }
+    for (let i = 0; i < n; i++) { const m = mw[i] || 1; if (!mw[i]) { const p = i * 4; mean[i * 3] = ref[p]; mean[i * 3 + 1] = ref[p + 1]; mean[i * 3 + 2] = ref[p + 2]; continue; }
+      mean[i * 3] /= m; mean[i * 3 + 1] /= m; mean[i * 3 + 2] /= m; }
     const base = lanczos2x(mean, w, h);
     const out = new ImageData(W2, H2), o4 = out.data;
-    for (let j = 0, o = 0, p = 0; j < W2 * H2; j++, o += 3, p += 4) {
-      const wt = ws ? ws[j] : 0, cov = Math.min(1, wt / 0.6) * dmix;   // pouca cobertura ou pouca diversidade → base Lanczos
-      for (let c = 0; c < 3; c++) o4[p + c] = wt > 1e-6 ? cov * (acc[o + c] / wt) + (1 - cov) * base[o + c] : base[o + c];
-      o4[p + 3] = 255; }
-    if (opt.amt) sharpenAmt(o4, W2, H2, opt.amt * (0.5 + 0.5 * dmix), opt.core);                         // compensa o desfoque do pixel do sensor e da combinação
-    return { ok: true, img: out, used, total: frames.length, div, dmix };
+    for (let Y = 0, j = 0; Y < H2; Y++) { const brow = (((Y / S) / BS) | 0) * BW;
+      for (let X = 0; X < W2; X++, j++) { const o = j * 3, p = j * 4, dm = dmixB[brow + (((X / S) / BS) | 0)];
+        const wt = ws ? ws[j] : 0, cov = Math.min(1, wt / 0.6) * dm;      // pouca cobertura ou pouca diversidade → base Lanczos
+        for (let c = 0; c < 3; c++) o4[p + c] = wt > 1e-6 ? cov * (acc[o + c] / wt) + (1 - cov) * base[o + c] : base[o + c];
+        o4[p + 3] = 255; } }
+    let mdm = 0; for (const v of dmixB) mdm += v; mdm /= dmixB.length;
+    if (opt.amt) sharpenAmt(o4, W2, H2, opt.amt * (0.5 + 0.5 * mdm), opt.core);
+    return { ok: true, img: out, used, total: frames.length, div: mdm, dmix: mdm, ref: refIdx, refFrame: ref };
   }
   function setSR(l) { srLevel = l; store.set("sr", l); document.querySelectorAll("#srSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.sr === l)); setFreezeUi(); }
   function outSize(w, h) { const H = Math.max(h, OUT_H); return [Math.round(H * w / h), H]; }
@@ -1313,15 +1354,15 @@
     try { if (cap.frames.length >= 4) r = await superResolve(cap.frames, cap.w, cap.h, () => {}); } catch (e) { console.error(e); }
     srBusy = false;
     if (r && r.ok) {
-      frozen = r.img; frozenRaw = null; frozenSR = { used: r.used, total: r.total, orig: new ImageData(cap.frames[0], cap.w, cap.h) };
-      { const n0 = cap.w * cap.h, f0 = new Float32Array(n0 * 3), F = cap.frames[0];       // 1 quadro ampliado, para a comparação
+      frozen = r.img; frozenRaw = null; frozenSR = { used: r.used, total: r.total, orig: new ImageData(new Uint8ClampedArray(r.refFrame), cap.w, cap.h) };
+      { const n0 = cap.w * cap.h, f0 = new Float32Array(n0 * 3), F = r.refFrame;       // 1 quadro ampliado, para a comparação
         for (let i = 0, p = 0; i < n0; i++, p += 4) { f0[i * 3] = F[p]; f0[i * 3 + 1] = F[p + 1]; f0[i * 3 + 2] = F[p + 2]; }
         const up = lanczos2x(f0, cap.w, cap.h), u8 = new Uint8ClampedArray(n0 * 16);
         for (let j = 0; j < n0 * 4; j++) { u8[j * 4] = up[j * 3]; u8[j * 4 + 1] = up[j * 3 + 1]; u8[j * 4 + 2] = up[j * 3 + 2]; u8[j * 4 + 3] = 255; }
         frozenSR.origUp = u8; }
       setStatus("Congelado com melhoria de resolução (" + r.used + " de " + r.total + " quadros, " + r.img.width + "×" + r.img.height + ").", "ok");
     } else if (cap.frames.length) {
-      frozen = new ImageData(cap.frames[0], cap.w, cap.h); frozenRaw = null; frozenSR = null;
+      frozen = new ImageData(new Uint8ClampedArray(r && r.refFrame ? r.refFrame : cap.frames[0]), cap.w, cap.h); frozenRaw = null; frozenSR = null;   // mesmo sem melhoria: o quadro mais nítido
       setStatus("Congelado sem melhoria de resolução: a imagem se moveu demais durante a captura" + (r ? " (" + r.used + " de " + r.total + " quadros aproveitáveis)" : "") + ". Segure a câmera mais parada e tente de novo.", "bad");
     }
     setFreezeUi();
