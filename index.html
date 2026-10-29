@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.4 — 2026-10-29: corrige "escada" na melhoria de resolução com a câmera parada (base = média alinhada + Lanczos-3; combinação sub-pixel só quando há diversidade de deslocamentos)
+<!-- Ajuste de Imagem — Videoendoscopia  v4.5 — 2026-10-29: melhoria de resolução ~3× mais rápida (pesos fixos por quadro, tabelas, sem combinação quando a câmera está parada)
+     v4.4 — 2026-10-29: corrige "escada" na melhoria de resolução com a câmera parada (base = média alinhada + Lanczos-3; combinação sub-pixel só quando há diversidade de deslocamentos)
      v4.3 — 2026-10-29: teste isolado "formato da câmera" (detecta MJPEG × sem compressão pelos blocos 8×8 e pela subamostragem de cor)
      v4.2 — 2026-10-29: Congelar com MELHORIA DE RESOLUÇÃO (super-resolução multiquadro: alinhamento sub-pixel Lucas-Kanade, descarte de quadros em movimento, shift-and-add robusto em grade 2×, leve deconvolução); Normal 0,5 s / Longa 1 s / Desligado; foto "MR" + quadro original
      v4.1 — 2026-10-26: sem WebGL a comparação e a lupa passam a funcionar (e o app avisa que o Lanczos está inativo); "antes" da comparação sem redução de ruído também com a imagem congelada
@@ -249,7 +250,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.4</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.5</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -867,48 +868,60 @@
       r.ok = Math.abs(r.dx) < 40 && Math.abs(r.dy) < 40 && r.res <= Math.max(1.6 * med, med + 3) && r.res < 18; }
     const used = regs.filter(r => r.ok).length;
     if (used < 4) return { ok: false, used, total: frames.length };
-    // referência ampliada (bilinear) para o teste de robustez e para preencher buracos
-    const up = new Float32Array(W2 * H2 * 3);
-    for (let Y = 0; Y < H2; Y++) for (let X = 0; X < W2; X++) {
-      const x = (X + 0.5) / S - 0.5, y = (Y + 0.5) / S - 0.5, o = (Y * W2 + X) * 3;
-      const xc = Math.min(w - 1.001, Math.max(0, x)), yc = Math.min(h - 1.001, Math.max(0, y)), xi = xc | 0, yi = yc | 0, fx = xc - xi, fy = yc - yi;
-      for (let c = 0; c < 3; c++) { const i = (yi * w + xi) * 4 + c;
-        up[o + c] = (ref[i] * (1 - fx) + ref[i + 4] * fx) * (1 - fy) + (ref[i + w * 4] * (1 - fx) + ref[i + w * 4 + 4] * fx) * fy; } }
-    const acc = new Float32Array(W2 * H2 * 3), ws = new Float32Array(W2 * H2), sig2 = 2 * opt.sig * opt.sig, tau2 = opt.tau * opt.tau;
-    for (let k = 0; k < frames.length; k++) {
-      const r = regs[k]; if (!r.ok) continue; const F = frames[k];
-      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-        const xr = x - r.dx, yr = y - r.dy, Uc = (xr + 0.5) * S - 0.5, Vc = (yr + 0.5) * S - 0.5;
-        if (Uc < -1 || Vc < -1 || Uc > W2 || Vc > H2) continue;
-        const p = (y * w + x) * 4, pr = F[p], pg = F[p + 1], pb = F[p + 2], lum = 0.2126 * pr + 0.7152 * pg + 0.0722 * pb;
-        const dlr = k === 0 ? 0 : lum - bil(R, w, h, xr, yr), rw = k === 0 ? 1 : Math.exp(-(dlr * dlr) / tau2);   // parte que se moveu: pesa menos
-        const u0 = Math.ceil(Uc - 1.5), u1 = Math.floor(Uc + 1.5), v0 = Math.ceil(Vc - 1.5), v1 = Math.floor(Vc + 1.5);
-        for (let V = v0; V <= v1; V++) { if (V < 0 || V >= H2) continue; const dv = V - Vc;
-          for (let U = u0; U <= u1; U++) { if (U < 0 || U >= W2) continue; const du = U - Uc, j = V * W2 + U, o = j * 3;
-            const wgt = Math.exp(-(du * du + dv * dv) / sig2) * rw;
-            acc[o] += wgt * pr; acc[o + 1] += wgt * pg; acc[o + 2] += wgt * pb; ws[j] += wgt; } }
-      }
-      onStep("combinando", k); await yieldUI();
-    }
-    // BASE: média dos quadros alinhados (tira ruído mesmo sem deslocamento) ampliada com Lanczos-3
-    const mean = new Float32Array(n * 3), mw = new Float32Array(n);
-    for (let k = 0; k < frames.length; k++) { const r = regs[k]; if (!r.ok) continue; const F = frames[k];
-      const FL = [new Float32Array(n), new Float32Array(n), new Float32Array(n)];
-      for (let i = 0, p = 0; i < n; i++, p += 4) { FL[0][i] = F[p]; FL[1][i] = F[p + 1]; FL[2][i] = F[p + 2]; }
-      const FY = k === 0 ? R : lumaOf(F, n);
-      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, xs = x + r.dx, ys = y + r.dy;
-        const dl = k === 0 ? 0 : bil(FY, w, h, xs, ys) - R[i], wgt = k === 0 ? 1 : Math.exp(-(dl * dl) / tau2);
-        mean[i * 3] += wgt * bil(FL[0], w, h, xs, ys); mean[i * 3 + 1] += wgt * bil(FL[1], w, h, xs, ys); mean[i * 3 + 2] += wgt * bil(FL[2], w, h, xs, ys); mw[i] += wgt; }
-      if (k % 4 === 0) await yieldUI(); }
-    for (let i = 0; i < n; i++) { mean[i * 3] /= mw[i]; mean[i * 3 + 1] /= mw[i]; mean[i * 3 + 2] /= mw[i]; }
-    const base = lanczos2x(mean, w, h);
-    // DIVERSIDADE dos deslocamentos sub-pixel: sem ela (câmera parada) a combinação vira "escada" → usa só a base
+    const tau2 = opt.tau * opt.tau;
+    // tabela do peso de robustez exp(-(Δ/τ)²) por |Δ| inteiro (evita Math.exp por pixel)
+    const RW = new Float32Array(256); for (let i = 0; i < 256; i++) RW[i] = Math.exp(-(i * i) / tau2);
+    // DIVERSIDADE dos deslocamentos sub-pixel (calculada antes): sem ela (câmera parada) não vale combinar — usa só a base
     const fx = [], fy = []; regs.forEach(r => { if (r.ok) { fx.push(r.dx - Math.round(r.dx)); fy.push(r.dy - Math.round(r.dy)); } });
     const sd = a => { const m = a.reduce((s, v) => s + v, 0) / a.length; return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / a.length); };
     const div = Math.min(sd(fx), sd(fy)), dmix = Math.max(0, Math.min(1, (div - 0.10) / 0.12));
+    // Em translação pura, a fração do deslocamento é a MESMA para todos os pixels do quadro:
+    // os pesos (bilinear e gaussiano) são calculados uma vez por quadro, sem exp/funções no laço interno.
+    const mean = new Float32Array(n * 3), mw = new Float32Array(n);
+    const acc = dmix > 0 ? new Float32Array(W2 * H2 * 3) : null, ws = dmix > 0 ? new Float32Array(W2 * H2) : null;
+    const sig2 = 2 * opt.sig * opt.sig;
+    for (let k = 0; k < frames.length; k++) {
+      const r = regs[k]; if (!r.ok) continue; const F = frames[k];
+      // --- média alinhada (amostra o quadro em x + d, bilinear com pesos fixos) ---
+      const ix = Math.floor(r.dx), iy = Math.floor(r.dy), ax = r.dx - ix, ay = r.dy - iy;
+      const w00 = (1 - ax) * (1 - ay), w10 = ax * (1 - ay), w01 = (1 - ax) * ay, w11 = ax * ay;
+      for (let y = 0; y < h; y++) { let ys = y + iy; if (ys < 0) ys = 0; else if (ys > h - 2) ys = h - 2;
+        for (let x = 0; x < w; x++) { let xs = x + ix; if (xs < 0) xs = 0; else if (xs > w - 2) xs = w - 2;
+          const p = (ys * w + xs) * 4, q = p + w * 4, i = y * w + x;
+          const cr = w00 * F[p] + w10 * F[p + 4] + w01 * F[q] + w11 * F[q + 4];
+          const cg = w00 * F[p + 1] + w10 * F[p + 5] + w01 * F[q + 1] + w11 * F[q + 5];
+          const cb = w00 * F[p + 2] + w10 * F[p + 6] + w01 * F[q + 2] + w11 * F[q + 6];
+          let wt = 1; if (k) { const dl = 0.2126 * cr + 0.7152 * cg + 0.0722 * cb - R[i]; wt = RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)]; }
+          mean[i * 3] += wt * cr; mean[i * 3 + 1] += wt * cg; mean[i * 3 + 2] += wt * cb; mw[i] += wt; } }
+      // --- combinação sub-pixel na grade 2× (só se houver diversidade) ---
+      if (acc) {
+        const cU = 0.5 - S * r.dx, cV = 0.5 - S * r.dy;            // Uc = S·x + cU  (idem V)
+        const bU = Math.floor(cU - 1.0), bV = Math.floor(cV - 1.0), tu = [], tv = [];
+        const jx = Math.floor(-r.dx), jy = Math.floor(-r.dy), bx = -r.dx - jx, by = -r.dy - jy;   // amostra da referência em x − d (pesos fixos)
+        const v00 = (1 - bx) * (1 - by), v10 = bx * (1 - by), v01 = (1 - bx) * by, v11 = bx * by;
+        for (let t = 0; t < 4; t++) { const du = bU + t - cU; tu.push(Math.abs(du) <= 1.0 ? Math.exp(-(du * du) / sig2) : 0);
+                                     const dv = bV + t - cV; tv.push(Math.abs(dv) <= 1.0 ? Math.exp(-(dv * dv) / sig2) : 0); }
+        for (let y = 0; y < h; y++) { const V0 = S * y + bV;
+          for (let x = 0; x < w; x++) {
+            const p = (y * w + x) * 4, pr = F[p], pg = F[p + 1], pb = F[p + 2];
+            let rw = 1; if (k) { let xs = x + jx, ys = y + jy; if (xs < 0) xs = 0; else if (xs > w - 2) xs = w - 2; if (ys < 0) ys = 0; else if (ys > h - 2) ys = h - 2;
+              const q = ys * w + xs, rv = v00 * R[q] + v10 * R[q + 1] + v01 * R[q + w] + v11 * R[q + w + 1];
+              const dl = 0.2126 * pr + 0.7152 * pg + 0.0722 * pb - rv;
+              rw = RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)]; if (rw < 0.01) continue; }
+            const U0 = S * x + bU;
+            for (let b = 0; b < 4; b++) { const wv = tv[b]; if (!wv) continue; const V = V0 + b; if (V < 0 || V >= H2) continue;
+              for (let a = 0; a < 4; a++) { const wu = tu[a]; if (!wu) continue; const U = U0 + a; if (U < 0 || U >= W2) continue;
+                const wgt = wu * wv * rw, j = V * W2 + U, o = j * 3;
+                acc[o] += wgt * pr; acc[o + 1] += wgt * pg; acc[o + 2] += wgt * pb; ws[j] += wgt; } }
+          } }
+      }
+      onStep("combinando", k); if (k % 3 === 0) await yieldUI();
+    }
+    for (let i = 0; i < n; i++) { mean[i * 3] /= mw[i]; mean[i * 3 + 1] /= mw[i]; mean[i * 3 + 2] /= mw[i]; }
+    const base = lanczos2x(mean, w, h);
     const out = new ImageData(W2, H2), o4 = out.data;
     for (let j = 0, o = 0, p = 0; j < W2 * H2; j++, o += 3, p += 4) {
-      const wt = ws[j], cov = Math.min(1, wt / 0.6) * dmix;   // pouca cobertura ou pouca diversidade → base Lanczos
+      const wt = ws ? ws[j] : 0, cov = Math.min(1, wt / 0.6) * dmix;   // pouca cobertura ou pouca diversidade → base Lanczos
       for (let c = 0; c < 3; c++) o4[p + c] = wt > 1e-6 ? cov * (acc[o + c] / wt) + (1 - cov) * base[o + c] : base[o + c];
       o4[p + 3] = 255; }
     if (opt.amt) sharpenAmt(o4, W2, H2, opt.amt * (0.5 + 0.5 * dmix), opt.core);                         // compensa o desfoque do pixel do sensor e da combinação
