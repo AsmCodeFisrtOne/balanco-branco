@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.1 — 2026-10-26: sem WebGL a comparação e a lupa passam a funcionar (e o app avisa que o Lanczos está inativo); "antes" da comparação sem redução de ruído também com a imagem congelada
+<!-- Ajuste de Imagem — Videoendoscopia  v4.3 — 2026-10-29: teste isolado "formato da câmera" (detecta MJPEG × sem compressão pelos blocos 8×8 e pela subamostragem de cor)
+     v4.2 — 2026-10-29: Congelar com MELHORIA DE RESOLUÇÃO (super-resolução multiquadro: alinhamento sub-pixel Lucas-Kanade, descarte de quadros em movimento, shift-and-add robusto em grade 2×, leve deconvolução); Normal 0,5 s / Longa 1 s / Desligado; foto "MR" + quadro original
+     v4.1 — 2026-10-26: sem WebGL a comparação e a lupa passam a funcionar (e o app avisa que o Lanczos está inativo); "antes" da comparação sem redução de ruído também com a imagem congelada
      v4.0 — 2026-10-26: "Comparar" liga realce e redução de ruído no Médio quando os dois estão desligados
      v3.9 — 2026-10-26: realce de bordas (máscara de nitidez na luminância com corte de ruído) e redução de ruído temporal adaptativa, 4 níveis cada; "Comparar" no topo agora é ANTES × DEPOIS (bilinear × Lanczos fica no cartão Câmera, tecla B); lição 7 no tutorial
      v3.8 — 2026-10-26: botões "Comparar" e "Lupa 3×" também na barra do topo
@@ -116,6 +118,9 @@
   .big { padding: 11px 16px; font-size: 16px; min-width: 104px;
     background: linear-gradient(180deg, rgba(48,53,60,.95), rgba(32,35,40,.95)); }
   .big .k { font-size: 12px; color: var(--dim); font-weight: 600; border: 1px solid #444b54; border-radius: 4px; padding: 0 4px; margin-left: 2px; }
+  #lblFreeze { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; }
+  #lblFreeze .sub { font-size: 11px; color: var(--brand-tint); letter-spacing: .02em; }
+  #btnFreeze.on #lblFreeze .sub { color: #fff; }
   .big.on { border-color: var(--brand-tint); color: #fff; background: linear-gradient(180deg, var(--brand-hi), var(--brand)); }
   .big.rec { color: #fff; border-color: #ff8c8c; background: linear-gradient(180deg, #d63a3a, #a82424); }
   .big.rec .dot { animation: blink 1s steps(2) infinite; }
@@ -243,7 +248,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.1</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.3</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -333,9 +338,17 @@
         </div>
         <div class="row" style="margin-top:12px"><span class="name">Redução de ruído</span></div>
         <p class="desc" style="margin:0 0 8px">Tira o "chuvisco" do sensor somando quadros seguidos. Em movimento rápido usa menos quadros para não deixar rastro.</p>
-        <div class="seg" id="nrSeg">
+        <div class="seg" id="nrSeg" style="margin-bottom:12px">
           <button class="btn" data-nr="0">Desligado</button><button class="btn" data-nr="1">Baixo</button>
           <button class="btn" data-nr="2">Médio</button><button class="btn" data-nr="3">Alto</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Melhoria de resolução <button class="btn sm help" data-goto="t5" title="Como funciona">?</button></h2>
+        <p class="desc">Ao <b>Congelar</b>, o app junta vários quadros seguidos e reconstrói a imagem numa grade 2× mais fina, com detalhe real (cerca de 1,3× a 1,8×). Segure a câmera parada durante a captura.</p>
+        <div class="seg" id="srSeg" style="grid-template-columns:repeat(3,1fr)">
+          <button class="btn" data-sr="0">Desligado</button><button class="btn" data-sr="1">Normal · 0,5 s</button><button class="btn" data-sr="2">Longa · 1 s</button>
         </div>
       </div>
 
@@ -392,6 +405,14 @@
         <p class="desc">Volta tudo ao padrão: desfaz a calibração, desliga o anti-vermelho, zera os ajustes de imagem e devolve a câmera aos valores de fábrica (brilho, contraste, nitidez…) e ao automático. Fotos e vídeos não são apagados.</p>
         <div class="btnrow"><button class="btn" id="btnResetAll">Retornar aos parâmetros normais</button></div>
       </div>
+
+      <!-- ===== TESTE ISOLADO: formato do vídeo entregue pela câmera ===== -->
+      <details class="card" id="fmtCard" style="border-style:dashed">
+        <summary><h2>Teste · formato da câmera</h2></summary>
+        <p class="desc">Verifica se o vídeo que chega da câmera vem <b>comprimido (MJPEG)</b> ou <b>sem compressão (YUY2 / NV12)</b>, analisando os próprios quadros. Aponte para algo com textura e luz normal, sem mexer, e toque em Analisar.</p>
+        <div class="btnrow"><button class="btn sm primary" id="btnFmt">Analisar formato</button></div>
+        <div id="fmtOut" style="margin-top:10px;font-size:13px"></div>
+      </details>
 
       <div class="keys">
         <kbd>W</kbd> calibrar · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
@@ -480,7 +501,8 @@
         <div>
           <h3><span class="num">5</span>Congelar, foto e vídeo</h3>
           <ul>
-            <li><b>Congelar</b> (Espaço): para a imagem para observar com calma. Os ajustes continuam funcionando sobre a imagem congelada.</li>
+            <li><b>Congelar</b> (Espaço): para a imagem para observar com calma. Com a <b>melhoria de resolução</b> ligada, o app junta os quadros dos próximos 0,5 s (ou 1 s, na opção Longa) e mostra a imagem congelada reconstruída com mais detalhe — <b>segure a câmera parada</b> enquanto aparece "CONGELANDO…". Se a imagem se mover demais, ela congela normalmente e avisa. Os ajustes continuam funcionando sobre a imagem congelada.</li>
+            <li>Foto tirada com a imagem melhorada sai com <b>MR</b> no nome e o <b>quadro original</b> é salvo junto (arquivo "_original").</li>
             <li><b>Foto</b> (P): salva a imagem exatamente como está na tela, sem o quadrado amarelo.</li>
             <li><b>Vídeo</b> (V): inicia e para a gravação; o botão mostra o tempo.</li>
             <li>Cada captura aparece no <b>canto direito</b>. Toque nela para rever em tela grande; o vídeo ao vivo continua numa janela pequena. Toque na janela pequena (ou Esc) para voltar.</li>
@@ -769,6 +791,102 @@
         d[p] = B[j]; d[p + 1] = B[j + 1]; d[p + 2] = B[j + 2];
       } }
   }
+  // ===== MELHORIA DE RESOLUÇÃO (super-resolução multiquadro, sem IA) =====
+  // 1) junta N quadros crus  2) alinha cada um ao 1º com precisão de fração de pixel (busca grosseira + Lucas-Kanade)
+  // 3) descarta quadros que se moveram/deformaram demais  4) combina numa grade 2× mais fina (shift-and-add
+  // gaussiano, robusto a partes que se moveram)  5) leve correção do desfoque do sensor.
+  const SR = [{ name: "Desligado", n: 0 }, { name: "Normal", n: 15, secs: 0.5 }, { name: "Longa", n: 30, secs: 1 }];
+  let srLevel = 1, srCap = null, srBusy = false;            // srCap: { n, frames: [Uint8ClampedArray], w, h, t0 }
+  const yieldUI = () => new Promise(r => setTimeout(r, 0));
+  function lumaOf(d, n) { const L = new Float32Array(n); for (let i = 0, p = 0; i < n; i++, p += 4) L[i] = 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2]; return L; }
+  function bil(L, w, h, x, y) {
+    if (x < 0) x = 0; else if (x > w - 1.001) x = w - 1.001; if (y < 0) y = 0; else if (y > h - 1.001) y = h - 1.001;
+    const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, i = yi * w + xi;
+    return (L[i] * (1 - fx) + L[i + 1] * fx) * (1 - fy) + (L[i + w] * (1 - fx) + L[i + w + 1] * fx) * fy;
+  }
+  // deslocamento (dx, dy) tal que frame(x + d) ≈ ref(x)
+  function register(R, F, w, h) {
+    // busca grosseira em 1/4 da resolução (±24 px)
+    const q = 4, W = (w / q) | 0, H = (h / q) | 0, rs = new Float32Array(W * H), fs = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let a = 0, b = 0;
+      for (let j = 0; j < q; j++) for (let i = 0; i < q; i++) { const k = (y * q + j) * w + x * q + i; a += R[k]; b += F[k]; }
+      rs[y * W + x] = a; fs[y * W + x] = b; }
+    let best = 1e30, bx = 0, by = 0; const m = 8, S = 6;
+    for (let sy = -S; sy <= S; sy++) for (let sx = -S; sx <= S; sx++) { let e = 0;
+      for (let y = m; y < H - m; y += 1) for (let x = m; x < W - m; x += 1) e += Math.abs(fs[(y + sy) * W + x + sx] - rs[y * W + x]);
+      if (e < best) { best = e; bx = sx; by = sy; } }
+    let dx = bx * q, dy = by * q;
+    // refinamento Lucas-Kanade (sub-pixel) na região central
+    const b0 = 36, x0 = b0, x1 = w - b0, y0 = b0, y1 = h - b0;
+    for (let it = 0; it < 8; it++) {
+      let sxx = 0, sxy = 0, syy = 0, sxe = 0, sye = 0;
+      for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) {
+        const i = y * w + x, gx = (R[i + 1] - R[i - 1]) * 0.5, gy = (R[i + w] - R[i - w]) * 0.5;
+        const e = bil(F, w, h, x + dx, y + dy) - R[i];
+        sxx += gx * gx; sxy += gx * gy; syy += gy * gy; sxe += gx * e; sye += gy * e; }
+      const det = sxx * syy - sxy * sxy; if (Math.abs(det) < 1e-6) break;
+      const ux = -(syy * sxe - sxy * sye) / det, uy = -(sxx * sye - sxy * sxe) / det;
+      dx += ux; dy += uy; if (Math.abs(ux) < 0.005 && Math.abs(uy) < 0.005) break;
+    }
+    let res = 0, cnt = 0;                                     // erro residual após alinhar
+    for (let y = y0; y < y1; y += 3) for (let x = x0; x < x1; x += 3) { res += Math.abs(bil(F, w, h, x + dx, y + dy) - R[y * w + x]); cnt++; }
+    return { dx, dy, res: res / cnt };
+  }
+  function sharpenAmt(d, w, h, amt, core) {                  // máscara de nitidez genérica (luminância)
+    const n = w * h, Y = lumaOf(d, n), T = new Float32Array(n);
+    for (let y = 0; y < h; y++) { const o = y * w;
+      for (let x = 0; x < w; x++) { const a = x > 1 ? x - 2 : 0, b = x > 0 ? x - 1 : 0, c = x < w - 1 ? x + 1 : w - 1, e = x < w - 2 ? x + 2 : w - 1;
+        T[o + x] = (Y[o + a] + 4 * Y[o + b] + 6 * Y[o + x] + 4 * Y[o + c] + Y[o + e]) * 0.0625; } }
+    for (let y = 0; y < h; y++) { const a = (y > 1 ? y - 2 : 0) * w, b = (y > 0 ? y - 1 : 0) * w, c = (y < h - 1 ? y + 1 : h - 1) * w, e = (y < h - 2 ? y + 2 : h - 1) * w, o = y * w;
+      for (let x = 0; x < w; x++) { let det = Y[o + x] - (T[a + x] + 4 * T[b + x] + 6 * T[o + x] + 4 * T[c + x] + T[e + x]) * 0.0625;
+        if (det > core) det -= core; else if (det < -core) det += core; else continue;
+        const p = (o + x) * 4, add = amt * det; d[p] += add; d[p + 1] += add; d[p + 2] += add; } }
+  }
+  const SR_OPT = { sig: 0.45, tau: 45, amt: 0.8, core: 1.0 };   // ajustado contra imagem de referência (teste com tremor + ruído)
+  async function superResolve(frames, w, h, onStep, opt) {
+    opt = Object.assign({}, SR_OPT, opt || {});
+    const n = w * h, S = 2, W2 = w * S, H2 = h * S, ref = frames[0], R = lumaOf(ref, n);
+    const regs = [{ dx: 0, dy: 0, res: 0, ok: true }];
+    for (let k = 1; k < frames.length; k++) { regs.push(register(R, lumaOf(frames[k], n), w, h)); if (k % 3 === 0) { onStep("alinhando", k); await yieldUI(); } }
+    // descarta quadros com movimento grande ou deformação (residual muito acima do típico)
+    const rr = regs.slice(1).map(r => r.res).sort((a, b) => a - b), med = rr.length ? rr[rr.length >> 1] : 0;
+    for (let k = 1; k < regs.length; k++) { const r = regs[k];
+      r.ok = Math.abs(r.dx) < 40 && Math.abs(r.dy) < 40 && r.res <= Math.max(1.6 * med, med + 3) && r.res < 18; }
+    const used = regs.filter(r => r.ok).length;
+    if (used < 4) return { ok: false, used, total: frames.length };
+    // referência ampliada (bilinear) para o teste de robustez e para preencher buracos
+    const up = new Float32Array(W2 * H2 * 3);
+    for (let Y = 0; Y < H2; Y++) for (let X = 0; X < W2; X++) {
+      const x = (X + 0.5) / S - 0.5, y = (Y + 0.5) / S - 0.5, o = (Y * W2 + X) * 3;
+      const xc = Math.min(w - 1.001, Math.max(0, x)), yc = Math.min(h - 1.001, Math.max(0, y)), xi = xc | 0, yi = yc | 0, fx = xc - xi, fy = yc - yi;
+      for (let c = 0; c < 3; c++) { const i = (yi * w + xi) * 4 + c;
+        up[o + c] = (ref[i] * (1 - fx) + ref[i + 4] * fx) * (1 - fy) + (ref[i + w * 4] * (1 - fx) + ref[i + w * 4 + 4] * fx) * fy; } }
+    const acc = new Float32Array(W2 * H2 * 3), ws = new Float32Array(W2 * H2), sig2 = 2 * opt.sig * opt.sig, tau2 = opt.tau * opt.tau;
+    for (let k = 0; k < frames.length; k++) {
+      const r = regs[k]; if (!r.ok) continue; const F = frames[k];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const xr = x - r.dx, yr = y - r.dy, Uc = (xr + 0.5) * S - 0.5, Vc = (yr + 0.5) * S - 0.5;
+        if (Uc < -1 || Vc < -1 || Uc > W2 || Vc > H2) continue;
+        const p = (y * w + x) * 4, pr = F[p], pg = F[p + 1], pb = F[p + 2], lum = 0.2126 * pr + 0.7152 * pg + 0.0722 * pb;
+        const dlr = k === 0 ? 0 : lum - bil(R, w, h, xr, yr), rw = k === 0 ? 1 : Math.exp(-(dlr * dlr) / tau2);   // parte que se moveu: pesa menos
+        const u0 = Math.ceil(Uc - 1.5), u1 = Math.floor(Uc + 1.5), v0 = Math.ceil(Vc - 1.5), v1 = Math.floor(Vc + 1.5);
+        for (let V = v0; V <= v1; V++) { if (V < 0 || V >= H2) continue; const dv = V - Vc;
+          for (let U = u0; U <= u1; U++) { if (U < 0 || U >= W2) continue; const du = U - Uc, j = V * W2 + U, o = j * 3;
+            const wgt = Math.exp(-(du * du + dv * dv) / sig2) * rw;
+            acc[o] += wgt * pr; acc[o + 1] += wgt * pg; acc[o + 2] += wgt * pb; ws[j] += wgt; } }
+      }
+      onStep("combinando", k); await yieldUI();
+    }
+    const out = new ImageData(W2, H2), o4 = out.data;
+    for (let j = 0, o = 0, p = 0; j < W2 * H2; j++, o += 3, p += 4) {
+      const wt = ws[j], blend = Math.min(1, wt / 0.6);            // poucos quadros cobrindo o ponto: mistura com a referência
+      for (let c = 0; c < 3; c++) o4[p + c] = wt > 1e-6 ? blend * (acc[o + c] / wt) + (1 - blend) * up[o + c] : up[o + c];
+      o4[p + 3] = 255; }
+    if (opt.amt) sharpenAmt(o4, W2, H2, opt.amt, opt.core);                         // compensa o desfoque do pixel do sensor e da combinação
+    const sh = regs.filter(r => r.ok).map(r => [((r.dx % 1) + 1) % 1, ((r.dy % 1) + 1) % 1]);
+    return { ok: true, img: out, used, total: frames.length, spread: sh.length };
+  }
+  function setSR(l) { srLevel = l; store.set("sr", l); document.querySelectorAll("#srSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.sr === l)); setFreezeUi(); }
   function outSize(w, h) { const H = Math.max(h, OUT_H); return [Math.round(H * w / h), H]; }
   const ov = $("ov"), octx = ov.getContext("2d");
   const stage = $("stage"), live = $("live");
@@ -781,7 +899,7 @@
 
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25, outW = 400, outH = 400;
-  let frozen = null, frozenRaw = null, freezeReq = false, showRoi = true;
+  let frozen = null, frozenRaw = null, frozenSR = null, freezeReq = false, showRoi = true;
   let rec = null; const items = []; let viewing = null, dirHandle = null, curTrack = null, wbDone = false;
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
@@ -952,13 +1070,17 @@
 
   // ----- laço de vídeo -----
   function frame() {
+    if (srCap) {                                              // durante a captura da melhoria: tela parada, CPU livre para a câmera
+      if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
+      return;
+    }
     const vw = video.videoWidth, vh = video.videoHeight;
     const w = frozen ? frozen.width : outW, h = frozen ? frozen.height : outH;
     if ((vw && vh) || frozen) {
       if (cv.width !== w || cv.height !== h) {
         cv.width = w; cv.height = h; const [OW, OH] = outSize(w, h);
         outCv.width = OW; outCv.height = OH; ov.width = OW; ov.height = OH; fit();
-        $("resIn").textContent = w + "×" + h; $("resOut").textContent = OW + "×" + OH + (UP.gl ? "" : " (sem WebGL — ampliação simples)");
+        $("resIn").textContent = w + "×" + h + (frozenSR && frozen ? " (melhoria de resolução)" : ""); $("resOut").textContent = OW + "×" + OH + (UP.gl ? "" : " (sem WebGL — ampliação simples)");
         if (!UP.gl && !warnedGL) { warnedGL = true; setStatus("Atenção: o navegador está sem WebGL, então a ampliação Lanczos-3 não está ativa. No Edge: Configurações › Sistema › ligue \"Usar aceleração de gráficos quando disponível\" e reinicie.", "bad"); }
       }
       let img;
@@ -973,7 +1095,7 @@
       const raw = cmpMode === 2 ? new Uint8ClampedArray(frozen && frozenRaw ? frozenRaw : d) : null;   // "antes": sem redução de ruído
       const rawFrame = freezeReq && !frozen ? new Uint8ClampedArray(d) : null;
       if (!frozen && !showOriginal) temporalNR(d, w, h, nrLevel, nrLive); else if (frozen) nrLive.buf = null;
-      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; }   // congela já com o ruído reduzido
+      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; frozenSR = null; }   // congela já com o ruído reduzido
       const s = Math.max(4, Math.floor(Math.min(w, h) * roiFrac)), x0 = (w - s) >> 1, y0 = (h - s) >> 1;
       let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0, cr = 0, cg = 0, cb = 0;
       const wr = wbLuts[0], wg = wbLuts[1], wb = wbLuts[2];
@@ -1022,7 +1144,10 @@
       };
       if (rec) { const t = (performance.now() - rec.start) / 1000; tag("● REC " + mmss(t), "#ff5a5a");
         if ($("lblVideo").textContent !== mmss(t)) $("lblVideo").textContent = mmss(t); }
-      if (frozen) tag("CONGELADO", "#7fd0ff");
+      if (srCap) tag("CONGELANDO… segure a câmera parada · " + srCap.frames.length + "/" + srCap.n + " quadros", "#7fd0ff");
+      else if (srBusy) tag("CONGELANDO… processando a melhoria de resolução", "#7fd0ff");
+      if (frozen && frozenSR) { tag("CONGELADO · MELHORIA DE RESOLUÇÃO · " + frozenSR.used + " quadros", "#7fd0ff"); tag("imagem reconstruída a partir de " + frozenSR.used + " quadros", "#ffd28a"); }
+      else if (frozen) tag("CONGELADO", "#7fd0ff");
       if (arLevel) tag("ANTI-VERMELHO " + AR[arLevel].name.toUpperCase(), "#ffb1a3");
       if (showOriginal) tag("SEM CORREÇÃO — só para comparar", "#ffd400");
 
@@ -1051,7 +1176,7 @@
   // (antes media e só depois travava: a câmera mudava a cor ao travar e a correção "voltava")
   async function doWB() {
     if (calibrating) return;
-    if (frozen || freezeReq) { setStatus("Descongele a imagem antes de calibrar.", "bad"); return; }
+    if (frozen || freezeReq || srCap || srBusy) { setStatus("Descongele a imagem antes de calibrar.", "bad"); return; }
     calibrating = true; $("btnWB").disabled = true; $("btnWB").textContent = "Calibrando…";
     const prev = gains.slice(), prevDone = wbDone; let ok = false;
     try {
@@ -1088,7 +1213,7 @@
   }
   function resetAll() {
     if (frozen || freezeReq) { frozen = null; freezeReq = false; setFreezeUi(); }
-    setCmp(false); setAR(0); setEVL(0); setSHP(0); setNR(0); setCmpMode(0); setZoom(false);
+    setCmp(false); setAR(0); setEVL(0); setSHP(0); setNR(0); setCmpMode(0); setZoom(false); setSR(1);
     adj = { ...ADJ_DEF }; store.set("adj:" + camKey, adj); renderAdj();
     roiFrac = 0.25; $("roi").value = 25; $("roiTxt").textContent = "25%";
     showRoi = true; $("showRoi").checked = true; $("lockAwb").checked = true; $("lockAe").checked = false;
@@ -1104,8 +1229,54 @@
     b.textContent = on ? "Mostrando SEM correção — toque para voltar" : "Ver sem correção";
   }
   function toggleCmp() { setCmp(!showOriginal); }
-  function setFreezeUi() { const on = !!(frozen || freezeReq); $("btnFreeze").classList.toggle("on", on); $("lblFreeze").textContent = on ? "Descongelar" : "Congelar"; }
-  function toggleFreeze() { if (frozen || freezeReq) { frozen = null; freezeReq = false; } else freezeReq = true; setFreezeUi(); }
+  function setFreezeUi() {
+    const busy = !!(srCap || srBusy), on = !!(frozen || freezeReq || busy), sub = SR[srLevel].n ? "melhoria de resolução" : "";
+    $("btnFreeze").classList.toggle("on", on);
+    $("lblFreeze").innerHTML = busy ? 'Processando…<span class="sub">melhoria de resolução</span>'
+      : frozen ? "Descongelar" + (frozenSR ? '<span class="sub">alta resolução ativa</span>' : "")
+      : "Congelar" + (sub ? '<span class="sub">' + sub + "</span>" : "");
+  }
+  // captura dedicada: lê cada quadro novo da câmera direto (sem o processamento da tela), no ritmo da câmera
+  const capCv = document.createElement("canvas"), capCtx = capCv.getContext("2d", { willReadFrequently: true });
+  function grabFrames(st, maxMs) {
+    return new Promise(res => {
+      const w = st.w, h = st.h; capCv.width = w; capCv.height = h; const t0 = performance.now();
+      const grab = () => {
+        const vw = video.videoWidth, vh = video.videoHeight;
+        if (vw && vh) { const a = w / h; let sx = 0, sy = 0, sw = vw, sh = vh;
+          if (vw / vh > a) { sw = vh * a; sx = (vw - sw) / 2; } else { sh = vw / a; sy = (vh - sh) / 2; }
+          capCtx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h); st.frames.push(capCtx.getImageData(0, 0, w, h).data);
+          $("lblFreeze").innerHTML = 'Capturando ' + st.frames.length + '/' + st.n + '<span class="sub">segure a câmera parada</span>'; }
+        if (st.frames.length >= st.n || performance.now() - t0 > maxMs) { res(); return; }
+        if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(grab); else setTimeout(grab, 33);
+      };
+      if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(grab); else grab();
+    });
+  }
+  async function toggleFreeze() {
+    if (srCap || srBusy) return;                              // aguardando a captura/processamento
+    if (frozen || freezeReq) { frozen = null; frozenSR = null; freezeReq = false; setFreezeUi(); $("resIn").textContent = outW + "×" + outH; return; }
+    const L = SR[srLevel];
+    if (!L.n || !cv.width) { freezeReq = true; setFreezeUi(); return; }
+    // captura N quadros crus (o vídeo segue ao vivo enquanto isso)
+    srCap = { n: L.n, frames: [], w: cv.width, h: cv.height }; setFreezeUi();
+    { const OW = ov.width, f2 = Math.round(ov.height / 36); octx.setTransform(1, 0, 0, 1, 0, 0); octx.font = f2 + "px Bonnie, Segoe UI, sans-serif";
+      const t = "CONGELANDO… segure a câmera parada", tw = octx.measureText(t).width + f2;
+      octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(OW - tw - 12, 12, tw, f2 * 1.6); octx.fillStyle = "#7fd0ff"; octx.fillText(t, OW - tw - 12 + f2 / 2, 12 + f2 * 1.2); }
+    await grabFrames(srCap, L.secs * 1000 * 2 + 500);
+    const cap = srCap; srCap = null; srBusy = true; setFreezeUi();
+    let r = null;
+    try { if (cap.frames.length >= 4) r = await superResolve(cap.frames, cap.w, cap.h, () => {}); } catch (e) { console.error(e); }
+    srBusy = false;
+    if (r && r.ok) {
+      frozen = r.img; frozenRaw = null; frozenSR = { used: r.used, total: r.total, orig: new ImageData(cap.frames[0], cap.w, cap.h) };
+      setStatus("Congelado com melhoria de resolução (" + r.used + " de " + r.total + " quadros, " + r.img.width + "×" + r.img.height + ").", "ok");
+    } else if (cap.frames.length) {
+      frozen = new ImageData(cap.frames[0], cap.w, cap.h); frozenRaw = null; frozenSR = null;
+      setStatus("Congelado sem melhoria de resolução: a imagem se moveu demais durante a captura" + (r ? " (" + r.used + " de " + r.total + " quadros aproveitáveis)" : "") + ". Segure a câmera mais parada e tente de novo.", "bad");
+    }
+    setFreezeUi();
+  }
   function toggleFull() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
 
   // ----- salvar -----
@@ -1151,7 +1322,7 @@
   async function saveItem(it) {
     if (it.saved || !it.blob || it.saving) return;
     it.saving = true;
-    try { const where = await saveBlob(it.blob, it.name); it.saved = true; setWhere(it, where); it.el.classList.remove("unsaved");
+    try { const where = await saveBlob(it.blob, it.name); if (it.extra && it.extra.blob) await saveBlob(it.extra.blob, it.extra.name); it.saved = true; setWhere(it, where); it.el.classList.remove("unsaved");
       setStatus((it.type === "foto" ? "Foto salva em " : "Vídeo salvo em ") + where, "ok"); }
     catch (e) { setStatus("Não foi possível salvar o arquivo.", "bad"); }
     it.saving = false; refreshSaveUi();
@@ -1174,7 +1345,7 @@
     const el = document.createElement("div"); el.className = "thumb"; el.title = it.name + "\nSalvando…";
     const im = document.createElement("img"); im.src = it.thumb;
     const tg = document.createElement("span"); tg.className = "tag" + (it.type === "video" ? " v" : "");
-    tg.textContent = it.type === "video" ? "▶ " + mmss(it.dur) : it.time;
+    tg.textContent = it.type === "video" ? "▶ " + mmss(it.dur) : (it.name.includes("_MR_") ? "MR · " : "") + it.time;
     const del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "Excluir";
     del.onclick = e => { e.stopPropagation(); armDelete(del, "✕", () => removeItem(it)); };
     el.append(im, tg, del); el.onclick = () => openItem(it); it.el = el;
@@ -1197,7 +1368,7 @@
     it.blob = null; refreshSaveUi();
     if (!it.saved) { setStatus(kind + " excluíd" + fem + ". Nenhum arquivo foi salvo.", "ok"); return; }
     if (dirHandle && it.where === dirHandle.name) {
-      try { await dirHandle.removeEntry(it.name); setStatus(kind + " excluíd" + fem + " da tela e da pasta " + dirHandle.name + ".", "ok"); return; }
+      try { await dirHandle.removeEntry(it.name); if (it.extra) { try { await dirHandle.removeEntry(it.extra.name); } catch (e) {} } setStatus(kind + " excluíd" + fem + " da tela e da pasta " + dirHandle.name + ".", "ok"); return; }
       catch (e) { setStatus(kind + " removid" + fem + " da tela, mas o arquivo não pôde ser apagado da pasta.", "bad"); return; }
     }
     setStatus(kind + " removid" + fem + " da tela. O arquivo já salvo em " + (it.where && it.where !== "…" ? it.where : "Downloads") + " precisa ser apagado por lá.", "");
@@ -1218,17 +1389,28 @@
   function setCmpUp(on) { setCmpMode(on ? 1 : 0); }
   function setZoom(on) { zoomF = on ? 3 : 1; $("btnZoom").classList.toggle("on", on); $("hdrZoom").classList.toggle("on", on); }
   function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue a comparação e a lupa para capturar.", "bad"); return true; } return false; }
+  // quadro original (sem melhoria), com o mesmo processamento de cor, para salvar junto da foto melhorada
+  function origBlob(imgData) {
+    return new Promise(res => {
+      const c = document.createElement("canvas"); c.width = imgData.width; c.height = imgData.height;
+      const cp = new ImageData(new Uint8ClampedArray(imgData.data), imgData.width, imgData.height);
+      if (!showOriginal) { applyPipeline(cp.data, luts, adj.sat, arLevel, EVL[evlLevel].k); sharpen(cp.data, cp.width, cp.height, shpLevel); }
+      c.getContext("2d").putImageData(cp, 0, 0); c.toBlob(b => res(b), "image/png");
+    });
+  }
   function takePhoto() {
     if (testView()) return;
     if (!cv.width) return; flash(); askPerm();
     const src = $("saveNative").checked ? cv : outCv;
-    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName("foto", "png");
+    const isSR = !!(frozen && frozenSR);
+    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(isSR ? "foto_MR" : "foto", "png");
     const thumb = src.toDataURL("image/jpeg", 0.8);        // miniatura imediata
     const it = { type: "foto", url: thumb, thumb, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
     addItem(it);
     src.toBlob(async blob => {
       if (!blob) { setStatus("Falha ao gerar a foto.", "bad"); return; }
       it.url = URL.createObjectURL(blob); if (viewing === it) $("vImg").src = it.url;
+      if (isSR) it.extra = { name: name.replace(/\.png$/, "_original.png"), blob: await origBlob(frozenSR.orig) };   // quadro original junto
       captured(it, blob);
     }, "image/png");
   }
@@ -1299,6 +1481,8 @@
   document.querySelectorAll("#shpSeg .btn").forEach(b => b.onclick = () => setSHP(+b.dataset.shp));
   document.querySelectorAll("#nrSeg .btn").forEach(b => b.onclick = () => setNR(+b.dataset.nr));
   setSHP(0); setNR(0);
+  document.querySelectorAll("#srSeg .btn").forEach(b => b.onclick = () => setSR(+b.dataset.sr));
+  { const v = store.get("sr"); setSR(typeof v === "number" && v >= 0 && v <= 2 ? v : 1); }
   $("hdrZoom").onclick = () => setZoom(zoomF === 1);
   $("btnZoom").onclick = () => setZoom(zoomF === 1);
   $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
@@ -1324,6 +1508,59 @@
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
+
+  // ===== TESTE ISOLADO: formato do vídeo (comprimido × sem compressão) =====
+  // O navegador não informa o formato USB. A análise usa duas "impressões digitais" do quadro, na resolução nativa:
+  //  • blocos 8×8: o MJPEG (JPEG) cria degraus nas fronteiras de 8 em 8 pixels → razão fronteira/interior > 1
+  //  • cor por linha: 4:2:0 (MJPEG ou NV12) repete a cor a cada 2 linhas; o YUY2 (4:2:2) tem cor em todas as linhas
+  async function analyzeFormat() {
+    const out = $("fmtOut"), vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) { out.textContent = "Sem vídeo da câmera."; return; }
+    const st = sets(), c = document.createElement("canvas"); c.width = vw; c.height = vh;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    out.textContent = "Analisando… mantenha a câmera parada.";
+    let bB = 0, bI = 0, nB = 0, nI = 0, ce = 0, co = 0, he = 0, ho = 0, frames = 0; const t0 = performance.now();
+    await new Promise(res => {
+      const step = () => {
+        g.drawImage(video, 0, 0, vw, vh); const d = g.getImageData(0, 0, vw, vh).data; frames++;
+        const Y = (x, y) => { const p = (y * vw + x) * 4; return 0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]; };
+        const C = (x, y) => { const p = (y * vw + x) * 4; return -0.169 * d[p] - 0.331 * d[p + 1] + 0.5 * d[p + 2]; };   // Cb
+        const C2 = (x, y) => { const p = (y * vw + x) * 4; return 0.5 * d[p] - 0.419 * d[p + 1] - 0.081 * d[p + 2]; };  // Cr
+        for (let y = 8; y < vh - 8; y += 2) for (let x = 8; x < vw - 9; x++) {
+          const m = x % 8, dh = Math.abs(Y(x + 1, y) - Y(x, y));
+          if (m === 7) { bB += dh; nB++; } else if (m >= 2 && m <= 5) { bI += dh; nI++; } }
+        for (let x = 8; x < vw - 8; x += 2) for (let y = 8; y < vh - 9; y++) {
+          const m = y % 8, dv = Math.abs(Y(x, y + 1) - Y(x, y));
+          if (m === 7) { bB += dv; nB++; } else if (m >= 2 && m <= 5) { bI += dv; nI++; } }
+        for (let y = 8; y < vh - 10; y += 2) for (let x = 8; x < vw - 8; x += 3) {            // cor: linha par→ímpar × ímpar→par
+          ce += Math.abs(C(x, y + 1) - C(x, y)) + Math.abs(C2(x, y + 1) - C2(x, y));
+          co += Math.abs(C(x, y + 2) - C(x, y + 1)) + Math.abs(C2(x, y + 2) - C2(x, y + 1)); }
+        for (let x = 8; x < vw - 10; x += 2) for (let y = 8; y < vh - 8; y += 3) {            // cor: coluna par→ímpar × ímpar→par
+          he += Math.abs(C(x + 1, y) - C(x, y)) + Math.abs(C2(x + 1, y) - C2(x, y));
+          ho += Math.abs(C(x + 2, y) - C(x + 1, y)) + Math.abs(C2(x + 2, y) - C2(x + 1, y)); }
+        if (frames >= 8) { res(); return; }
+        if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(step); else setTimeout(step, 40);
+      };
+      if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(step); else step();
+    });
+    const block = (bB / nB) / (bI / nI), vRatio = ce / Math.max(co, 1e-6), hRatio = he / Math.max(ho, 1e-6);
+    const v420 = vRatio < 0.6, h422 = hRatio < 0.6;
+    let verdict, cls;
+    if (block > 1.12) { verdict = "COMPRIMIDO (MJPEG) — há degraus nos blocos de 8×8 típicos do JPEG."; cls = "bad"; }
+    else if (block > 1.05) { verdict = "Provavelmente COMPRIMIDO (MJPEG de alta qualidade) — sinal fraco de blocos 8×8."; cls = "bad"; }
+    else if (!v420 && h422) { verdict = "SEM COMPRESSÃO (YUY2, 4:2:2) — sem blocos JPEG e cor em todas as linhas."; cls = "ok"; }
+    else if (v420) { verdict = "SEM sinais de compressão, cor 4:2:0 — pode ser NV12/I420 sem compressão, ou MJPEG de qualidade muito alta."; cls = "ok"; }
+    else { verdict = "SEM sinais de compressão (formato de cor completo)."; cls = "ok"; }
+    out.innerHTML = '<div id="status" class="' + cls + '" style="margin:0 0 8px">' + verdict + "</div>" +
+      '<div class="row"><span class="lbl">Resolução que a câmera entrega</span><span>' + vw + "×" + vh + "</span></div>" +
+      '<div class="row"><span class="lbl">Quadros por segundo (configurado)</span><span>' + (st.frameRate ? Math.round(st.frameRate) : "–") + "</span></div>" +
+      '<div class="row"><span class="lbl">Blocos 8×8 (≈1,00 = sem JPEG)</span><span>' + block.toFixed(3) + "</span></div>" +
+      '<div class="row"><span class="lbl">Cor entre linhas (&lt;0,6 = 4:2:0)</span><span>' + vRatio.toFixed(2) + "</span></div>" +
+      '<div class="row"><span class="lbl">Cor entre colunas (&lt;0,6 = subamostrada)</span><span>' + hRatio.toFixed(2) + "</span></div>" +
+      '<p class="desc" style="margin:8px 0 0">É uma estimativa pela imagem: mostra o formato que o navegador está recebendo agora. Para a lista completa de formatos que a câmera oferece, use o FFmpeg (comando no chat).</p>';
+    out.querySelector("#status").removeAttribute("id");
+  }
+  $("btnFmt").onclick = analyzeFormat;
 
   setAR(+(store.get("ar") || 0));
   setEVL(0);                                               // sempre abre com "Evitar estouro de luz" desligado
