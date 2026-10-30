@@ -608,7 +608,7 @@
         <summary><h2>Gravação</h2></summary>
         <div style="margin-bottom:8px"><input type="text" id="prefix" placeholder="Identificação do exame (opcional)" style="width:100%"></div>
         <div class="row"><span class="lbl">Salvar em</span><span id="dirName" style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Downloads</span></div>
-        <div class="btnrow"><button class="btn sm" id="btnDir">Escolher pasta…</button><button class="btn sm" id="btnOpen" title="Abrir foto ou vídeo salvo para rever ou medir">Abrir arquivo…</button></div>
+        <div class="btnrow"><button class="btn sm" id="btnDir">Escolher onde salvar…</button><button class="btn sm" id="btnOpen" title="Abrir foto ou vídeo salvo para rever ou medir">Abrir arquivo…</button></div>
         <input type="file" id="fileOpen" accept="image/*,video/*" multiple hidden>
         <label class="sw" style="margin-top:8px"><span>Salvar na resolução da entrada (sem ampliar)</span><input type="checkbox" id="saveNative"></label>
         <label class="sw"><span>Salvar cada captura automaticamente</span><input type="checkbox" id="autoSave"></label>
@@ -3088,7 +3088,7 @@
       '<label>Usuário</label><input id="auU" autocomplete="username"><label>Senha</label><input id="auP" type="password" autocomplete="current-password">' +
       (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
       '<div class="au-row"><button class="btn primary" id="auGo">Entrar</button><button class="btn" id="auCam" title="Usa a câmera sem acessar pacientes (bancada, testes)">Só câmera</button></div>' +
-      '<p class="au-sub"><a href="#" id="auOther">Usar outra pasta do consultório…</a></p>');
+      '<p class="au-sub"><a href="#" id="auOther">Trocar o local dos dados…</a></p>');
     $("auU").focus(); $("auP").onkeydown = e => { if (e.key === "Enter") $("auGo").click(); };
     $("auGo").onclick = async () => {
       if (!(await rootPerm(PR.root, true))) return authLogin("Sem permissão para a pasta do consultório. Clique em Entrar e permita o acesso.");
@@ -3098,8 +3098,9 @@
     $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); };
     $("auOther").onclick = e => { e.preventDefault(); authSetup1(true); }; }
   function authSetup1(back) {
-    authShow('<h2>Configurar o consultório</h2><p class="au-sub">Escolha (ou crie) a pasta onde ficarão pacientes, exames, imagens e laudos — de preferência num disco com criptografia (BitLocker) e com backup.</p>' +
-      (window.showDirectoryPicker ? '<div class="au-row"><button class="btn primary" id="auPick">Escolher pasta…</button>' + (back ? '<button class="btn" id="auBack">Voltar</button>' : '') + '</div>'
+    authShow('<h2>Onde salvar os dados do consultório</h2><p class="au-sub">Escolha o local onde o sistema vai salvar pacientes, exames, imagens e laudos. Na janela que abrir, use <b>“Nova pasta”</b> para criar uma (sugestão: <b>Nasofibrolaringoscopia</b>), de preferência num disco com criptografia (BitLocker) e com backup.</p>' +
+      '<p class="au-sub">Já tem os dados de outro computador ou de um backup? Escolha essa pasta para continuar de onde parou.</p>' +
+      (window.showDirectoryPicker ? '<div class="au-row"><button class="btn primary" id="auPick">Escolher onde salvar…</button>' + (back ? '<button class="btn" id="auBack">Voltar</button>' : '') + '</div>'
         : '<p class="au-err">Este navegador não permite gravar numa pasta do computador. Use o Microsoft Edge ou o Google Chrome.</p>') +
       '<div class="au-row"><button class="btn" id="auCam">Só câmera (sem prontuário)</button></div>');
     if ($("auPick")) $("auPick").onclick = async () => { let h; try { h = await window.showDirectoryPicker({ id: "consultorio", mode: "readwrite" }); } catch (e) { return; }
