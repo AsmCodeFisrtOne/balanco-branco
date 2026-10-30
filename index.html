@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v5.2 — 2026-10-30: barra de ajustes na imagem congelada (ampliação, realce, ruído — ruído por filtro bilateral no quadro parado)
+<!-- Ajuste de Imagem — Videoendoscopia  v5.3 — 2026-10-30: Métrica completa — pares com letra/cor própria, editar/apagar, ângulo, anotação, zoom/arrastar, comparar dois exames
+     v5.2 — 2026-10-30: barra de ajustes na imagem congelada (ampliação, realce, ruído — ruído por filtro bilateral no quadro parado)
      v5.1 — 2026-10-30: nomes com "IA" e o benefício (Nitidez por IA ao vivo; Contornos por IA na Métrica, ruído no máximo), espessura de linha na Métrica, referência por ferramenta
      v5.0 — 2026-10-30: MÉTRICA — régua (reta, círculo, retângulo, contorno) em qualquer imagem parada (congelamento, foto, vídeo pausado, arquivo aberto), com a IA forte aplicada só ali e texto das medidas gravado na imagem; IA forte saiu do ao vivo
      v4.9 — 2026-10-29: quadro Original (pixels da câmera) em Ver todos os métodos; IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
@@ -142,8 +143,19 @@
   #mBar .btn.sel { background: var(--brand); border-color: var(--brand-hi); color: #fff; }
   #mSide { width: 300px; flex: none; background: var(--surface); border-left: 1px solid var(--line); padding: 12px; overflow-y: auto; }
   #mSide .card { margin-bottom: 10px; }
-  #mList .mrow { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-  #mList .mrow b { white-space: nowrap; } .dotY { color: #ffd400; } .dotR { color: #ff5a5a; }
+  #mList .mrow { display: flex; align-items: center; gap: 6px; font-size: 14px; padding: 4px 2px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 4px; }
+  #mList .mrow .nm { flex: 1; } #mList .mrow b { white-space: nowrap; font-weight: 600; text-align: right; } #mList .mrow.sel { background: var(--surface-3); }
+  #mList .mrow .x { background: none; border: 0; color: var(--dim); cursor: pointer; font-size: 14px; padding: 0 4px; } #mList .mrow .x:hover { color: var(--bad); }
+  #mList .mhead { margin: 10px 0 2px; font-size: 12px; letter-spacing: .05em; color: var(--brand-tint); text-transform: uppercase; }
+  #mList .mcmp div { font-size: 14px; padding: 3px 0; }
+  #mNote { position: absolute; z-index: 3; width: 260px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--brand-tint); background: #0f1012; color: #fff; font-size: 15px; }
+  #mPick { position: absolute; inset: 0; z-index: 4; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; }
+  #mPick[hidden] { display: none; }
+  #mPick .pkbox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; width: min(560px, 92%); max-height: 80%; overflow: auto; }
+  #mPick .pkhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  #mPickList { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  #mPickList .pk { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 4px; color: var(--txt); cursor: pointer; font-size: 11px; text-align: left; }
+  #mPickList .pk img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; display: block; } #mPickList .pk span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
   #mProg { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; margin-top: 6px; } #mProg i { display: block; height: 100%; width: 0; background: var(--brand-tint); transition: width .2s; }
   #vFrame { display: none; gap: 6px; } #vFrame.on { display: flex; }
   @media (max-width: 900px) { #metric { flex-direction: column; } #mSide { width: auto; max-height: 40%; border-left: 0; border-top: 1px solid var(--line); } }
@@ -280,7 +292,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.2</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.3</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -325,14 +337,21 @@
       <div id="metric" hidden>
         <div id="mMain"><canvas id="mCv"></canvas>
           <div id="mBar"><span class="t">MÉTRICA</span>
-            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button>
+            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button>
             <select id="mLw" title="Espessura da linha" style="height:32px"><option value="0.6">Linha fina</option><option value="1" selected>Linha média</option><option value="1.7">Linha grossa</option></select>
-            <span class="sep"></span><button class="btn sm" id="mView">Ver original</button><button class="btn sm" id="mUndo">Desfazer</button><button class="btn sm" id="mClear">Limpar</button>
-            <span class="sep"></span><button class="btn sm primary" id="mSave">Salvar imagem</button><button class="btn sm" id="mClose" title="Esc">Fechar</button></div>
+            <span class="sep"></span><button class="btn sm" id="mZout" title="Diminuir zoom (ou roda do mouse / pinça)">−</button><button class="btn sm" id="mZin" title="Aumentar zoom">+</button><button class="btn sm" id="mZfit" title="Ver a imagem inteira">Ajustar</button>
+            <button class="btn sm" id="mView">Ver original</button>
+            <span class="sep"></span><button class="btn sm" id="mDel" title="Apagar a medida selecionada (Delete)" disabled>Apagar</button><button class="btn sm" id="mUndo">Desfazer</button><button class="btn sm" id="mClear">Limpar</button>
+            <span class="sep"></span><button class="btn sm" id="mCmp">Comparar exame…</button><button class="btn sm primary" id="mSave">Salvar imagem</button><button class="btn sm" id="mClose" title="Esc">Fechar</button></div>
+          <input type="text" id="mNote" placeholder="Texto da anotação (Enter)" maxlength="80" hidden>
+          <div id="mPick" hidden><div class="pkbox"><div class="pkhead"><b>Comparar com outro exame</b><button class="btn sm" id="mPickClose">Fechar</button></div>
+            <p class="desc" style="margin:0 0 8px">Escolha uma foto da galeria ou abra um arquivo de imagem. Para um quadro de vídeo, abra o vídeo, pause e tire uma foto antes.</p>
+            <div id="mPickList"></div><div class="btnrow" style="margin-top:8px"><button class="btn sm" id="mPickFile">Abrir arquivo de imagem…</button></div>
+            <input type="file" id="mFile" accept="image/*" hidden></div></div>
         </div>
         <div id="mSide">
           <div class="card"><h2>Medidas</h2><div id="mList"></div>
-            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência A</b> (amarela) e a 2ª é medida contra ela; a 3ª é a referência B e a 4ª é medida contra B, e assim por diante (retas: comprimento; demais: área). Toque numa medida da lista para trocá-la com a referência do par. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência</b> e a 2ª é medida contra ela; a 3ª é nova referência, e assim por diante (retas: comprimento; demais: área). Cada par tem letra e cor próprias. <b>Ângulo</b>: arraste o 1º lado a partir do vértice e toque onde termina o 2º. <b>Anotação</b>: arraste do texto até o ponto indicado. Para ajustar: toque numa marca <b>+</b> (ou na lista) para selecionar e arraste as marcas brancas; <b>Apagar</b> remove a selecionada. Zoom: roda do mouse, pinça ou +/−; arraste com o botão direito ou dois dedos. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
           <div class="card"><h2>Imagem da medição</h2>
             <div class="row"><span class="lbl">Origem</span><span id="mOrigin" style="text-align:right;max-width:170px;overflow-wrap:anywhere">–</span></div>
             <div class="row"><span class="lbl">Câmera</span><span id="mRes">–</span></div>
@@ -1860,90 +1879,164 @@
   function closeViewer() { if (!viewing) return; viewing = null; $("vVid").pause(); items.forEach(x => x.el.classList.remove("sel")); $("viewer").hidden = true; fit(); }
 
   // ===================== MÉTRICA =====================
-  // Imagem parada (congelamento, foto, quadro de vídeo ou arquivo aberto) → IA forte uma vez → régua (reta, círculo, retângulo, contorno).
-  // A 1ª forma de cada família é a referência (retas: comprimento; áreas: área). Medidas relativas, guardadas em coordenadas 0..1 da imagem.
-  const MT = { lw: 1, open: false, src: null, cOrig: null, cIA: null, showIA: true, shapes: [], drag: null, tool: "line", origin: "", tok: null, t0: 0, ms: 0, err: "", rect: null, loupe: null };
+  // Imagem parada → Contornos por IA (uma vez) → ferramentas: reta, círculo, retângulo, contorno (em PARES: referência + medida),
+  // ângulo (graus) e anotação (seta + texto livre). Até 2 painéis lado a lado (comparar exames). Coordenadas 0..1 da imagem.
+  // Zoom/arrastar por painel (roda do mouse, pinça, botão direito/do meio, +/−). As marcas "+" são alças: arraste para ajustar.
+  const MT = { lw: 1, open: false, panels: [], act: 0, tool: "line", drag: null, edit: null, pend: null, sel: null, loupe: null, ptrs: new Map(), pinch: null, pan: null, note: null };
   const mCv = $("mCv"), mCtx = mCv.getContext("2d");
-  const fam = t => t;                                          // cada ferramenta tem a sua referência (a 1ª daquele tipo)
-  const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno" };
-  function mVal(S) {                                           // em pixels da câmera (proporção certa mesmo em imagem não quadrada)
-    const W = MT.src ? MT.src.width : 1, H = MT.src ? MT.src.height : 1;
-    if (S.t === "poly") { let a = 0; const P = S.pts; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][0] * W) * (P[i][1] * H) - (P[i][0] * W) * (P[j][1] * H); return Math.abs(a) / 2; }
+  const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno", angle: "Ângulo", note: "Anotação" };
+  const PCOL = [["#ffd400", "#ff5a5a"], ["#3fe0ff", "#5b8cff"], ["#b6ff5c", "#22c55e"], ["#ff8ae6", "#c084fc"], ["#ffffff", "#fb923c"]];   // [referência, medida] por par
+  const pct = v => (Math.round(v * 10) / 10).toFixed(v < 10 ? 1 : 0).replace(".", ",");
+  const deg = v => v.toFixed(1).replace(".", ",") + "°";
+  const AP = () => MT.panels[MT.act];
+  function canvasOf(im) { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; c.getContext("2d").putImageData(im, 0, 0); return c; }
+  function newPanel(im, origin) { return { src: im, cOrig: canvasOf(im), cIA: null, showIA: true, shapes: [], origin, tok: null, step: 0, n: 34, ms: 0, err: "", view: { z: 1, cx: 0.5, cy: 0.5 }, rect: null }; }
+  function mVal(P, S) {                                       // em pixels da câmera (proporção certa mesmo em imagem não quadrada)
+    const W = P.src.width, H = P.src.height;
+    if (S.t === "poly") { let a = 0; const Q = S.pts; for (let i = 0, j = Q.length - 1; i < Q.length; j = i++) a += (Q[j][0] * W) * (Q[i][1] * H) - (Q[i][0] * W) * (Q[j][1] * H); return Math.abs(a) / 2; }
+    if (S.t === "angle") { if (!S.c) return 0; const ux = (S.b[0] - S.a[0]) * W, uy = (S.b[1] - S.a[1]) * H, vx = (S.c[0] - S.a[0]) * W, vy = (S.c[1] - S.a[1]) * H;
+      const n = Math.hypot(ux, uy) * Math.hypot(vx, vy); return n ? Math.acos(Math.max(-1, Math.min(1, (ux * vx + uy * vy) / n))) * 180 / Math.PI : 0; }
+    if (S.t === "note") return 1;
     const dx = (S.b[0] - S.a[0]) * W, dy = (S.b[1] - S.a[1]) * H;
     return S.t === "line" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
-  const pct = v => (Math.round(v * 10) / 10).toFixed(v < 10 ? 1 : 0).replace(".", ",");
-  // em cada ferramenta as formas formam PARES: 1ª = referência A, 2ª = medida contra A; 3ª = referência B, 4ª = medida contra B…
-  function mInfo(list) { const ref = {}, cnt = {}; return list.map(S => { const f = fam(S.t), v = mVal(S), c = cnt[f] = (cnt[f] || 0) + 1;
-    const L = String.fromCharCode(65 + ((c - 1) >> 1) % 26), isLine = S.t === "line", isRef = (c - 1) % 2 === 0;
-    if (isRef) { ref[f] = v; return { S, ref: true, pair: L, name: NAMES[S.t] + " " + L + " · referência", txt: "REFERÊNCIA " + L + " (" + NAMES[S.t].toLowerCase() + ")", val: "referência" }; }
-    const p = ref[f] ? 100 * v / ref[f] : 0, val = pct(p) + "%" + (p <= 100 ? " · livre " + pct(100 - p) + "%" : "");
-    return { S, ref: false, pair: L, name: NAMES[S.t] + " " + L + " · medida", txt: L + ": " + (isLine ? "" : "área ") + val,
-      val: (isLine ? "" : "área ") + pct(p) + "% da ref. " + L + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
-  // desenho: tracejado + marcador "+" (como no ultrassom)
-  function drawShapesM(c, map, scale, list) {
-    const k = MT.lw, info = mInfo(list), lw = 2.5 * scale * k, fs = Math.round(17 * scale), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)];
+  // pares: em cada ferramenta a 1ª é referência e a 2ª é medida contra ela, e assim por diante. As letras seguem a ordem geral (A, B, C…)
+  function mInfo(P, list) { const cnt = {}, last = {}; let letters = 0, ang = 0;
+    return list.map(S => {
+      if (S.t === "angle") { ang++; const v = mVal(P, S); return { S, kind: "angle", col: "#ffffff", idx: ang, num: v, name: "Ângulo " + ang, txt: "Ângulo " + ang + ": " + deg(v), val: deg(v) }; }
+      if (S.t === "note") return { S, kind: "note", col: "#ffffff", name: "Anotação", txt: S.text || "", val: S.text ? "“" + S.text + "”" : "(sem texto)" };
+      const t = S.t, c = cnt[t] = (cnt[t] || 0) + 1, v = mVal(P, S), isLine = t === "line";
+      if ((c - 1) % 2 === 0) { const li = letters++, L = String.fromCharCode(65 + li % 26); last[t] = { v, L, li };
+        return { S, kind: "ref", ref: true, pair: L, col: PCOL[li % PCOL.length][0], name: NAMES[t] + " " + L + " · referência", txt: "REFERÊNCIA " + L + " (" + NAMES[t].toLowerCase() + ")", val: "referência" }; }
+      const R = last[t], p = R.v ? 100 * v / R.v : 0, val = pct(p) + "%" + (p <= 100 ? " · livre " + pct(100 - p) + "%" : "");
+      return { S, kind: "meas", ref: false, pair: R.L, num: p, col: PCOL[R.li % PCOL.length][1], name: NAMES[t] + " " + R.L + " · medida", txt: R.L + ": " + (isLine ? "" : "área ") + val,
+        val: (isLine ? "" : "área ") + pct(p) + "% da ref. " + R.L + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
+  // alças de cada forma (k = qual ponto; "m" = mover a forma inteira)
+  function handles(S) {
+    if (S.t === "line") return [["a", S.a], ["b", S.b], ["m", [(S.a[0] + S.b[0]) / 2, (S.a[1] + S.b[1]) / 2]]];
+    if (S.t === "circle") return [["m", S.a], ["b", S.b]];
+    if (S.t === "rect") return [["a", S.a], ["b", S.b], ["ab", [S.a[0], S.b[1]]], ["ba", [S.b[0], S.a[1]]], ["m", [(S.a[0] + S.b[0]) / 2, (S.a[1] + S.b[1]) / 2]]];
+    if (S.t === "poly") { let x = 0, y = 0; S.pts.forEach(q => { x += q[0]; y += q[1]; }); return [["m", [x / S.pts.length, y / S.pts.length]]]; }
+    if (S.t === "angle") return S.c ? [["a", S.a], ["b", S.b], ["c", S.c]] : [["a", S.a], ["b", S.b]];
+    if (S.t === "note") return [["a", S.a], ["b", S.b]];
+    return []; }
+  const cl01 = v => Math.min(1, Math.max(0, v));
+  function applyEdit(E, p) { const S = E.S, O = E.orig, du = p[0] - E.start[0], dv = p[1] - E.start[1], mv = q => [cl01(q[0] + du), cl01(q[1] + dv)];
+    if (E.k === "m") { if (S.pts) S.pts = O.pts.map(mv); else { S.a = mv(O.a); S.b = mv(O.b); if (O.c) S.c = mv(O.c); } return; }
+    if (E.k === "ab") { S.a = [p[0], O.a[1]]; S.b = [O.b[0], p[1]]; return; }
+    if (E.k === "ba") { S.b = [p[0], O.b[1]]; S.a = [O.a[0], p[1]]; return; }
+    S[E.k] = p; }
+  const clone = S => JSON.parse(JSON.stringify(S));
+  // ---------- desenho ----------
+  function drawShapesM(c, map, scale, P, list, sel) {
+    const info = mInfo(P, list), k = MT.lw, lw = 2.5 * scale * k, fs = Math.round(17 * scale), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)], placed = [];
     const plus = (x, y) => { const r = 9 * scale * (0.6 + 0.4 * k); c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
-    c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round"; const placed = [];
-    info.forEach(({ S, ref, txt }) => {
-      const col = ref ? "#ffd400" : "#ff5a5a"; c.strokeStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
+    const label = (txt, lx, ly, col) => { if (!txt) return; c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, W = c.canvas.width, H = c.canvas.height, bh = fs * 1.6;
+      const x = Math.min(Math.max(4, lx), W - tw - 4); let y = Math.min(Math.max(4, ly), H - bh - 4);
+      for (let i = 0; i < 20 && placed.some(q => x < q[0] + q[2] && q[0] < x + tw && y < q[1] + q[3] + 3 * scale && q[1] < y + bh + 3 * scale); i++)   // não sobrepor etiquetas
+        y = y + bh + 4 * scale > H - bh ? y - (bh + 4 * scale) * (i + 1) : y + bh + 4 * scale;
+      placed.push([x, y, tw, bh]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); };
+    c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round"; c.lineCap = "round";
+    info.forEach(({ S, txt, col, kind }) => {
+      c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
       let lx, ly;
-      if (S.t === "poly") { const P = S.pts.map(map); c.beginPath(); P.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (S !== MT.drag) c.closePath(); c.stroke();
-        lx = Math.max(...P.map(q => q[0])); ly = Math.min(...P.map(q => q[1])); }
+      if (S.t === "poly") { const Q = S.pts.map(map); c.beginPath(); Q.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (!(MT.drag && MT.drag.S === S)) c.closePath(); c.stroke();
+        lx = Math.max(...Q.map(q => q[0])) + 8 * scale; ly = Math.min(...Q.map(q => q[1])) - fs * 1.9; }
+      else if (S.t === "angle") { const [ax, ay] = map(S.a), [bx, by] = map(S.b); c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by);
+        if (S.c) { const [cx2, cy2] = map(S.c); c.moveTo(ax, ay); c.lineTo(cx2, cy2); c.stroke(); plus(cx2, cy2);
+          const a1 = Math.atan2(by - ay, bx - ax), a2 = Math.atan2(cy2 - ay, cx2 - ax); let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+          c.setLineDash([]); c.beginPath(); c.arc(ax, ay, 26 * scale, a1, a1 + d, d < 0); c.stroke(); c.setLineDash(dash); }
+        else c.stroke();
+        plus(ax, ay); plus(bx, by); lx = ax + 30 * scale; ly = ay + 10 * scale; }
+      else if (S.t === "note") { const [ax, ay] = map(S.a), [bx, by] = map(S.b); c.setLineDash([]);
+        if (Math.hypot(bx - ax, by - ay) > 6 * scale) { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+          const an = Math.atan2(by - ay, bx - ax), h = 14 * scale * (0.6 + 0.4 * k); c.beginPath(); c.moveTo(bx, by);
+          c.lineTo(bx - h * Math.cos(an - 0.45), by - h * Math.sin(an - 0.45)); c.lineTo(bx - h * Math.cos(an + 0.45), by - h * Math.sin(an + 0.45)); c.closePath(); c.fill(); }
+        lx = ax - 4 * scale; ly = ay - fs * 0.8; }
       else { const [ax, ay] = map(S.a), [bx, by] = map(S.b);
-        if (S.t === "line") { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); plus(ax, ay); plus(bx, by); lx = bx; ly = by; }
-        else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72; ly = ay - r * 0.72; }
-        else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y); lx = Math.max(ax, bx); ly = Math.min(ay, by); } }
-      c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, W = c.canvas.width, H = c.canvas.height;
-      const x = Math.min(Math.max(4, lx + 8 * scale), W - tw - 4), bh = fs * 1.6; let y = Math.min(Math.max(4, ly - fs * 1.9), H - fs * 1.7);
-      for (let k = 0; k < 20 && placed.some(q => x < q[0] + q[2] && q[0] < x + tw && y < q[1] + q[3] + 3 * scale && q[1] < y + bh + 3 * scale); k++)   // não sobrepor etiquetas
-        y = y + bh + 4 * scale > H - bh ? y - (bh + 4 * scale) * (k + 1) : y + bh + 4 * scale;
-      placed.push([x, y, tw, bh]);
-      c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); });
+        if (S.t === "line") { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); plus(ax, ay); plus(bx, by); lx = bx + 8 * scale; ly = by - fs * 1.9; }
+        else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72 + 8 * scale; ly = ay - r * 0.72 - fs * 1.9; }
+        else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y);
+          lx = Math.max(ax, bx) + 8 * scale; ly = Math.min(ay, by) - fs * 1.9; } }
+      label(txt, lx, ly, kind === "note" ? "#ffffff" : col); });
+    if (sel && list.includes(sel)) { c.setLineDash([]); c.shadowBlur = 0; c.lineWidth = 2 * scale;   // alças da forma selecionada
+      for (const [, q] of handles(sel)) { const [x, y] = map(q); c.beginPath(); c.arc(x, y, 7 * scale, 0, 2 * Math.PI); c.fillStyle = "rgba(255,255,255,.25)"; c.fill(); c.strokeStyle = "#fff"; c.stroke(); } }
     c.restore(); }
-  function mBase() { return MT.showIA && MT.cIA ? MT.cIA : MT.cOrig; }
+  function mBase(P) { return P.showIA && P.cIA ? P.cIA : P.cOrig; }
+  function mLayout() { const dpr = devicePixelRatio || 1, W = mCv.width, H = mCv.height, top = ($("mBar").offsetHeight + 18) * dpr, n = MT.panels.length, gap = 12 * dpr;
+    const bw = n > 1 ? (W - 16 * dpr - gap) / 2 : W - 16 * dpr, bh = H - top - 8 * dpr;
+    MT.panels.forEach((P, i) => { const ar = P.src.width / P.src.height; let dw = bw, dh = dw / ar; if (dh > bh) { dh = bh; dw = dh * ar; }
+      const bx = 8 * dpr + i * (bw + gap); P.rect = { ox: bx + (bw - dw) / 2, oy: top + (bh - dh) / 2, dw, dh, dpr }; }); }
+  const clampView = V => { V.z = Math.min(8, Math.max(1, V.z)); const h = 0.5 / V.z; V.cx = Math.min(1 - h, Math.max(h, V.cx)); V.cy = Math.min(1 - h, Math.max(h, V.cy)); };
+  const toScr = (P, q) => { const R = P.rect, V = P.view; return [R.ox + ((q[0] - V.cx) * V.z + 0.5) * R.dw, R.oy + ((q[1] - V.cy) * V.z + 0.5) * R.dh]; };
+  const fromScr = (P, x, y) => { const R = P.rect, V = P.view; return [V.cx + ((x - R.ox) / R.dw - 0.5) / V.z, V.cy + ((y - R.oy) / R.dh - 0.5) / V.z]; };
   function mDraw() {
     if (!MT.open) return; const dpr = devicePixelRatio || 1, r = mCv.getBoundingClientRect();
     const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr); if (mCv.width !== W || mCv.height !== H) { mCv.width = W; mCv.height = H; }
-    mCtx.fillStyle = "#000"; mCtx.fillRect(0, 0, W, H); if (!MT.src) return;
-    const top = ($("mBar").offsetHeight + 18) * dpr, ar = MT.src.width / MT.src.height;   /* imagem sempre abaixo da barra, mesmo quando ela quebra linha */ let dw = W - 16 * dpr, dh = dw / ar; if (dh > H - top - 8 * dpr) { dh = H - top - 8 * dpr; dw = dh * ar; }
-    const ox = (W - dw) / 2, oy = top + (H - top - dh) / 2; MT.rect = { ox, oy, dw, dh, dpr };
-    const b = mBase(); mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high"; mCtx.drawImage(b, ox, oy, dw, dh);
-    const map = q => [ox + q[0] * dw, oy + q[1] * dh], list = MT.drag ? MT.shapes.concat([MT.drag]) : MT.shapes;
-    drawShapesM(mCtx, map, dpr, list);
-    const tg = MT.showIA && MT.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : MT.cIA ? "imagem ORIGINAL da câmera (sem IA)" : MT.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA…";
-    mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
-    mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(ox + dw - tw - 6 * dpr, oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = MT.showIA && MT.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, ox + dw - tw + 2 * dpr, oy + 23 * dpr);
-    if (MT.loupe) {                                            // lupa de precisão: 4× em volta do ponteiro, no canto oposto
-      const [u, v] = MT.loupe, R = 80 * dpr, Z = 4, cx = u < 0.5 ? ox + dw - R - 12 * dpr : ox + R + 12 * dpr, cy = oy + dh - R - 12 * dpr;
-      const bw = b.width, bh = b.height, sw = (2 * R / Z) * bw / dw, sh = (2 * R / Z) * bh / dh;
-      mCtx.save(); mCtx.beginPath(); mCtx.arc(cx, cy, R, 0, 2 * Math.PI); mCtx.clip(); mCtx.fillStyle = "#000"; mCtx.fill();
-      mCtx.drawImage(b, u * bw - sw / 2, v * bh - sh / 2, sw, sh, cx - R, cy - R, 2 * R, 2 * R);
-      const lmap = q => [cx + (q[0] - u) * dw * Z, cy + (q[1] - v) * dh * Z]; drawShapesM(mCtx, lmap, dpr, list.filter(S => S === MT.drag || S.t !== "poly").slice(-3));
-      mCtx.restore(); mCtx.strokeStyle = "#fff"; mCtx.lineWidth = 1.5 * dpr; mCtx.beginPath(); mCtx.arc(cx, cy, R, 0, 2 * Math.PI); mCtx.stroke();
-      mCtx.beginPath(); mCtx.moveTo(cx - 10 * dpr, cy); mCtx.lineTo(cx + 10 * dpr, cy); mCtx.moveTo(cx, cy - 10 * dpr); mCtx.lineTo(cx, cy + 10 * dpr); mCtx.stroke(); } }
+    mCtx.fillStyle = "#000"; mCtx.fillRect(0, 0, W, H); if (!MT.panels.length) return; mLayout();
+    MT.panels.forEach((P, pi) => { const R = P.rect, V = P.view, b = mBase(P), bw = b.width, bh = b.height;
+      mCtx.save(); mCtx.beginPath(); mCtx.rect(R.ox, R.oy, R.dw, R.dh); mCtx.clip();
+      mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high";
+      mCtx.drawImage(b, (V.cx - 0.5 / V.z) * bw, (V.cy - 0.5 / V.z) * bh, bw / V.z, bh / V.z, R.ox, R.oy, R.dw, R.dh);
+      let list = P.shapes; if (MT.drag && MT.drag.P === P && !list.includes(MT.drag.S)) list = list.concat([MT.drag.S]); if (MT.pend && MT.pend.P === P && !list.includes(MT.pend.S)) list = list.concat([MT.pend.S]);
+      drawShapesM(mCtx, q => toScr(P, q), dpr, P, list, MT.sel && MT.sel.P === P ? MT.sel.S : null);
+      const tg = P.showIA && P.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : P.cIA ? "imagem ORIGINAL da câmera (sem IA)" : P.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA…";
+      mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
+      mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(R.ox + R.dw - tw - 6 * dpr, R.oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = P.showIA && P.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, R.ox + R.dw - tw + 2 * dpr, R.oy + 23 * dpr);
+      const head = (MT.panels.length > 1 ? "Exame " + (pi + 1) + " · " + P.origin : "") + (V.z > 1.01 ? (MT.panels.length > 1 ? " · " : "") + "zoom " + V.z.toFixed(1).replace(".", ",") + "×" : "");
+      if (head) { const hw = mCtx.measureText(head).width + 16 * dpr; mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(R.ox + 6 * dpr, R.oy + R.dh - 30 * dpr, hw, 24 * dpr); mCtx.fillStyle = "#cfe8ff"; mCtx.fillText(head, R.ox + 14 * dpr, R.oy + R.dh - 13 * dpr); }
+      mCtx.restore();
+      if (MT.panels.length > 1 && pi === MT.act) { mCtx.strokeStyle = "#d08c7e"; mCtx.lineWidth = 2 * dpr; mCtx.strokeRect(R.ox - 2 * dpr, R.oy - 2 * dpr, R.dw + 4 * dpr, R.dh + 4 * dpr); }
+      if (MT.loupe && MT.loupe.P === P) {                     // lupa de precisão (3× sobre a vista atual), no canto oposto ao ponteiro
+        const [u, v] = MT.loupe.p, Rr = 70 * dpr, Z = 3, [px] = toScr(P, [u, v]), cx = px < R.ox + R.dw / 2 ? R.ox + R.dw - Rr - 10 * dpr : R.ox + Rr + 10 * dpr, cy = R.oy + R.dh - Rr - 40 * dpr;
+        const s = R.dw * V.z * Z, sw = 2 * Rr / s * bw, sh = 2 * Rr / (R.dh * V.z * Z) * bh;
+        mCtx.save(); mCtx.beginPath(); mCtx.arc(cx, cy, Rr, 0, 2 * Math.PI); mCtx.clip(); mCtx.fillStyle = "#000"; mCtx.fill();
+        mCtx.drawImage(b, u * bw - sw / 2, v * bh - sh / 2, sw, sh, cx - Rr, cy - Rr, 2 * Rr, 2 * Rr);
+        drawShapesM(mCtx, q => [cx + (q[0] - u) * s, cy + (q[1] - v) * R.dh * V.z * Z], dpr, P, list.filter(S => S.t !== "poly" || (MT.drag && MT.drag.S === S)), null);
+        mCtx.restore(); mCtx.strokeStyle = "#fff"; mCtx.lineWidth = 1.5 * dpr; mCtx.beginPath(); mCtx.arc(cx, cy, Rr, 0, 2 * Math.PI); mCtx.stroke();
+        mCtx.beginPath(); mCtx.moveTo(cx - 10 * dpr, cy); mCtx.lineTo(cx + 10 * dpr, cy); mCtx.moveTo(cx, cy - 10 * dpr); mCtx.lineTo(cx, cy + 10 * dpr); mCtx.stroke(); } });
+    $("mDel").disabled = !MT.sel; }
+  // ---------- lista de medidas e comparação ----------
   function mList() {
-    const info = mInfo(MT.shapes), el = $("mList");
-    el.innerHTML = info.length ? "" : '<p class="desc" style="margin:0">Escolha a ferramenta e arraste na imagem. A primeira forma será a referência.</p>';
-    info.forEach(({ S, ref, name, val }) => { const r = document.createElement("div"); r.className = "mrow";
-      if (!ref) { r.style.cursor = "pointer"; r.title = "Tocar para trocar: esta vira a referência do par"; r.onclick = () => {   // troca dentro do par
-        const i = MT.shapes.indexOf(S); let j = i - 1; while (j >= 0 && MT.shapes[j].t !== S.t) j--; if (j < 0) return;
-        MT.shapes[i] = MT.shapes[j]; MT.shapes[j] = S; mDraw(); mList();
-        setStatus("Métrica · " + NAMES[S.t] + " escolhido(a) como referência.", "ok"); }; }
-      r.innerHTML = '<span class="' + (ref ? "dotY" : "dotR") + '">● </span>'; r.firstChild.after(name); const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; r.append(b); el.append(r); }); }
+    const el = $("mList"); el.innerHTML = ""; const two = MT.panels.length > 1;
+    MT.panels.forEach((P, pi) => {
+      if (two) { const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Exame " + (pi + 1) + " · " + P.origin; el.append(h); }
+      const info = mInfo(P, P.shapes);
+      if (!info.length) { const p = document.createElement("p"); p.className = "desc"; p.style.margin = "4px 0"; p.textContent = "Escolha a ferramenta e arraste na imagem. A primeira forma de cada ferramenta será a referência."; el.append(p); }
+      info.forEach(({ S, ref, kind, name, val, col }) => { const r = document.createElement("div"); r.className = "mrow" + (MT.sel && MT.sel.S === S ? " sel" : "");
+        const dot = document.createElement("span"); dot.textContent = "● "; dot.style.color = col; const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+        const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; const x = document.createElement("button"); x.className = "x"; x.textContent = "✕"; x.title = "Apagar esta medida";
+        x.onclick = ev => { ev.stopPropagation(); mDelete(P, S); };
+        r.append(dot, nm, b, x); r.title = kind === "meas" ? "Tocar: selecionar · tocar de novo: trocar com a referência do par" : kind === "note" ? "Tocar: selecionar · tocar de novo: editar o texto" : "Tocar: selecionar";
+        r.onclick = () => { MT.act = pi;
+          if (MT.sel && MT.sel.S === S) {                      // 2º toque: troca com a referência do par / edita texto
+            if (kind === "meas") { const i = P.shapes.indexOf(S); let j = i - 1; while (j >= 0 && P.shapes[j].t !== S.t) j--; if (j >= 0) { P.shapes[i] = P.shapes[j]; P.shapes[j] = S; setStatus("Métrica · trocada com a referência do par.", "ok"); } }
+            else if (kind === "note") noteEdit(P, S); }
+          MT.sel = { P, S }; mDraw(); mList(); mStatus(); };
+        el.append(r); }); });
+    if (two) {                                                 // comparação entre os exames: mesmo par (ferramenta + letra) ou mesmo nº de ângulo
+      const key = i => i.kind === "meas" ? i.S.t + "|" + i.pair : i.kind === "angle" ? "angle|" + i.idx : null;
+      const A = new Map(), B = mInfo(MT.panels[1], MT.panels[1].shapes); mInfo(MT.panels[0], MT.panels[0].shapes).forEach(i => { const k = key(i); if (k) A.set(k, i); });
+      const rows = []; B.forEach(i => { const k = key(i), a = k && A.get(k); if (!a) return;
+        rows.push(i.kind === "angle" ? "Ângulo " + i.idx + ": " + deg(a.num) + " → " + deg(i.num)
+          : "Par " + i.pair + " (" + NAMES[i.S.t].toLowerCase() + "): " + pct(a.num) + "% → " + pct(i.num) + "% (" + (i.num - a.num >= 0 ? "+" : "−") + pct(Math.abs(i.num - a.num)) + " p.p.)"); });
+      const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (exame 1 → exame 2)"; el.append(h);
+      const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
+      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; p.append(d); }); el.append(p); MT.cmpRows = rows; } else MT.cmpRows = []; }
   function mStatus() {
-    const n = MT.n || 34, st = MT.step || 0;
-    $("mBase").textContent = MT.showIA && MT.cIA ? "Contornos por IA ×4 · ruído " + fmtStr(esrStrength) : "Original da câmera";
-    $("mProg").querySelector("i").style.width = (MT.cIA ? 100 : MT.err ? 0 : 100 * st / n) + "%";
-    $("mMsg").textContent = MT.err ? "Contornos por IA: " + MT.err : MT.cIA ? "Contornos por IA aplicado em " + (MT.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando Contornos por IA… etapa " + st + "/" + n + ".";
-    $("mView").textContent = MT.showIA ? "Ver original" : "Ver com IA"; $("mView").disabled = !MT.cIA; }
-  function canvasOf(im) { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; c.getContext("2d").putImageData(im, 0, 0); return c; }
-  async function mRunIA() {
-    if (MT.tok) MT.tok.cancel = true; const tok = MT.tok = { cancel: false }; MT.cIA = null; MT.err = ""; MT.step = 0; MT.showIA = true; mStatus(); mDraw();
-    if (!UP.esr || !UP.esrImage) { MT.err = "precisa de WebGL2 com aceleração de hardware"; MT.showIA = false; mStatus(); mDraw(); return; }
+    const P = AP(); if (!P) return; const n = P.n || 34, st = P.step || 0, two = MT.panels.length > 1;
+    $("mOrigin").textContent = (two ? "Exame " + (MT.act + 1) + ": " : "") + P.origin; $("mRes").textContent = P.src.width + "×" + P.src.height;
+    $("mBase").textContent = P.showIA && P.cIA ? "Contornos por IA ×4 · ruído " + fmtStr(esrStrength) : "Original da câmera";
+    $("mProg").querySelector("i").style.width = (P.cIA ? 100 : P.err ? 0 : 100 * st / n) + "%";
+    $("mMsg").textContent = P.err ? "Contornos por IA: " + P.err : P.cIA ? "Contornos por IA aplicado em " + (P.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando Contornos por IA… etapa " + st + "/" + n + ".";
+    $("mView").textContent = P.showIA ? "Ver original" : "Ver com IA"; $("mView").disabled = !P.cIA;
+    $("mCmp").textContent = two ? "Fechar comparação" : "Comparar exame…"; }
+  async function mRunIA(P) {
+    if (P.tok) P.tok.cancel = true; const tok = P.tok = { cancel: false }; P.cIA = null; P.err = ""; P.step = 0; P.showIA = true; mStatus(); mDraw();
+    if (!UP.esr || !UP.esrImage) { P.err = "precisa de WebGL2 com aceleração de hardware"; P.showIA = false; mStatus(); mDraw(); return; }
     const t0 = performance.now();
-    try { const out = await UP.esrImage(MT.src, esrStrength, (k, n) => { if (tok.cancel) return; MT.step = k; MT.n = n; mStatus(); }, tok);
-      if (tok.cancel || !out) return; MT.cIA = canvasOf(out); MT.ms = performance.now() - t0; }
-    catch (e) { if (!tok.cancel) { MT.err = e.message; MT.showIA = false; } }
+    try { const out = await UP.esrImage(P.src, esrStrength, (k, n) => { if (tok.cancel) return; P.step = k; P.n = n; if (P === AP()) mStatus(); }, tok);
+      if (tok.cancel || !out) return; P.cIA = canvasOf(out); P.ms = performance.now() - t0; }
+    catch (e) { if (!tok.cancel) { P.err = e.message; P.showIA = false; } }
     if (!tok.cancel) { mStatus(); mDraw(); } }
   // reduz para no máximo 640 px no maior lado (ou para a resolução da câmera, quando conhecida)
   function toNative(srcEl, sw, sh, nat) {
@@ -1957,22 +2050,24 @@
   function metricOpen(im, origin) {
     if (cmpMode) setCmpMode(0); if (zoomF > 1) setZoom(false); if (rec) { setStatus("Pare a gravação antes de abrir a Métrica.", "bad"); return; }
     esrStrength = 1;                                           // Contornos por IA começa com a redução de ruído no máximo
-    MT.open = true; MT.src = im; MT.cOrig = canvasOf(im); MT.cIA = null; MT.shapes = []; MT.drag = null; MT.origin = origin; MT.err = "";
-    $("mOrigin").textContent = origin; $("mRes").textContent = im.width + "×" + im.height; $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
-    $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(); }
-  function metricClose() { if (MT.tok) MT.tok.cancel = true; MT.open = false; MT.loupe = null; $("metric").hidden = true; }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
+    MT.open = true; MT.panels = [newPanel(im, origin)]; MT.act = 0; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
+    $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
+    $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
+  function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
+    MT.open = false; MT.loupe = null; MT.pend = null; $("metric").hidden = true; }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
   const nowTxt = () => { const d = new Date(), z = n => String(n).padStart(2, "0"); return z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
   const mmssc = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, "0") + ":" + s.toFixed(2).padStart(5, "0").replace(".", ","); };
+  async function imageOfItem(it) {                             // foto da galeria → imagem na resolução da câmera
+    let el, w, h;
+    if (it.native) { el = await createImageBitmap(it.native); w = el.width; h = el.height; }
+    else { el = new Image(); el.src = it.url; await el.decode().catch(() => {}); w = el.naturalWidth; h = el.naturalHeight; }
+    return w ? toNative(el, w, h, null) : null; }
   // de onde vem a imagem: congelado (ao vivo), foto ou vídeo aberto no visualizador, ou o quadro ao vivo (congela antes)
   async function metricFromCurrent() {
     if (MT.open) return;
     if (viewing) {
       const it = viewing;
-      if (it.type === "foto") { let el, w, h, nat = null;
-        if (it.native) { el = await createImageBitmap(it.native); w = el.width; h = el.height; }
-        else { el = $("vImg"); if (!el.complete) await el.decode().catch(() => {}); w = el.naturalWidth; h = el.naturalHeight; }
-        if (!w) { setStatus("Não consegui ler esta foto.", "bad"); return; }
-        metricOpen(toNative(el, w, h, nat), "foto " + it.name); return; }
+      if (it.type === "foto") { const im = await imageOfItem(it); if (!im) { setStatus("Não consegui ler esta foto.", "bad"); return; } metricOpen(im, "foto " + it.name); return; }
       const vv = $("vVid"); vv.pause(); if (!vv.videoWidth) { setStatus("O vídeo ainda não carregou.", "bad"); return; }
       metricOpen(toNative(vv, vv.videoWidth, vv.videoHeight, it.nat), "vídeo " + it.name + " @ " + mmssc(vv.currentTime)); return; }
     if (!frozen) {                                             // ao vivo: congela e abre quando a imagem parar
@@ -1980,41 +2075,131 @@
       for (let i = 0; i < 600 && !frozen; i++) await new Promise(r => setTimeout(r, 50)); if (!frozen) return; await new Promise(r => setTimeout(r, 120)); }
     const d = new Date(), z = n => String(n).padStart(2, "0");
     metricOpen(toNative(cv, cv.width, cv.height, null), "congelamento " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) + (frozenSR ? " (melhoria de resolução)" : "")); }
-  // desenhar com o ponteiro
-  const mPt = e => { const R = MT.rect, b = mCv.getBoundingClientRect(), d = R.dpr, cl = v => Math.min(1, Math.max(0, v));
-    return [cl(((e.clientX - b.left) * d - R.ox) / R.dw), cl(((e.clientY - b.top) * d - R.oy) / R.dh)]; };
-  mCv.addEventListener("pointerdown", e => { if (!MT.rect) return; e.preventDefault(); try { mCv.setPointerCapture(e.pointerId); } catch (x) {}
-    const p = mPt(e); MT.drag = MT.tool === "poly" ? { t: "poly", pts: [p] } : { t: MT.tool, a: p, b: p }; MT.loupe = p; mDraw(); });
-  mCv.addEventListener("pointermove", e => { if (!MT.drag) return; e.preventDefault(); const p = mPt(e); MT.loupe = p;
-    if (MT.drag.t === "poly") { const L = MT.drag.pts[MT.drag.pts.length - 1], R = MT.rect; if (Math.hypot((p[0] - L[0]) * R.dw, (p[1] - L[1]) * R.dh) > 3 * R.dpr) MT.drag.pts.push(p); }
-    else MT.drag.b = p; mDraw(); });
-  const mEnd = () => { if (!MT.drag) return; const S = MT.drag; MT.drag = null; MT.loupe = null;
-    const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(S) > 16 : mVal(S) > (S.t === "line" ? 4 : 16);
-    if (ok) { MT.shapes.push(S); const inf = mInfo(MT.shapes).find(x => x.S === S); setStatus("Métrica · " + inf.name + (inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
+  // ---------- apagar / anotação ----------
+  function mDelete(P, S) { const i = P.shapes.indexOf(S); if (i >= 0) P.shapes.splice(i, 1); if (MT.sel && MT.sel.S === S) MT.sel = null; mDraw(); mList(); setStatus("Métrica · medida apagada.", "ok"); }
+  function noteEdit(P, S) { const inp = $("mNote"), [x, y] = toScr(P, S.a), d = P.rect.dpr; MT.note = { P, S };
+    Object.assign(inp.style, { left: Math.max(4, x / d - 4) + "px", top: Math.max(4, y / d - 36) + "px" }); inp.value = S.text || ""; inp.hidden = false; inp.focus(); }
+  function noteHide(commit) { const inp = $("mNote"), N = MT.note; if (!N) { inp.hidden = true; return; } MT.note = null; inp.hidden = true;
+    if (commit) N.S.text = inp.value.trim(); if (!N.S.text && Math.hypot(N.S.b[0] - N.S.a[0], N.S.b[1] - N.S.a[1]) < 0.01) mDelete(N.P, N.S); else { mDraw(); mList(); } }
+  $("mNote").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); noteHide(true); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); noteHide(false); } });
+  $("mNote").addEventListener("blur", () => { if (MT.note) noteHide(true); });
+  // ---------- ponteiro: desenhar, editar, zoom e arrastar ----------
+  const panelAt = (x, y) => MT.panels.findIndex(P => P.rect && x >= P.rect.ox && x <= P.rect.ox + P.rect.dw && y >= P.rect.oy && y <= P.rect.oy + P.rect.dh);
+  const evXY = e => { const b = mCv.getBoundingClientRect(), d = devicePixelRatio || 1; return [(e.clientX - b.left) * d, (e.clientY - b.top) * d]; };
+  function hitTest(x, y) {                                     // alça mais próxima (a forma selecionada tem prioridade)
+    const tol = 14 * (devicePixelRatio || 1); let best = null;
+    const test = (P, S) => { for (const [k, q] of handles(S)) { const [sx, sy] = toScr(P, q), d = Math.hypot(sx - x, sy - y); if (d < tol && (!best || d < best.d)) best = { P, S, k, d }; } };
+    if (MT.sel) test(MT.sel.P, MT.sel.S); if (best) return best;
+    for (const P of MT.panels) for (let i = P.shapes.length - 1; i >= 0; i--) test(P, P.shapes[i]);
+    return best; }
+  function zoomAt(P, x, y, f) { const before = fromScr(P, x, y); P.view.z *= f; clampView(P.view); const after = fromScr(P, x, y);
+    P.view.cx += before[0] - after[0]; P.view.cy += before[1] - after[1]; clampView(P.view); }
+  mCv.addEventListener("contextmenu", e => e.preventDefault());
+  mCv.addEventListener("wheel", e => { e.preventDefault(); const [x, y] = evXY(e), i = panelAt(x, y); if (i < 0) return; zoomAt(MT.panels[i], x, y, e.deltaY < 0 ? 1.15 : 1 / 1.15); mDraw(); }, { passive: false });
+  mCv.addEventListener("pointerdown", e => {
+    if (!MT.panels.length || !MT.panels[0].rect) return; e.preventDefault(); try { mCv.setPointerCapture(e.pointerId); } catch (x) {}
+    const [x, y] = evXY(e); MT.ptrs.set(e.pointerId, [x, y]);
+    if (MT.note) noteHide(true);
+    if (MT.ptrs.size === 2) {                                  // dois dedos: pinça (zoom) e arrastar
+      MT.drag = MT.edit = null; MT.loupe = null; const [p1, p2] = [...MT.ptrs.values()], i = panelAt((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2); if (i < 0) return;
+      const P = MT.panels[i]; MT.pinch = { P, d0: Math.hypot(p1[0] - p2[0], p1[1] - p2[1]), z0: P.view.z, img: fromScr(P, (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2) }; mDraw(); return; }
+    const pi = panelAt(x, y); if (pi < 0) return; const P = MT.panels[pi];
+    if (pi !== MT.act) { MT.act = pi; mStatus(); }
+    if (e.button === 1 || e.button === 2) { MT.pan = { P, x, y, cx: P.view.cx, cy: P.view.cy }; return; }   // botão do meio/direito: arrastar a imagem
+    const p = fromScr(P, x, y).map(cl01);
+    if (MT.pend) { if (MT.pend.P === P) { MT.drag = MT.pend; MT.pend = null; MT.drag.S.c = p; MT.loupe = { P, p }; mDraw(); return; } MT.pend = null; }
+    const h = hitTest(x, y);                                   // só a forma SELECIONADA é editável (assim dá para começar outra forma no mesmo ponto)
+    if (h && MT.sel && h.S === MT.sel.S) { MT.edit = { P: h.P, S: h.S, k: h.k, start: p, orig: clone(h.S) }; MT.loupe = { P: h.P, p }; mDraw(); return; }
+    MT.tap = h;                                                // toque curto numa marca "+" (sem arrastar) = selecionar
+    const t = MT.tool, S = t === "poly" ? { t, pts: [p] } : t === "angle" ? { t, a: p, b: p, c: null } : t === "note" ? { t, a: p, b: p, text: "" } : { t, a: p, b: p };
+    MT.drag = { P, S }; MT.loupe = { P, p }; mDraw(); });
+  mCv.addEventListener("pointermove", e => {
+    const [x, y] = evXY(e); if (MT.ptrs.has(e.pointerId)) MT.ptrs.set(e.pointerId, [x, y]);
+    if (MT.pinch && MT.ptrs.size >= 2) { const [p1, p2] = [...MT.ptrs.values()], P = MT.pinch.P, cxs = (p1[0] + p2[0]) / 2, cys = (p1[1] + p2[1]) / 2;
+      P.view.z = MT.pinch.z0 * Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) / (MT.pinch.d0 || 1); clampView(P.view);
+      const now = fromScr(P, cxs, cys); P.view.cx += MT.pinch.img[0] - now[0]; P.view.cy += MT.pinch.img[1] - now[1]; clampView(P.view); mDraw(); return; }
+    if (MT.pan) { const P = MT.pan.P, R = P.rect; P.view.cx = MT.pan.cx - (x - MT.pan.x) / (R.dw * P.view.z); P.view.cy = MT.pan.cy - (y - MT.pan.y) / (R.dh * P.view.z); clampView(P.view); mDraw(); return; }
+    if (MT.edit) { const P = MT.edit.P, p = fromScr(P, x, y).map(cl01); applyEdit(MT.edit, p); MT.loupe = { P, p }; mDraw(); return; }
+    if (MT.drag) { const { P, S } = MT.drag, p = fromScr(P, x, y).map(cl01); MT.loupe = { P, p };
+      if (S.t === "poly") { const L = S.pts[S.pts.length - 1], R = P.rect; if (Math.hypot((p[0] - L[0]) * R.dw * P.view.z, (p[1] - L[1]) * R.dh * P.view.z) > 3 * R.dpr) S.pts.push(p); }
+      else if (S.t === "angle" && S.c) S.c = p; else S.b = p; mDraw(); return; }
+    if (MT.pend && e.pointerType === "mouse") { const P = MT.pend.P; MT.pend.S.c = fromScr(P, x, y).map(cl01); mDraw(); } });
+  const mEnd = e => {
+    MT.ptrs.delete(e.pointerId);
+    if (MT.pinch) { if (MT.ptrs.size < 2) MT.pinch = null; return; }
+    if (MT.pan) { MT.pan = null; return; }
+    if (MT.edit) { MT.edit = null; MT.loupe = null; mDraw(); mList(); return; }
+    if (!MT.drag) return; const { P, S } = MT.drag; MT.drag = null; MT.loupe = null;
+    const len = Math.hypot((S.b ? S.b[0] - S.a[0] : 0) * P.src.width, (S.b ? S.b[1] - S.a[1] : 0) * P.src.height);
+    const tiny = S.t === "poly" ? S.pts.length < 3 : len < 3 && !(S.t === "angle" && S.c);
+    if (tiny && MT.tap) { MT.sel = { P: MT.tap.P, S: MT.tap.S }; MT.tap = null; setStatus("Métrica · " + NAMES[MT.sel.S.t].toLowerCase() + " selecionado(a): arraste as marcas para ajustar, ou Apagar.", "ok"); mDraw(); mList(); return; }
+    MT.tap = null; if (tiny && MT.sel && S.t !== "note") { MT.sel = null; mDraw(); mList(); return; }
+    if (S.t === "angle") {
+      if (!S.c) { if (len < 3) { mDraw(); return; } S.c = S.b.slice(); MT.pend = { P, S }; setStatus("Ângulo: agora indique o 2º lado — toque (ou arraste) onde ele termina.", "ok"); mDraw(); return; }
+      P.shapes.push(S); MT.sel = { P, S }; setStatus("Métrica · ângulo " + deg(mVal(P, S)) + ".", "ok"); mDraw(); mList(); return; }
+    if (S.t === "note") { if (len < 3) S.b = S.a.slice(); P.shapes.push(S); MT.sel = { P, S }; mDraw(); mList(); noteEdit(P, S); return; }
+    const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(P, S) > 16 : mVal(P, S) > (S.t === "line" ? 4 : 16);
+    if (ok) { P.shapes.push(S); const inf = mInfo(P, P.shapes).find(i => i.S === S);
+      setStatus("Métrica · " + inf.name + (inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
     mDraw(); mList(); };
-  mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", () => { MT.drag = null; MT.loupe = null; mDraw(); });
+  mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", e => { MT.ptrs.delete(e.pointerId); MT.drag = MT.edit = MT.pinch = MT.pan = null; MT.loupe = null; mDraw(); });
   new ResizeObserver(() => mDraw()).observe(mCv);
-  document.querySelectorAll("#mBar [data-tool]").forEach(b => b.onclick = () => { MT.tool = b.dataset.tool; document.querySelectorAll("#mBar [data-tool]").forEach(x => x.classList.toggle("sel", x === b)); });
-  $("mView").onclick = () => { if (!MT.cIA) return; MT.showIA = !MT.showIA; mStatus(); mDraw(); };
-  $("mUndo").onclick = () => { MT.shapes.pop(); mDraw(); mList(); }; $("mClear").onclick = () => { MT.shapes = []; mDraw(); mList(); };
+  // ---------- barra ----------
+  document.querySelectorAll("#mBar [data-tool]").forEach(b => b.onclick = () => { MT.tool = b.dataset.tool; MT.pend = null; document.querySelectorAll("#mBar [data-tool]").forEach(x => x.classList.toggle("sel", x === b)); mDraw(); });
+  $("mView").onclick = () => { const P = AP(); if (!P || !P.cIA) return; P.showIA = !P.showIA; mStatus(); mDraw(); };
+  $("mUndo").onclick = () => { const P = AP(); if (!P) return; const S = P.shapes.pop(); if (MT.sel && MT.sel.S === S) MT.sel = null; mDraw(); mList(); };
+  $("mClear").onclick = () => { const P = AP(); if (!P) return; P.shapes = []; MT.sel = null; MT.pend = null; mDraw(); mList(); };
+  $("mDel").onclick = () => { if (MT.sel) mDelete(MT.sel.P, MT.sel.S); };
+  $("mZin").onclick = () => { const P = AP(); if (!P || !P.rect) return; zoomAt(P, P.rect.ox + P.rect.dw / 2, P.rect.oy + P.rect.dh / 2, 1.5); mDraw(); };
+  $("mZout").onclick = () => { const P = AP(); if (!P || !P.rect) return; zoomAt(P, P.rect.ox + P.rect.dw / 2, P.rect.oy + P.rect.dh / 2, 1 / 1.5); mDraw(); };
+  $("mZfit").onclick = () => { MT.panels.forEach(P => { P.view = { z: 1, cx: 0.5, cy: 0.5 }; }); mDraw(); };
   $("mClose").onclick = metricClose; $("btnMetric").onclick = metricFromCurrent; $("vMetric").onclick = metricFromCurrent;
   MT.lw = +(store.get("mLw") || 1); $("mLw").value = String(MT.lw); if (!$("mLw").value) { MT.lw = 1; $("mLw").value = "1"; }
   $("mLw").onchange = e => { MT.lw = +e.target.value; store.set("mLw", MT.lw); mDraw(); };
   $("mStr").oninput = e => { esrStrength = +e.target.value; $("mStrTxt").textContent = fmtStr(esrStrength); store.set("esrStr", esrStrength); };
-  $("mStr").onchange = () => { if (MT.open && UP.esr) mRunIA(); };
-  // salvar: imagem + medidas + texto (rodapé) gravados na própria imagem → galeria
+  $("mStr").onchange = () => { if (MT.open && UP.esr) MT.panels.forEach(P => mRunIA(P)); };
+  // ---------- comparar com outro exame ----------
+  function pickOpen() {
+    const box = $("mPickList"); box.innerHTML = "";
+    const fotos = items.filter(it => it.type === "foto");
+    if (!fotos.length) box.innerHTML = '<p class="desc">Nenhuma foto na galeria. Use “Abrir arquivo de imagem…”.</p>';
+    fotos.forEach(it => { const b = document.createElement("button"); b.className = "pk"; b.title = it.name;
+      const im = document.createElement("img"); im.src = it.thumb || it.url; const s = document.createElement("span"); s.textContent = it.name; b.append(im, s);
+      b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name); };
+      box.append(b); });
+    $("mPick").hidden = false; }
+  function addPanel(im, origin) { const P = newPanel(im, origin); MT.panels = [MT.panels[0], P]; MT.act = 1; MT.sel = null; MT.pend = null;
+    mDraw(); mList(); mStatus(); mRunIA(P); setStatus("Comparação: meça os mesmos pares nos dois exames para ver a diferença.", "ok"); }
+  $("mCmp").onclick = () => { if (MT.panels.length > 1) { const P = MT.panels.pop(); if (P.tok) P.tok.cancel = true; MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); return; } pickOpen(); };
+  $("mPickClose").onclick = () => { $("mPick").hidden = true; };
+  $("mPickFile").onclick = () => $("mFile").click();
+  $("mFile").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; $("mPick").hidden = true;
+    const el = new Image(); el.src = URL.createObjectURL(f); await el.decode().catch(() => {}); if (!el.naturalWidth) { setStatus("Não consegui abrir esta imagem.", "bad"); return; }
+    addPanel(toNative(el, el.naturalWidth, el.naturalHeight, null), "arquivo " + f.name); };
+  // ---------- salvar: imagem(ns) + medidas + texto (rodapé) gravados na própria imagem → galeria ----------
   $("mSave").onclick = () => {
-    if (!MT.src) return; askPerm(); const b = mBase(), Wd = Math.max(1080, b.width >= 1080 ? 1080 : b.width), k = Wd / b.width, Hd = Math.round(b.height * k);
-    const info = mInfo(MT.shapes), fs = Math.round(Wd / 48), lh = Math.round(fs * 1.45);
-    const lines = ["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "Origem: " + MT.origin + " · câmera " + MT.src.width + "×" + MT.src.height,
-      "Base: " + (MT.showIA && MT.cIA ? "Contornos por IA ×4 (redução de ruído " + fmtStr(esrStrength) + ") — Processada por IA — pode conter detalhes inexistentes; confira no original" : "imagem original da câmera (sem IA)")]
-      .concat(info.length ? info.map(i => i.ref ? i.name + " (100%)" : i.name + ": " + i.val) : ["(sem medidas)"]);
-    const c = document.createElement("canvas"); c.width = Wd; c.height = Hd + lines.length * lh + Math.round(fs * 1.2); const x = c.getContext("2d");
-    x.imageSmoothingQuality = "high"; x.drawImage(b, 0, 0, Wd, Hd); drawShapesM(x, q => [q[0] * Wd, q[1] * Hd], Wd / 900, MT.shapes);
-    x.fillStyle = "#0f1012"; x.fillRect(0, Hd, Wd, c.height - Hd); x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
-    lines.forEach((t, i) => { x.fillStyle = i === 0 ? "#d08c7e" : i === 2 && MT.showIA && MT.cIA ? "#ffb3e6" : i >= 3 && info[i - 3] ? (info[i - 3].ref ? "#ffd400" : "#ff5a5a") : "#eceef0";
-      x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
-    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName("metrica", "png");
+    if (!MT.panels.length) return; askPerm(); noteHide(true);
+    const two = MT.panels.length > 1, Wp = two ? 900 : 1080, gap = two ? 12 : 0;
+    const imgs = MT.panels.map(P => { const b = mBase(P); return { P, b, H: Math.round(b.height * Wp / b.width) }; }), Hd = Math.max(...imgs.map(o => o.H));
+    const fs = Math.round(Wp / 48), lh = Math.round(fs * 1.45), lines = [];
+    lines.push(["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "#d08c7e"]);
+    MT.panels.forEach((P, pi) => {
+      lines.push([(two ? "Exame " + (pi + 1) + " — " : "") + "Origem: " + P.origin + " · câmera " + P.src.width + "×" + P.src.height, "#eceef0"]);
+      lines.push(["Base: " + (P.showIA && P.cIA ? "Contornos por IA ×4 (redução de ruído " + fmtStr(esrStrength) + ") — Processada por IA — pode conter detalhes inexistentes; confira no original" : "imagem original da câmera (sem IA)"), P.showIA && P.cIA ? "#ffb3e6" : "#eceef0"]);
+      const info = mInfo(P, P.shapes); if (!info.length) lines.push(["(sem medidas)", "#959ba3"]);
+      info.forEach(i => lines.push([(two ? "  " : "") + (i.kind === "ref" ? i.name + " (100%)" : i.kind === "note" ? "Anotação: " + (i.S.text || "(seta)") : i.name + ": " + i.val), i.kind === "note" ? "#eceef0" : i.col])); });
+    if (two) { lines.push(["Comparação (exame 1 → exame 2):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t, "#eceef0"])); }
+    const Wt = Wp * MT.panels.length + gap, c = document.createElement("canvas"); c.width = Wt;
+    const x = c.getContext("2d"); x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
+    const wrap = []; lines.forEach(([t, col]) => { let s = t; while (x.measureText(s).width > Wt - fs * 1.4 && s.length > 20) { let k = s.length; while (k > 10 && x.measureText(s.slice(0, k)).width > Wt - fs * 1.4) k--; const sp = s.lastIndexOf(" ", k); const cut = sp > 20 ? sp : k; wrap.push([s.slice(0, cut), col]); s = "   " + s.slice(cut).trim(); } wrap.push([s, col]); });
+    c.height = Hd + wrap.length * lh + Math.round(fs * 1.2);
+    x.fillStyle = "#0f1012"; x.fillRect(0, 0, Wt, c.height); x.imageSmoothingQuality = "high";
+    imgs.forEach(({ P, b, H }, i) => { const ox = i * (Wp + gap); x.drawImage(b, ox, 0, Wp, H); x.save(); x.beginPath(); x.rect(ox, 0, Wp, H); x.clip();
+      drawShapesM(x, q => [ox + q[0] * Wp, q[1] * H], Wp / 900, P, P.shapes, null); x.restore();
+      if (two) { x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; const t = "Exame " + (i + 1), tw = x.measureText(t).width + fs; x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(ox + 8, 8, tw, fs * 1.6); x.fillStyle = "#cfe8ff"; x.fillText(t, ox + 8 + fs / 2, 8 + fs * 1.15); } });
+    x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
+    wrap.forEach(([t, col], i) => { x.fillStyle = col; x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
+    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(two ? "metrica_comparacao" : "metrica", "png");
     const it = { type: "foto", url: c.toDataURL("image/jpeg", 0.85), thumb: null, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
     it.thumb = it.url; addItem(it);
     c.toBlob(blob => { if (!blob) { setStatus("Falha ao gerar a imagem da métrica.", "bad"); return; } it.url = URL.createObjectURL(blob); captured(it, blob);
@@ -2237,8 +2422,13 @@
   document.addEventListener("keydown", e => {
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
-    if (MT.open) { if (k === "escape" || k === "l") { e.preventDefault(); metricClose(); }
-      else if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); MT.shapes.pop(); mDraw(); mList(); } return; }
+    if (MT.open) {
+      if (k === "escape") { e.preventDefault(); if (!$("mPick").hidden) $("mPick").hidden = true; else if (MT.pend) { MT.pend = null; mDraw(); } else if (MT.sel) { MT.sel = null; mDraw(); mList(); } else metricClose(); }
+      else if (k === "l") { e.preventDefault(); metricClose(); }
+      else if (k === "delete" || k === "backspace") { e.preventDefault(); if (MT.sel) mDelete(MT.sel.P, MT.sel.S); }
+      else if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); $("mUndo").click(); }
+      else if (k === "+" || k === "=") $("mZin").click(); else if (k === "-") $("mZout").click(); else if (k === "0") $("mZfit").click();
+      return; }
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
                   "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", toggleAntesDepois], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "m": ["upSeg", () => setUP((upMethod + 1) % 3)], "l": ["btnMetric", metricFromCurrent], "n": ["btnCmp3", setCmp3], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
     if (!act || tab !== "imagem") return;
