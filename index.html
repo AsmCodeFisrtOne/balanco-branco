@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v4.9 — 2026-10-29: quadro Original (pixels da câmera) em Ver todos os métodos; IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
+<!-- Ajuste de Imagem — Videoendoscopia  v5.0 — 2026-10-30: MÉTRICA — régua (reta, círculo, retângulo, contorno) em qualquer imagem parada (congelamento, foto, vídeo pausado, arquivo aberto), com a IA forte aplicada só ali e texto das medidas gravado na imagem; IA forte saiu do ao vivo
+     v4.9 — 2026-10-29: quadro Original (pixels da câmera) em Ver todos os métodos; IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
      v4.8 — 2026-10-29: bancada de ampliação — Lanczos-3 × FSR 1.0 (EASU+RCAS) × IA (FSRCNN ×2) na GPU (WebGL2), com comparação lado a lado
      v4.7 — 2026-10-29: redução de ruído com compensação de movimento (acompanha o endoscópio, sem arrasto)
      v4.6 — 2026-10-29: congelar não perde o foco — referência = quadro mais nítido, descarta quadros borrados, alinhamento com rotação/escala, máscara por bloco e diversidade por bloco
@@ -121,6 +122,23 @@
   #vName { font-size: 14px; color: var(--dim); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   #tools { position: absolute; left: 14px; bottom: 14px; z-index: 5; display: flex; gap: 10px; flex-wrap: wrap; }
+  /* ---------- métrica ---------- */
+  #metric { position: absolute; inset: 0; z-index: 7; background: #000; display: flex; }
+  #metric[hidden] { display: none; }
+  #mMain { flex: 1; position: relative; min-width: 0; }
+  #mCv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  #mBar { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    background: rgba(15,16,18,.88); border: 1px solid var(--line); padding: 6px 8px 6px 12px; border-radius: 10px; width: max-content; max-width: calc(100% - 20px); }
+  #mBar .t { font-size: 14px; color: var(--brand-tint); letter-spacing: .05em; margin-right: 4px; }
+  #mBar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 2px; }
+  #mBar .btn.sel { background: var(--brand); border-color: var(--brand-hi); color: #fff; }
+  #mSide { width: 300px; flex: none; background: var(--surface); border-left: 1px solid var(--line); padding: 12px; overflow-y: auto; }
+  #mSide .card { margin-bottom: 10px; }
+  #mList .mrow { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  #mList .mrow b { white-space: nowrap; } .dotY { color: #ffd400; } .dotR { color: #ff5a5a; }
+  #mProg { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; margin-top: 6px; } #mProg i { display: block; height: 100%; width: 0; background: var(--brand-tint); transition: width .2s; }
+  #vFrame { display: none; gap: 6px; } #vFrame.on { display: flex; }
+  @media (max-width: 900px) { #metric { flex-direction: column; } #mSide { width: auto; max-height: 40%; border-left: 0; border-top: 1px solid var(--line); } }
   .big { padding: 11px 16px; font-size: 16px; min-width: 104px;
     background: linear-gradient(180deg, rgba(48,53,60,.95), rgba(32,35,40,.95)); }
   .big .k { font-size: 12px; color: var(--dim); font-weight: 600; border: 1px solid #444b54; border-radius: 4px; padding: 0 4px; margin-left: 2px; }
@@ -254,7 +272,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v4.9</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.0</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -286,7 +304,29 @@
       <div id="live" title="Voltar ao vivo"><canvas id="cv" style="display:none"></canvas><canvas id="out"></canvas><canvas id="ov"></canvas></div>
       <div id="viewer" hidden>
         <img id="vImg" alt=""><video id="vVid" controls></video>
-        <div id="vbar"><span id="vName"></span><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
+        <div id="vbar"><span id="vName"></span>
+          <span id="vFrame"><button class="btn sm" id="vPrev" title="Quadro anterior">◀ quadro</button><button class="btn sm" id="vNext" title="Próximo quadro">quadro ▶</button><button class="btn sm" id="vSharp" title="Procura o quadro mais nítido perto deste (±0,5 s)">Mais nítido</button></span>
+          <button class="btn sm" id="vMetric" title="Medir nesta imagem (L)">Métrica</button><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
+      </div>
+      <div id="metric" hidden>
+        <div id="mMain"><canvas id="mCv"></canvas>
+          <div id="mBar"><span class="t">MÉTRICA</span>
+            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button>
+            <span class="sep"></span><button class="btn sm" id="mView">Ver original</button><button class="btn sm" id="mUndo">Desfazer</button><button class="btn sm" id="mClear">Limpar</button>
+            <span class="sep"></span><button class="btn sm primary" id="mSave">Salvar imagem</button><button class="btn sm" id="mClose" title="Esc">Fechar</button></div>
+        </div>
+        <div id="mSide">
+          <div class="card"><h2>Medidas</h2><div id="mList"></div>
+            <p class="desc" style="margin:8px 0 0">A 1ª reta é a referência das retas (100%); a 1ª área (círculo, retângulo ou contorno) é a referência das áreas. As seguintes mostram a % da referência. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+          <div class="card"><h2>Imagem da medição</h2>
+            <div class="row"><span class="lbl">Origem</span><span id="mOrigin" style="text-align:right;max-width:170px;overflow-wrap:anywhere">–</span></div>
+            <div class="row"><span class="lbl">Câmera</span><span id="mRes">–</span></div>
+            <div class="row"><span class="lbl">Base</span><span id="mBase">–</span></div>
+            <div id="mProg"><i></i></div><p class="desc" id="mMsg" style="margin:6px 0 0"></p>
+            <div class="sl" style="margin-top:8px"><span class="name">IA forte · força contra ruído</span><span class="val" id="mStrTxt">0,50</span>
+              <input type="range" id="mStr" min="0" max="1" step="0.05" value="0.5"></div>
+            <p class="desc" style="margin:4px 0 0">A IA forte (Real-ESRGAN) deixa as bordas mais nítidas para posicionar a régua, mas pode criar textura que não existe — use <b>Ver original</b> para conferir a borda.</p></div>
+        </div>
       </div>
       <div id="tools">
         <button class="btn big" id="btnFreeze" title="Congelar a imagem (Espaço)">
@@ -301,6 +341,9 @@
         <button class="btn big" id="btnAR" title="Anti-vermelho (A)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M5 5l14 14"/></svg>
           <span id="lblAR">Anti-verm.</span><span class="k">A</span></button>
+        <button class="btn big" id="btnMetric" title="Métrica: medidas relativas na imagem parada (L)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>
+          Métrica<span class="k">L</span></button>
       </div>
       <div id="gallery"><div class="gtitle">Capturas</div><button class="btn sm primary" id="btnSaveAll" style="width:100%;margin-bottom:8px;display:none">Salvar todas</button></div>
       <div id="flash"></div>
@@ -356,16 +399,14 @@
         <div class="row"><span class="lbl">Tempo por quadro</span><span id="upMs" style="color:var(--dim)"></span></div>
         <div class="seg" id="upSeg" style="margin-bottom:6px;grid-template-columns:repeat(2,1fr)">
           <button class="btn sm sel" data-up="0">Lanczos-3</button><button class="btn sm" data-up="1">FSR (bordas)</button>
-          <button class="btn sm" data-up="2">IA leve (FSRCNN)</button><button class="btn sm" data-up="3">IA forte (Real-ESRGAN)</button>
+          <button class="btn sm" data-up="2" style="grid-column:span 2">IA leve (FSRCNN)</button>
         </div>
-        <div class="sl" id="esrBox" style="display:none"><span class="name">IA forte · força contra ruído</span><span class="val" id="esrTxt">0,50</span>
-          <input type="range" id="esrStr" min="0" max="1" step="0.05" value="0.5"></div>
         <p class="desc" id="upDesc" style="margin:0 0 6px"></p>
         <div class="btnrow"><button class="btn sm" id="btnCmpUp" title="B">Comparar ampliação</button><button class="btn sm" id="btnCmp3" title="N">Ver todos os métodos</button><button class="btn sm" id="btnZoom" title="Z">Lupa 3×</button></div>
         <p class="desc" id="cmpUpDesc" style="margin:6px 0 0"></p>
-        <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — <b>Original</b> (pixels da câmera, sem interpolar) · Lanczos-3 · FSR · IA leve, e com a imagem congelada também a IA forte.</p>
+        <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — <b>Original</b> (pixels da câmera, sem interpolar) · Lanczos-3 · FSR · IA leve.</p>
         <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="btnTrio">Salvar as imagens de cada método (PNG)</button></div>
-        <p class="desc" style="margin:4px 0 0">Salva a imagem inteira de saída feita por cada método, em arquivos separados (mais a entrada da câmera), com o mesmo horário no nome. Congele antes: assim todas são do mesmo quadro e a IA forte entra junto.</p>
+        <p class="desc" style="margin:4px 0 0">Salva a imagem inteira de saída feita por cada método, em arquivos separados (mais a entrada da câmera), com o mesmo horário no nome. Congele antes para todas serem do mesmo quadro. (A IA forte agora fica só na <b>Métrica</b>.)</p>
       </div>
 
       <div class="card">
@@ -415,7 +456,8 @@
         <summary><h2>Gravação</h2></summary>
         <div style="margin-bottom:8px"><input type="text" id="prefix" placeholder="Identificação do exame (opcional)" style="width:100%"></div>
         <div class="row"><span class="lbl">Salvar em</span><span id="dirName" style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Downloads</span></div>
-        <div class="btnrow"><button class="btn sm" id="btnDir">Escolher pasta…</button></div>
+        <div class="btnrow"><button class="btn sm" id="btnDir">Escolher pasta…</button><button class="btn sm" id="btnOpen" title="Abrir foto ou vídeo salvo para rever ou medir">Abrir arquivo…</button></div>
+        <input type="file" id="fileOpen" accept="image/*,video/*" multiple hidden>
         <label class="sw" style="margin-top:8px"><span>Salvar na resolução da entrada (sem ampliar)</span><input type="checkbox" id="saveNative"></label>
         <label class="sw"><span>Salvar cada captura automaticamente</span><input type="checkbox" id="autoSave"></label>
         <p class="desc" style="margin:2px 0 0">Desligado: a captura fica só na tela até você tocar em <b>Salvar</b> — se excluir antes, nada é baixado. Com uma pasta escolhida, excluir também apaga o arquivo.</p>
@@ -438,7 +480,7 @@
 
       <div class="keys">
         <kbd>W</kbd> calibrar · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
-        <kbd>A</kbd> anti-vermelho · <kbd>C</kbd> antes×depois · <kbd>B</kbd> comparar ampliação · <kbd>M</kbd> método de ampliação · <kbd>N</kbd> todos os métodos · <kbd>Z</kbd> lupa · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
+        <kbd>A</kbd> anti-vermelho · <kbd>C</kbd> antes×depois · <kbd>B</kbd> comparar ampliação · <kbd>M</kbd> método de ampliação · <kbd>N</kbd> todos os métodos · <kbd>Z</kbd> lupa · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>L</kbd> métrica · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
       </div>
     </aside>
   </section>
@@ -717,7 +759,7 @@
   // 0 Lanczos-3 (interpolação clássica) · 1 FSR 1.0 da AMD (EASU, segue a direção das bordas, + RCAS, nitidez adaptativa)
   // 2 IA · FSRCNN ×2 (rede neural pequena, pesos pré-treinados públicos — Saafke/FSRCNN_Tensorflow, licença Apache-2.0;
   //   atua na luminância, a cor vem do Lanczos). FSR e IA ampliam 2× e o restante até 1080 é feito pelo Lanczos-3.
-  const UPM = [{ name: "Lanczos-3", tag: "Lanczos-3" }, { name: "FSR (bordas)", tag: "FSR 1.0" }, { name: "IA leve (FSRCNN)", tag: "IA leve · FSRCNN" }, { name: "IA forte (Real-ESRGAN)", tag: "IA forte · Real-ESRGAN" }];
+  const UPM = [{ name: "Lanczos-3", tag: "Lanczos-3" }, { name: "FSR (bordas)", tag: "FSR 1.0" }, { name: "IA leve (FSRCNN)", tag: "IA leve · FSRCNN" }];
   // IA forte: Real-ESRGAN compacta (realesr-general-x4v3, Xintao Wang, licença BSD-3) — 34 convoluções 3×3 de 64 canais, amplia 4×,
   // treinada com degradações de câmeras reais (ruído, borrão, compressão). Pesos em ia_forte_x4v3.bin (fp16), carregados no 1º uso.
   // Força contra ruído: mistura dos pesos "general" (1) e "wdn" (0, mexe pouco no ruído), como no Real-ESRGAN oficial.
@@ -868,12 +910,13 @@
     if (pConv) { const P1 = packW(FSRCNN_W, 1); layers = P1.meta; tW = newTex(); upW(tW, P1); }
     const slots = [0, 1].map(() => ({ inp: newTex(), x2: [null, newTex(), newTex()], key: ["", "", ""], inKey: "", x4: newTex(), k4: "" }));
     const tmp = newTex(), atA = newTex(), atB = newTex(), full = newTex(), eA = newTex(), eB = newTex();
-    // ---- IA forte (Real-ESRGAN): roda só na imagem congelada, em faixas e camada por camada, cedendo a vez à tela entre camadas
+    // ---- IA forte (Real-ESRGAN): usada só na Métrica — uma imagem por vez, em faixas e camada por camada, cedendo a vez à tela entre camadas
     const E = { st: "off", W: null, layers: null, tW: null, raw: null, strength: -1, job: null, step: 0, msg: "" };
     const half = (() => { const t = new Float32Array(65536); for (let h = 0; h < 65536; h++) { const s = h & 0x8000 ? -1 : 1, e = (h >> 10) & 31, f = h & 1023;
       t[h] = e === 0 ? s * f * Math.pow(2, -24) : e === 31 ? (f ? NaN : s * Infinity) : s * (1 + f / 1024) * Math.pow(2, e - 15); } return t; })();
-    async function esrLoad() {
-      if (E.st === "ok" || E.st === "loading") return E.st === "ok";
+    let esrLoadP = null;
+    function esrLoad() { if (E.st === "ok") return Promise.resolve(true); if (!esrLoadP || E.st === "erro") esrLoadP = esrLoad1(); return esrLoadP; }
+    async function esrLoad1() {
       E.st = "loading"; E.msg = "carregando pesos…";
       try { const r = await fetch("ia_forte_x4v3.bin"); if (!r.ok) throw new Error("HTTP " + r.status);
         const u16 = new Uint16Array(await r.arrayBuffer()), f = new Float32Array(u16.length); for (let i = 0; i < u16.length; i++) f[i] = half[u16[i]];
@@ -889,10 +932,11 @@
     const pxf = new Float32Array(4), pxb = new Uint8Array(4);
     const gpuWait = async T => { target(T); if (T.f) gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, pxf); else gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pxb);   // espera a GPU terminar a camada
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); await new Promise(r => setTimeout(r, 0)); };
-    async function esrRun(S, key) {
+    async function esrRun(S, key, onStep, tok) {
       const w = S.inp.w, h = S.inp.h; let src = S.inp, tci = 1, dst = eA;
       for (let li = 0; li < E.layers.length; li++) { const L = E.layers[li], tco = Math.min(L.go, 4);
-        if (E.job.key !== key || S.inKey + "|" + E.strength !== key) return false;   // a imagem mudou: abandona
+        if ((tok && tok.cancel) || E.job.key !== key || S.inKey + "|" + E.strength !== key) return false;   // cancelado ou a imagem mudou: abandona
+        if (onStep) onStep(li, E.layers.length);
         alloc(dst, w * tco, h * Math.ceil(L.go / 4), 2); target(dst); gl.useProgram(pConv.pr); bind(0, src); bind(1, E.tW);
         gl.uniform1i(pConv.u("tIn"), 0); gl.uniform1i(pConv.u("tW"), 1); gl.uniform1i(pConv.u("uw"), w); gl.uniform1i(pConv.u("uh"), h);
         for (const [n, v] of [["uGi", L.gi], ["uK", L.k], ["uBase", L.base], ["uBias", L.bias], ["uAlpha", L.alpha], ["uPre", L.pre], ["uFirst", L.first], ["uTCi", tci], ["uTCo", tco], ["uGo", L.go]]) gl.uniform1i(pConv.u(n), v);
@@ -901,17 +945,21 @@
       alloc(S.x4, 4 * w, 4 * h, 0); target(S.x4); gl.useProgram(pShuf.pr); bind(0, src); bind(1, S.inp);
       gl.uniform1i(pShuf.u("tX"), 0); gl.uniform1i(pShuf.u("tIn"), 1); gl.uniform1i(pShuf.u("uw"), w); gl.uniform1i(pShuf.u("uh"), h); quad();
       await gpuWait(S.x4); return true; }
-    function esrNeed(S) {                                        // garante a IA forte do slot (assíncrona); true = pronta
-      if (!pShuf) { E.msg = "sem suporte na placa de vídeo"; return false; }
-      if (E.st !== "ok") { if (E.st === "off") esrLoad(); return false; }
-      const key = S.inKey + "|" + esrStrength;
-      if (S.k4 === key) return true;
-      if (E.job) return false;
-      esrWeights(esrStrength); const t0 = performance.now(); E.step = 0;
-      E.job = { key: S.inKey + "|" + E.strength };
-      esrRun(S, E.job.key).then(ok => { if (ok) { S.k4 = E.job.key; api.esrMs = performance.now() - t0; } E.job = null; })
-        .catch(e => { console.warn(e); E.st = "erro"; E.msg = "falhou: " + e.message; E.job = null; });
-      return false; }
+    const mSlot = { inp: newTex(), x4: newTex(), inKey: "", k4: "" }; let mCount = 0;
+    // imagem (ImageData) → imagem 4× (ImageData), com a força contra ruído pedida; tok.cancel = true interrompe
+    async function esrImage(im, strength, onStep, tok) {
+      if (!pShuf) throw new Error("a placa de vídeo deste computador não suporta a IA forte");
+      if (!(await esrLoad())) throw new Error(E.msg);
+      while (E.job) { if (tok && tok.cancel) return null; await new Promise(r => setTimeout(r, 30)); }
+      esrWeights(strength); const M = mSlot, w = im.width, h = im.height;
+      alloc(M.inp, w, h, 0); gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, M.inp.t);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, im.data);
+      M.inKey = "m" + (++mCount); E.job = { key: M.inKey + "|" + E.strength };
+      try { if (!(await esrRun(M, E.job.key, onStep, tok))) return null;
+        const out = new ImageData(4 * w, 4 * h); target(M.x4);
+        gl.readPixels(0, 0, 4 * w, 4 * h, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(out.data.buffer)); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        return out;                                              // linha 0 = topo da imagem (convenção das texturas)
+      } finally { E.job = null; } }
     function run2x(S, w, h, m) {                                // amplia 2× a entrada do slot com o método m → S.x2
       const X2 = S.x2[m]; alloc(X2, 2 * w, 2 * h, 0);
       if (m === 1) { alloc(tmp, 2 * w, 2 * h, 0);
@@ -928,9 +976,8 @@
     }
     const sum = d => { let a = 0, b = 0; for (let i = 0; i < d.length; i += 61) { a = (a + d[i]) % 65521; b = (b + a) % 65521; } return b * 65536 + a; };
     let nDraw = 0; const px1 = new Uint8Array(4);
-    const api = { gl: true, gl2: true, ia: !!pConv, esr: !!pShuf, ms: 0, esrMs: 0, esrReady: false, esrBusy: false, esrStep: 0, esrN: 34, esrMsg: "", panels: 3, draw(img, w, h, before) {
-      const sel = upMethod >= 2 && !pConv ? 0 : upMethod, cmp = cmpMode, fz = !!frozen;
-      const m = sel === 3 ? 0 : sel;                              // IA forte: a base de cálculo ao vivo é o Lanczos
+    const api = { gl: true, gl2: true, ia: !!pConv, esr: !!pShuf, esrImage, ms: 0, panels: 3, draw(img, w, h, before) {
+      const sel = upMethod >= 2 && !pConv ? 0 : upMethod, cmp = cmpMode, m = sel;
       const want = cmp === 3 ? (pConv ? [1, 2] : [1]) : (m ? [m] : []);
       const need = [[slots[0], img, want]]; if (before) need.push([slots[1], before, m ? [m] : []]);
       const timed = want.length === 1 && (!api.ms || ++nDraw % 20 === 0); let t0 = 0;
@@ -944,14 +991,10 @@
           run2x(S, w, h, k); S.key[k] = inKey;
           if (timed) { target(S.x2[k]); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px1); const dt = performance.now() - t0; api.ms = api.ms ? api.ms * 0.6 + dt * 0.4 : dt; } } }
       const A = slots[0], B = slots[1];
-      // IA forte só com a imagem congelada (calcula uma vez e reaproveita)
-      const esrA = fz && (sel === 3 || cmp === 3) ? esrNeed(A) : false;
-      const esrB = fz && sel === 3 && before && esrA ? esrNeed(B) : false;
-      api.esrReady = esrA; api.esrBusy = !!E.job; api.esrStep = E.step; api.esrN = E.layers ? E.layers.length : 34; api.esrMsg = E.msg;
-      const src = (S, ok) => sel === 3 ? (ok ? S.x4 : S.inp) : (m ? S.x2[m] : S.inp);
-      let L = src(A, esrA), R = L, C = A.inp, D = A.inp, E5 = A.inp, bilL = 0, nP = 3;
-      if (cmp === 1) { L = A.inp; bilL = sel ? 0 : 1; } else if (cmp === 2 && before) L = src(B, esrB);
-      else if (cmp === 3) { L = A.inp; R = A.inp; C = A.x2[1]; D = pConv ? A.x2[2] : A.inp; nP = 4; if (fz && pShuf) { nP = 5; E5 = esrA ? A.x4 : A.inp; } }   // original · Lanczos · FSR · IA leve · IA forte
+      const src = S => m ? S.x2[m] : S.inp;
+      let L = src(A), R = L, C = A.inp, D = A.inp, E5 = A.inp, bilL = 0, nP = 3;
+      if (cmp === 1) { L = A.inp; bilL = sel ? 0 : 1; } else if (cmp === 2 && before) L = src(B);
+      else if (cmp === 3) { L = A.inp; R = A.inp; C = A.x2[1]; D = pConv ? A.x2[2] : A.inp; nP = 4; }   // original · Lanczos · FSR · IA leve
       api.panels = nP;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, outCv.width, outCv.height); gl.useProgram(pDisp.pr);
       bind(0, L); bind(1, R); bind(2, C); bind(3, D); bind(4, E5); gl.uniform1i(pDisp.u("tL"), 0); gl.uniform1i(pDisp.u("tR"), 1); gl.uniform1i(pDisp.u("tC"), 2); gl.uniform1i(pDisp.u("tD"), 3); gl.uniform1i(pDisp.u("tE"), 4);
@@ -959,9 +1002,8 @@
       gl.uniform1f(pDisp.u("cmp"), cmp); gl.uniform1f(pDisp.u("zoom"), zoomF); gl.uniform1i(pDisp.u("bilL"), bilL); quad();
     }, renderFull(k, OW, OH) {                                  // imagem de saída inteira (OW×OH) com o método k, para salvar
       const A = slots[0]; if (!A.inp.w || (k === 2 && !pConv)) return null;
-      if (k === 3 && A.k4 !== A.inKey + "|" + esrStrength) return null;
-      if (k && k < 3 && A.key[k] !== A.inKey) { run2x(A, A.inp.w, A.inp.h, k); A.key[k] = A.inKey; }
-      const S = k === 3 ? A.x4 : k ? A.x2[k] : A.inp; alloc(full, OW, OH, 0); target(full); gl.useProgram(pDisp.pr);
+      if (k && A.key[k] !== A.inKey) { run2x(A, A.inp.w, A.inp.h, k); A.key[k] = A.inKey; }
+      const S = k ? A.x2[k] : A.inp; alloc(full, OW, OH, 0); target(full); gl.useProgram(pDisp.pr);
       bind(0, S); bind(1, S); bind(2, S); bind(3, S); bind(4, S); gl.uniform1i(pDisp.u("tL"), 0); gl.uniform1i(pDisp.u("tR"), 1); gl.uniform1i(pDisp.u("tC"), 2); gl.uniform1i(pDisp.u("tD"), 3); gl.uniform1i(pDisp.u("tE"), 4); gl.uniform2i(pDisp.u("sD"), S.w, S.h); gl.uniform2i(pDisp.u("sE"), S.w, S.h); gl.uniform1f(pDisp.u("nP"), 3);
       gl.uniform2i(pDisp.u("sL"), S.w, S.h); gl.uniform2i(pDisp.u("sR"), S.w, S.h); gl.uniform2i(pDisp.u("sC"), S.w, S.h); gl.uniform2f(pDisp.u("vO"), OW, OH);
       gl.uniform1f(pDisp.u("cmp"), 0); gl.uniform1f(pDisp.u("zoom"), 1); gl.uniform1i(pDisp.u("bilL"), 0); quad();
@@ -1475,7 +1517,7 @@
 
   // ----- laço de vídeo -----
   function frame() {
-    if (srCap) {                                              // durante a captura da melhoria: tela parada, CPU livre para a câmera
+    if (srCap || MT.open) {                                   // captura da melhoria ou Métrica aberta: tela parada, placa de vídeo livre
       if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
       return;
     }
@@ -1502,7 +1544,7 @@
       const raw = cmpMode === 2 ? new Uint8ClampedArray(srCmp ? frozenSR.origUp : (frozen && frozenRaw ? frozenRaw : d)) : null;
       const rawFrame = freezeReq && !frozen ? new Uint8ClampedArray(d) : null;
       if (!frozen && !showOriginal) temporalNR(d, w, h, nrLevel, nrLive); else if (frozen) nrLive.buf = null;
-      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; frozenSR = null; }   // congela já com o ruído reduzido
+      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; frozenSR = null; setFreezeUi(); }   // congela já com o ruído reduzido
       const s = Math.max(4, Math.floor(Math.min(w, h) * roiFrac)), x0 = (w - s) >> 1, y0 = (h - s) >> 1;
       let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0, cr = 0, cg = 0, cb = 0;
       const wr = wbLuts[0], wg = wbLuts[1], wb = wbLuts[2];
@@ -1525,9 +1567,7 @@
       if (raw) { if (!showOriginal) { applyPipeline(raw, luts, adj.sat, arLevel, EVL[evlLevel].k); if (srCmp) sharpen(raw, w, h, shpLevel); } before = new ImageData(raw, w, h); }
       ctx.putImageData(img, 0, 0);
       UP.draw(img, w, h, before);                            // amplia para a saída com o método escolhido (padrão Lanczos-3)
-      if (++upTick % 5 === 0) { const cu = curUp(); let t = cu && cu < 3 && UP.ms ? UPM[cu].tag + " · " + UP.ms.toFixed(1) + " ms/quadro" : "";
-        if (cu === 3 || (cmpMode === 3 && frozen)) t = UP.esrMsg ? "IA forte: " + UP.esrMsg : !frozen ? (cu === 3 ? "IA forte: congele a imagem" : t)
-          : UP.esrBusy ? "IA forte: calculando… camada " + UP.esrStep + "/" + UP.esrN : UP.esrReady ? "IA forte · " + (UP.esrMs / 1000).toFixed(1) + " s" : "IA forte: preparando…";
+      if (++upTick % 5 === 0) { const cu = curUp(), t = cu && UP.ms ? UPM[cu].tag + " · " + UP.ms.toFixed(1) + " ms/quadro" : "";
         if ($("upMs").textContent !== t) $("upMs").textContent = t; }
 
       const sc = ov.width / w;                               // sobreposições desenhadas no espaço da entrada, escaladas
@@ -1542,10 +1582,9 @@
           const bx = al === "left" ? x : x - tw; const by = al === "center" ? f2 * 0.6 : f2 * 2.6 + (frozen || rec || arLevel || showOriginal ? f2 * 2.2 : 0); octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(al === "center" ? x - tw / 2 : bx, by, tw, f2 * 1.7);
           octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
         if (cmpMode === 3) { const nP = UP.panels || 3; octx.fillStyle = "#ffd400"; for (let k = 1; k < nP; k++) octx.fillRect(k * OW / nP - 2, 0, 4, OH);
-          const esrLab = UP.esrReady ? "IA forte" : UP.esrMsg ? "IA forte: erro" : "IA forte: calculando…";
-          [["Original"], ["Lanczos-3"], ["FSR 1.0"], [UP.ia ? "IA leve" : "IA indisponível"], [esrLab]].slice(0, nP).forEach(([t], k) => lab(t, k * OW / nP + 8, "left")); }
+          [["Original"], ["Lanczos-3"], ["FSR 1.0"], [UP.ia ? "IA leve" : "IA indisponível"]].slice(0, nP).forEach(([t], k) => lab(t, k * OW / nP + 8, "left")); }
         else if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
-          if (cmpMode === 1) { const m = curUp(); if (m) { lab("Lanczos-3", 12, "left"); lab(m === 3 && !(frozen && UP.esrReady) ? (frozen ? "IA forte: calculando…" : "IA forte: congele a imagem") : UPM[m].tag, OW - 12, "right"); } else { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); } }
+          if (cmpMode === 1) { const m = curUp(); if (m) { lab("Lanczos-3", 12, "left"); lab(UPM[m].tag, OW - 12, "right"); } else { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); } }
           else if (frozen && frozenSR) { lab("ANTES · 1 quadro (Lanczos-3)", 12, "left"); lab("DEPOIS · melhoria de resolução (" + frozenSR.used + " quadros)", OW - 12, "right"); }
           else { lab("ANTES", 12, "left"); lab("DEPOIS · realce " + SHP[shpLevel].name.toLowerCase() + " · ruído " + NR[nrLevel].name.toLowerCase(), OW - 12, "right"); } }
         if (zoomF > 1) lab("LUPA " + zoomF + "×", OW / 2, "center");
@@ -1563,8 +1602,6 @@
       else if (srBusy) tag("CONGELANDO… processando a melhoria de resolução", "#7fd0ff");
       if (frozen && frozenSR) { tag("CONGELADO · MELHORIA DE RESOLUÇÃO · " + frozenSR.used + " quadros", "#7fd0ff"); tag("imagem reconstruída a partir de " + frozenSR.used + " quadros", "#ffd28a"); }
       else if (frozen) tag("CONGELADO", "#7fd0ff");
-      if (frozen && curUp() === 3 && UP.esrReady && !cmpMode) tag("IA · imagem ampliada por rede neural (Real-ESRGAN)", "#ffb3e6");
-      if (frozen && curUp() === 3 && UP.esrBusy && !cmpMode) tag("IA forte calculando… " + UP.esrStep + "/" + UP.esrN, "#ffb3e6");
       if (arLevel) tag("ANTI-VERMELHO " + AR[arLevel].name.toUpperCase(), "#ffb1a3");
       if (showOriginal) tag("SEM CORREÇÃO — só para comparar", "#ffd400");
 
@@ -1789,6 +1826,7 @@
     const kind = it.type === "foto" ? "Foto" : "Vídeo", fem = it.type === "foto" ? "a" : "o";
     it.blob = null; refreshSaveUi();
     if (!it.saved) { setStatus(kind + " excluíd" + fem + ". Nenhum arquivo foi salvo.", "ok"); return; }
+    if (it.ext) { setStatus(kind + " fechad" + fem + " (o arquivo original não foi alterado).", "ok"); return; }
     if (dirHandle && it.where === dirHandle.name) {
       try { await dirHandle.removeEntry(it.name); if (it.extra) { try { await dirHandle.removeEntry(it.extra.name); } catch (e) {} } setStatus(kind + " excluíd" + fem + " da tela e da pasta " + dirHandle.name + ".", "ok"); return; }
       catch (e) { setStatus(kind + " removid" + fem + " da tela, mas o arquivo não pôde ser apagado da pasta.", "bad"); return; }
@@ -1800,32 +1838,204 @@
     const vi = $("vImg"), vv = $("vVid");
     if (it.type === "foto") { vv.pause(); vv.removeAttribute("src"); vv.style.display = "none"; vi.style.display = ""; vi.src = it.url; }
     else { vi.style.display = "none"; vv.style.display = ""; vv.src = it.url; vv.play().catch(() => {}); }
-    $("vName").textContent = it.name; $("vName").title = it.name + " — salvo em: " + it.where;
+    $("vName").textContent = it.name; $("vName").title = it.name + " — salvo em: " + it.where; $("vFrame").classList.toggle("on", it.type === "video");
     $("viewer").hidden = false; refreshSaveUi(); fit();
   }
   function closeViewer() { if (!viewing) return; viewing = null; $("vVid").pause(); items.forEach(x => x.el.classList.remove("sel")); $("viewer").hidden = true; fit(); }
 
+  // ===================== MÉTRICA =====================
+  // Imagem parada (congelamento, foto, quadro de vídeo ou arquivo aberto) → IA forte uma vez → régua (reta, círculo, retângulo, contorno).
+  // A 1ª forma de cada família é a referência (retas: comprimento; áreas: área). Medidas relativas, guardadas em coordenadas 0..1 da imagem.
+  const MT = { open: false, src: null, cOrig: null, cIA: null, showIA: true, shapes: [], drag: null, tool: "line", origin: "", tok: null, t0: 0, ms: 0, err: "", rect: null, loupe: null };
+  const mCv = $("mCv"), mCtx = mCv.getContext("2d");
+  const fam = t => t === "line" ? "line" : "area";
+  const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno" };
+  function mVal(S) {                                           // em pixels da câmera (proporção certa mesmo em imagem não quadrada)
+    const W = MT.src ? MT.src.width : 1, H = MT.src ? MT.src.height : 1;
+    if (S.t === "poly") { let a = 0; const P = S.pts; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][0] * W) * (P[i][1] * H) - (P[i][0] * W) * (P[j][1] * H); return Math.abs(a) / 2; }
+    const dx = (S.b[0] - S.a[0]) * W, dy = (S.b[1] - S.a[1]) * H;
+    return S.t === "line" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
+  const pct = v => (Math.round(v * 10) / 10).toFixed(v < 10 ? 1 : 0).replace(".", ",");
+  function mInfo(list) { const ref = {}, cnt = { line: 0, area: 0 }; return list.map(S => { const f = fam(S.t), v = mVal(S); cnt[f]++;
+    const name = (f === "line" ? "Reta " : "Área ") + cnt[f] + (f === "area" ? " (" + NAMES[S.t].toLowerCase() + ")" : "");
+    if (!ref[f]) { ref[f] = v; return { S, ref: true, name, txt: f === "line" ? "REFERÊNCIA (reta)" : "REFERÊNCIA (área)", val: "referência" }; }
+    const p = ref[f] ? 100 * v / ref[f] : 0, val = pct(p) + "%" + (p <= 100 ? " · livre " + pct(100 - p) + "%" : "");
+    return { S, ref: false, name, txt: (f === "line" ? "" : "área ") + val, val: pct(p) + "% da referência" + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
+  // desenho: tracejado + marcador "+" (como no ultrassom)
+  function drawShapesM(c, map, scale, list) {
+    const info = mInfo(list), lw = 2.5 * scale, fs = Math.round(17 * scale), dash = [10 * scale, 7 * scale];
+    const plus = (x, y) => { const r = 9 * scale; c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
+    c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round";
+    info.forEach(({ S, ref, txt }) => {
+      const col = ref ? "#ffd400" : "#ff5a5a"; c.strokeStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
+      let lx, ly;
+      if (S.t === "poly") { const P = S.pts.map(map); c.beginPath(); P.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (S !== MT.drag) c.closePath(); c.stroke();
+        lx = Math.max(...P.map(q => q[0])); ly = Math.min(...P.map(q => q[1])); }
+      else { const [ax, ay] = map(S.a), [bx, by] = map(S.b);
+        if (S.t === "line") { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); plus(ax, ay); plus(bx, by); lx = bx; ly = by; }
+        else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72; ly = ay - r * 0.72; }
+        else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y); lx = Math.max(ax, bx); ly = Math.min(ay, by); } }
+      c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, W = c.canvas.width, H = c.canvas.height;
+      const x = Math.min(Math.max(4, lx + 8 * scale), W - tw - 4), y = Math.min(Math.max(4, ly - fs * 1.9), H - fs * 1.7);
+      c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, fs * 1.6); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); });
+    c.restore(); }
+  function mBase() { return MT.showIA && MT.cIA ? MT.cIA : MT.cOrig; }
+  function mDraw() {
+    if (!MT.open) return; const dpr = devicePixelRatio || 1, r = mCv.getBoundingClientRect();
+    const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr); if (mCv.width !== W || mCv.height !== H) { mCv.width = W; mCv.height = H; }
+    mCtx.fillStyle = "#000"; mCtx.fillRect(0, 0, W, H); if (!MT.src) return;
+    const top = 64 * dpr, ar = MT.src.width / MT.src.height; let dw = W - 16 * dpr, dh = dw / ar; if (dh > H - top - 8 * dpr) { dh = H - top - 8 * dpr; dw = dh * ar; }
+    const ox = (W - dw) / 2, oy = top + (H - top - dh) / 2; MT.rect = { ox, oy, dw, dh, dpr };
+    const b = mBase(); mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high"; mCtx.drawImage(b, ox, oy, dw, dh);
+    const map = q => [ox + q[0] * dw, oy + q[1] * dh], list = MT.drag ? MT.shapes.concat([MT.drag]) : MT.shapes;
+    drawShapesM(mCtx, map, dpr, list);
+    const tg = MT.showIA && MT.cIA ? "IA · imagem ampliada por rede neural (Real-ESRGAN)" : MT.cIA ? "imagem ORIGINAL da câmera (sem IA)" : MT.err ? "IA forte indisponível — imagem original" : "aplicando IA forte… (já pode medir)";
+    mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
+    mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(ox + dw - tw - 6 * dpr, oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = MT.showIA && MT.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, ox + dw - tw + 2 * dpr, oy + 23 * dpr);
+    if (MT.loupe) {                                            // lupa de precisão: 4× em volta do ponteiro, no canto oposto
+      const [u, v] = MT.loupe, R = 80 * dpr, Z = 4, cx = u < 0.5 ? ox + dw - R - 12 * dpr : ox + R + 12 * dpr, cy = oy + dh - R - 12 * dpr;
+      const bw = b.width, bh = b.height, sw = (2 * R / Z) * bw / dw, sh = (2 * R / Z) * bh / dh;
+      mCtx.save(); mCtx.beginPath(); mCtx.arc(cx, cy, R, 0, 2 * Math.PI); mCtx.clip(); mCtx.fillStyle = "#000"; mCtx.fill();
+      mCtx.drawImage(b, u * bw - sw / 2, v * bh - sh / 2, sw, sh, cx - R, cy - R, 2 * R, 2 * R);
+      const lmap = q => [cx + (q[0] - u) * dw * Z, cy + (q[1] - v) * dh * Z]; drawShapesM(mCtx, lmap, dpr, list.filter(S => S === MT.drag || S.t !== "poly").slice(-3));
+      mCtx.restore(); mCtx.strokeStyle = "#fff"; mCtx.lineWidth = 1.5 * dpr; mCtx.beginPath(); mCtx.arc(cx, cy, R, 0, 2 * Math.PI); mCtx.stroke();
+      mCtx.beginPath(); mCtx.moveTo(cx - 10 * dpr, cy); mCtx.lineTo(cx + 10 * dpr, cy); mCtx.moveTo(cx, cy - 10 * dpr); mCtx.lineTo(cx, cy + 10 * dpr); mCtx.stroke(); } }
+  function mList() {
+    const info = mInfo(MT.shapes), el = $("mList");
+    el.innerHTML = info.length ? "" : '<p class="desc" style="margin:0">Escolha a ferramenta e arraste na imagem. A primeira forma será a referência.</p>';
+    info.forEach(({ ref, name, val }) => { const r = document.createElement("div"); r.className = "mrow";
+      r.innerHTML = '<span class="' + (ref ? "dotY" : "dotR") + '">● </span>'; r.firstChild.after(name); const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; r.append(b); el.append(r); }); }
+  function mStatus() {
+    const n = MT.n || 34, st = MT.step || 0;
+    $("mBase").textContent = MT.showIA && MT.cIA ? "IA forte ×4 · força " + fmtStr(esrStrength) : "Original da câmera";
+    $("mProg").querySelector("i").style.width = (MT.cIA ? 100 : MT.err ? 0 : 100 * st / n) + "%";
+    $("mMsg").textContent = MT.err ? "IA forte: " + MT.err : MT.cIA ? "IA forte aplicada em " + (MT.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando IA forte… camada " + st + "/" + n + " (você já pode medir).";
+    $("mView").textContent = MT.showIA ? "Ver original" : "Ver IA"; $("mView").disabled = !MT.cIA; }
+  function canvasOf(im) { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; c.getContext("2d").putImageData(im, 0, 0); return c; }
+  async function mRunIA() {
+    if (MT.tok) MT.tok.cancel = true; const tok = MT.tok = { cancel: false }; MT.cIA = null; MT.err = ""; MT.step = 0; MT.showIA = true; mStatus(); mDraw();
+    if (!UP.esr || !UP.esrImage) { MT.err = "precisa de WebGL2 com aceleração de hardware"; MT.showIA = false; mStatus(); mDraw(); return; }
+    const t0 = performance.now();
+    try { const out = await UP.esrImage(MT.src, esrStrength, (k, n) => { if (tok.cancel) return; MT.step = k; MT.n = n; mStatus(); }, tok);
+      if (tok.cancel || !out) return; MT.cIA = canvasOf(out); MT.ms = performance.now() - t0; }
+    catch (e) { if (!tok.cancel) { MT.err = e.message; MT.showIA = false; } }
+    if (!tok.cancel) { mStatus(); mDraw(); } }
+  // reduz para no máximo 640 px no maior lado (ou para a resolução da câmera, quando conhecida)
+  function toNative(srcEl, sw, sh, nat) {
+    let w = sw, h = sh; if (nat && nat[0] && nat[1] && nat[0] < sw) { w = nat[0]; h = nat[1]; }
+    const k = Math.min(1, 640 / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
+    let c = document.createElement("canvas"), cw = sw, ch = sh; c.width = cw; c.height = ch; c.getContext("2d").drawImage(srcEl, 0, 0, sw, sh);
+    while (cw / 2 >= w && ch / 2 >= h) { const n = document.createElement("canvas"); n.width = Math.round(cw / 2); n.height = Math.round(ch / 2);   // reduz pela metade em etapas (média)
+      const x = n.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(c, 0, 0, n.width, n.height); c = n; cw = n.width; ch = n.height; }
+    const o = document.createElement("canvas"); o.width = w; o.height = h; const x = o.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(c, 0, 0, w, h);
+    return x.getImageData(0, 0, w, h); }
+  function metricOpen(im, origin) {
+    if (cmpMode) setCmpMode(0); if (zoomF > 1) setZoom(false); if (rec) { setStatus("Pare a gravação antes de abrir a Métrica.", "bad"); return; }
+    MT.open = true; MT.src = im; MT.cOrig = canvasOf(im); MT.cIA = null; MT.shapes = []; MT.drag = null; MT.origin = origin; MT.err = "";
+    $("mOrigin").textContent = origin; $("mRes").textContent = im.width + "×" + im.height; $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
+    $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(); }
+  function metricClose() { if (MT.tok) MT.tok.cancel = true; MT.open = false; MT.loupe = null; $("metric").hidden = true; }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
+  const nowTxt = () => { const d = new Date(), z = n => String(n).padStart(2, "0"); return z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
+  const mmssc = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, "0") + ":" + s.toFixed(2).padStart(5, "0").replace(".", ","); };
+  // de onde vem a imagem: congelado (ao vivo), foto ou vídeo aberto no visualizador, ou o quadro ao vivo (congela antes)
+  async function metricFromCurrent() {
+    if (MT.open) return;
+    if (viewing) {
+      const it = viewing;
+      if (it.type === "foto") { let el, w, h, nat = null;
+        if (it.native) { el = await createImageBitmap(it.native); w = el.width; h = el.height; }
+        else { el = $("vImg"); if (!el.complete) await el.decode().catch(() => {}); w = el.naturalWidth; h = el.naturalHeight; }
+        if (!w) { setStatus("Não consegui ler esta foto.", "bad"); return; }
+        metricOpen(toNative(el, w, h, nat), "foto " + it.name); return; }
+      const vv = $("vVid"); vv.pause(); if (!vv.videoWidth) { setStatus("O vídeo ainda não carregou.", "bad"); return; }
+      metricOpen(toNative(vv, vv.videoWidth, vv.videoHeight, it.nat), "vídeo " + it.name + " @ " + mmssc(vv.currentTime)); return; }
+    if (!frozen) {                                             // ao vivo: congela e abre quando a imagem parar
+      if (!freezeReq && !srCap && !srBusy) toggleFreeze(); setStatus("Congelando para a Métrica…", "ok");
+      for (let i = 0; i < 600 && !frozen; i++) await new Promise(r => setTimeout(r, 50)); if (!frozen) return; await new Promise(r => setTimeout(r, 120)); }
+    const d = new Date(), z = n => String(n).padStart(2, "0");
+    metricOpen(toNative(cv, cv.width, cv.height, null), "congelamento " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) + (frozenSR ? " (melhoria de resolução)" : "")); }
+  // desenhar com o ponteiro
+  const mPt = e => { const R = MT.rect, b = mCv.getBoundingClientRect(), d = R.dpr, cl = v => Math.min(1, Math.max(0, v));
+    return [cl(((e.clientX - b.left) * d - R.ox) / R.dw), cl(((e.clientY - b.top) * d - R.oy) / R.dh)]; };
+  mCv.addEventListener("pointerdown", e => { if (!MT.rect) return; e.preventDefault(); try { mCv.setPointerCapture(e.pointerId); } catch (x) {}
+    const p = mPt(e); MT.drag = MT.tool === "poly" ? { t: "poly", pts: [p] } : { t: MT.tool, a: p, b: p }; MT.loupe = p; mDraw(); });
+  mCv.addEventListener("pointermove", e => { if (!MT.drag) return; e.preventDefault(); const p = mPt(e); MT.loupe = p;
+    if (MT.drag.t === "poly") { const L = MT.drag.pts[MT.drag.pts.length - 1], R = MT.rect; if (Math.hypot((p[0] - L[0]) * R.dw, (p[1] - L[1]) * R.dh) > 3 * R.dpr) MT.drag.pts.push(p); }
+    else MT.drag.b = p; mDraw(); });
+  const mEnd = () => { if (!MT.drag) return; const S = MT.drag; MT.drag = null; MT.loupe = null;
+    const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(S) > 16 : mVal(S) > (S.t === "line" ? 4 : 16);
+    if (ok) { MT.shapes.push(S); const inf = mInfo(MT.shapes).pop(); setStatus("Métrica · " + inf.name + ": " + (inf.ref ? "referência (100%) — agora meça o que quer comparar." : inf.val), "ok"); }
+    mDraw(); mList(); };
+  mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", () => { MT.drag = null; MT.loupe = null; mDraw(); });
+  new ResizeObserver(() => mDraw()).observe(mCv);
+  document.querySelectorAll("#mBar [data-tool]").forEach(b => b.onclick = () => { MT.tool = b.dataset.tool; document.querySelectorAll("#mBar [data-tool]").forEach(x => x.classList.toggle("sel", x === b)); });
+  $("mView").onclick = () => { if (!MT.cIA) return; MT.showIA = !MT.showIA; mStatus(); mDraw(); };
+  $("mUndo").onclick = () => { MT.shapes.pop(); mDraw(); mList(); }; $("mClear").onclick = () => { MT.shapes = []; mDraw(); mList(); };
+  $("mClose").onclick = metricClose; $("btnMetric").onclick = metricFromCurrent; $("vMetric").onclick = metricFromCurrent;
+  $("mStr").oninput = e => { esrStrength = +e.target.value; $("mStrTxt").textContent = fmtStr(esrStrength); store.set("esrStr", esrStrength); };
+  $("mStr").onchange = () => { if (MT.open && UP.esr) mRunIA(); };
+  // salvar: imagem + medidas + texto (rodapé) gravados na própria imagem → galeria
+  $("mSave").onclick = () => {
+    if (!MT.src) return; askPerm(); const b = mBase(), Wd = Math.max(1080, b.width >= 1080 ? 1080 : b.width), k = Wd / b.width, Hd = Math.round(b.height * k);
+    const info = mInfo(MT.shapes), fs = Math.round(Wd / 48), lh = Math.round(fs * 1.45);
+    const lines = ["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "Origem: " + MT.origin + " · câmera " + MT.src.width + "×" + MT.src.height,
+      "Base: " + (MT.showIA && MT.cIA ? "IA forte Real-ESRGAN ×4 (força " + fmtStr(esrStrength) + ") — imagem gerada por rede neural; conferir bordas no original" : "imagem original da câmera (sem IA)")]
+      .concat(info.length ? info.map(i => i.name + ": " + (i.ref ? "referência (100%)" : i.val)) : ["(sem medidas)"]);
+    const c = document.createElement("canvas"); c.width = Wd; c.height = Hd + lines.length * lh + Math.round(fs * 1.2); const x = c.getContext("2d");
+    x.imageSmoothingQuality = "high"; x.drawImage(b, 0, 0, Wd, Hd); drawShapesM(x, q => [q[0] * Wd, q[1] * Hd], Wd / 900, MT.shapes);
+    x.fillStyle = "#0f1012"; x.fillRect(0, Hd, Wd, c.height - Hd); x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
+    lines.forEach((t, i) => { x.fillStyle = i === 0 ? "#d08c7e" : i === 2 && MT.showIA && MT.cIA ? "#ffb3e6" : i >= 3 && info[i - 3] ? (info[i - 3].ref ? "#ffd400" : "#ff5a5a") : "#eceef0";
+      x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
+    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName("metrica", "png");
+    const it = { type: "foto", url: c.toDataURL("image/jpeg", 0.85), thumb: null, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
+    it.thumb = it.url; addItem(it);
+    c.toBlob(blob => { if (!blob) { setStatus("Falha ao gerar a imagem da métrica.", "bad"); return; } it.url = URL.createObjectURL(blob); captured(it, blob);
+      setStatus("Imagem da métrica na galeria (" + name + ")." + (autoSaveOn() || dirHandle ? "" : " Toque em Salvar para baixar."), "ok"); }, "image/png"); };
+  // ----- vídeo no visualizador: quadro a quadro e quadro mais nítido -----
+  const vv0 = $("vVid"), FR = 1 / 30;
+  const seekTo = t => new Promise(r => { const done = () => { vv0.removeEventListener("seeked", done); r(); }; vv0.addEventListener("seeked", done); vv0.currentTime = Math.max(0, Math.min(vv0.duration || 0, t)); setTimeout(done, 1500); });
+  $("vPrev").onclick = () => { vv0.pause(); seekTo(vv0.currentTime - FR); }; $("vNext").onclick = () => { vv0.pause(); seekTo(vv0.currentTime + FR); };
+  $("vSharp").onclick = async () => {
+    vv0.pause(); if (!vv0.videoWidth) return; const t0 = vv0.currentTime, c = document.createElement("canvas"), W = 256, H = Math.round(256 * vv0.videoHeight / vv0.videoWidth);
+    c.width = W; c.height = H; const x = c.getContext("2d", { willReadFrequently: true }); let best = -1, bt = t0; $("vSharp").disabled = true;
+    for (let k = -7; k <= 7; k++) { const t = t0 + k * 0.5 / 7; if (t < 0 || t > (vv0.duration || 0)) continue; await seekTo(t); x.drawImage(vv0, 0, 0, W, H);
+      const d = x.getImageData(0, 0, W, H).data; let s = 0;
+      for (let y = 1; y < H - 1; y += 2) for (let xx = 1; xx < W - 1; xx += 2) { const i = (y * W + xx) * 4, g = q => d[q] * 0.3 + d[q + 1] * 0.59 + d[q + 2] * 0.11;
+        const l = 4 * g(i) - g(i - 4) - g(i + 4) - g(i - W * 4) - g(i + W * 4); s += l * l; }
+      if (s > best) { best = s; bt = t; } }
+    await seekTo(bt); $("vSharp").disabled = false; setStatus("Quadro mais nítido perto do ponto pausado: " + mmssc(bt) + ".", "ok"); };
+  // ----- abrir arquivos salvos (foto ou vídeo) -----
+  $("btnOpen").onclick = () => $("fileOpen").click();
+  $("fileOpen").onchange = async e => {
+    const fs = [...e.target.files]; e.target.value = ""; let last = null;
+    for (const f of fs) { const isV = f.type.startsWith("video"), url = URL.createObjectURL(f);
+      let thumb = url;
+      if (isV) thumb = await new Promise(res => { const v = document.createElement("video"); v.muted = true; v.src = url; v.preload = "auto";
+          v.onloadeddata = () => { v.currentTime = Math.min(0.2, (v.duration || 1) / 2); }; v.onseeked = () => { const c = document.createElement("canvas"); c.width = 160; c.height = Math.round(160 * v.videoHeight / v.videoWidth) || 120;
+            c.getContext("2d").drawImage(v, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", 0.7)); }; v.onerror = () => res(""); setTimeout(() => res(""), 4000); });
+      const it = { type: isV ? "video" : "foto", url, thumb, name: f.name, where: "arquivo aberto", saved: true, ext: true, time: "arquivo" };
+      addItem(it); last = it; }
+    if (last) { openItem(last); setStatus(fs.length + " arquivo(s) aberto(s). Para medir: " + (last.type === "video" ? "pause o vídeo no ponto desejado e " : "") + "toque em Métrica.", "ok"); } };
   // ----- foto -----
   function flash() { const f = $("flash"); f.style.transition = "none"; f.style.opacity = .7; requestAnimationFrame(() => { f.style.transition = "opacity .3s"; f.style.opacity = 0; }); }
   let upTick = 0;
-  const curUp = () => (upMethod === 2 && !UP.ia) || (upMethod === 3 && !UP.esr) || (upMethod && !UP.gl2) ? 0 : upMethod;
+  const curUp = () => (upMethod === 2 && !UP.ia) || upMethod > 2 || (upMethod && !UP.gl2) ? 0 : upMethod;
   const UP_DESC = ["Interpolação clássica (6×6 vizinhos). Não inventa nada; é a referência para comparar.",
     "FSR 1.0 (AMD): interpola seguindo a direção de cada borda e reforça a nitidez sem halo. Não inventa detalhe; amplia 2× e o resto até 1080 é Lanczos.",
-    "Rede neural pequena (FSRCNN ×2, pesos públicos pré-treinados com fotos comuns, não com endoscopia). Reconstrói bordas na luminância; a cor vem do Lanczos. Amplia 2× e o resto até 1080 é Lanczos.",
-    "Rede neural maior (Real-ESRGAN compacta ×4, 34 camadas), treinada com ruído, borrão e compressão de câmeras reais. Só na imagem CONGELADA: leva alguns segundos. Pode criar textura que não existe — a imagem leva a etiqueta \"IA\" e deve ser comparada com o Lanczos."];
+    "Rede neural pequena (FSRCNN ×2, pesos públicos pré-treinados com fotos comuns, não com endoscopia). Reconstrói bordas na luminância; a cor vem do Lanczos. Amplia 2× e o resto até 1080 é Lanczos."];
   function setUP(m, quiet) {
     if (m && !UP.gl2) { if (!quiet) setStatus("FSR e IA precisam de WebGL2 com aceleração de hardware. No Edge: Configurações › Sistema › \"Usar aceleração de gráficos quando disponível\".", "bad"); m = 0; }
-    else if ((m === 2 && !UP.ia) || (m === 3 && !UP.esr)) { if (!quiet) setStatus("A IA precisa de texturas de ponto flutuante na placa de vídeo, que este navegador não oferece. FSR e Lanczos continuam disponíveis.", "bad"); m = 0; }
+    else if (m > 2) m = 0;
+    else if (m === 2 && !UP.ia) { if (!quiet) setStatus("A IA precisa de texturas de ponto flutuante na placa de vídeo, que este navegador não oferece. FSR e Lanczos continuam disponíveis.", "bad"); m = 0; }
     upMethod = m; UP.ms = 0; store.set("up", m);
     document.querySelectorAll("#upSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.up === m));
-    $("upDesc").textContent = UP_DESC[m]; $("upMs").textContent = ""; $("esrBox").style.display = m === 3 ? "" : "none";
+    $("upDesc").textContent = UP_DESC[m]; $("upMs").textContent = "";
     $("cmpUpDesc").innerHTML = m ? "Teste: lado a lado, a mesma região — esquerda <b>Lanczos-3</b>, direita <b>" + UPM[m].name + "</b>. Use com a lupa para ver a diferença nas bordas."
       : "Teste: lado a lado, a mesma região — esquerda <b>esticada pelo navegador</b> (bilinear), direita <b>Lanczos-3</b>. Use com a lupa para ver a diferença nas bordas.";
   }
-  document.querySelectorAll("#upSeg .btn").forEach(b => b.onclick = () => { setUP(+b.dataset.up); if (upMethod === +b.dataset.up) setStatus("Ampliação: " + UPM[upMethod].name + "." + (upMethod === 3 && !frozen ? " Congele a imagem (Espaço) para a IA forte calcular." : ""), "ok"); });
+  document.querySelectorAll("#upSeg .btn").forEach(b => b.onclick = () => { setUP(+b.dataset.up); if (upMethod === +b.dataset.up) setStatus("Ampliação: " + UPM[upMethod].name + ".", "ok"); });
   const fmtStr = v => v.toFixed(2).replace(".", ",");
-  esrStrength = Math.min(1, Math.max(0, +(store.get("esrStr") ?? 0.5))); $("esrStr").value = esrStrength; $("esrTxt").textContent = fmtStr(esrStrength);
-  $("esrStr").oninput = e => { esrStrength = +e.target.value; $("esrTxt").textContent = fmtStr(esrStrength); store.set("esrStr", esrStrength); };
+  esrStrength = Math.min(1, Math.max(0, +(store.get("esrStr") ?? 0.5)));
   setUP(+(store.get("up") || 0), true);
   function setCmp3() {
     if (cmpMode === 3) { setCmpMode(0); return; }
@@ -1840,8 +2050,7 @@
     tc.width = cv.width; tc.height = cv.height; tx.drawImage(cv, 0, 0);
     where = await saveBlob(await toBlob(tc), base + "_entrada_" + cv.width + "x" + cv.height + ".png"); n++;
     tc.width = OW; tc.height = OH;
-    if (frozen && UP.esr && !UP.esrReady) setStatus("A IA forte ainda está calculando — salvando os outros métodos.", "bad");
-    for (const [k, nm] of [[0, "lanczos3"], [1, "fsr"], [2, "ia_leve_fsrcnn"], [3, "ia_forte_realesrgan"]]) { const im = UP.renderFull(k, OW, OH); if (!im) continue;
+    for (const [k, nm] of [[0, "lanczos3"], [1, "fsr"], [2, "ia_leve_fsrcnn"]]) { const im = UP.renderFull(k, OW, OH); if (!im) continue;
       tx.putImageData(im, 0, 0); await saveBlob(await toBlob(tc), base + "_" + nm + "_" + OW + "x" + OH + ".png"); n++; }
     setStatus(n + " arquivos salvos em " + where + " (" + base + "_…). " + (frozen ? "" : "Atenção: ao vivo, cada imagem pode ser de um instante diferente — congele para comparar o mesmo quadro."), frozen ? "ok" : "bad");
   }
@@ -1849,8 +2058,7 @@
   function setCmpMode(m) { cmpMode = m; $("btnCmpUp").classList.toggle("on", m === 1); $("btnCmp3").classList.toggle("on", m === 3); $("hdrCmp").classList.toggle("on", m === 2); }
   function setCmpUp(on) { setCmpMode(on ? 1 : 0); }
   function setZoom(on) { zoomF = on ? 3 : 1; $("btnZoom").classList.toggle("on", on); $("hdrZoom").classList.toggle("on", on); }
-  function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue a comparação e a lupa para capturar.", "bad"); return true; }
-    if (frozen && curUp() === 3 && !UP.esrReady) { setStatus("Aguarde a IA forte terminar de calcular para capturar.", "bad"); return true; } return false; }
+  function testView() { if (cmpMode || zoomF > 1) { setStatus("Desligue a comparação e a lupa para capturar.", "bad"); return true; } return false; }
   // quadro original (sem melhoria), com o mesmo processamento de cor, para salvar junto da foto melhorada
   function origBlob(imgData) {
     return new Promise(res => {
@@ -1865,9 +2073,10 @@
     if (!cv.width) return; flash(); askPerm();
     const src = $("saveNative").checked ? cv : outCv;
     const isSR = !!(frozen && frozenSR);
-    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName((isSR ? "foto_MR" : "foto") + (frozen && curUp() === 3 && UP.esrReady && !$("saveNative").checked ? "_IA" : ""), "png");
+    const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(isSR ? "foto_MR" : "foto", "png");
     const thumb = src.toDataURL("image/jpeg", 0.8);        // miniatura imediata
     const it = { type: "foto", url: thumb, thumb, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
+    cv.toBlob(b => { it.native = b; }, "image/png");             // versão na resolução da câmera (não aparece na galeria) — base da Métrica
     addItem(it);
     src.toBlob(async blob => {
       if (!blob) { setStatus("Falha ao gerar a foto.", "bad"); return; }
@@ -1891,14 +2100,14 @@
     const mime = pickMime(), cs = vsrc.captureStream(30); let recorder;
     try { recorder = new MediaRecorder(cs, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 }); }
     catch (e) { setStatus("Erro ao iniciar a gravação: " + e.message, "bad"); return; }
-    rec = { recorder, cs, chunks: [], start: performance.now(), mime: recorder.mimeType || mime, thumb: vsrc.toDataURL("image/jpeg", 0.7), w: vsrc.width };
+    rec = { recorder, cs, chunks: [], start: performance.now(), mime: recorder.mimeType || mime, thumb: vsrc.toDataURL("image/jpeg", 0.7), w: vsrc.width, nat: [cv.width, cv.height] };
     const r = rec;
     recorder.ondataavailable = e => { if (e.data && e.data.size) r.chunks.push(e.data); };
     recorder.onstop = async () => {
       r.cs.getTracks().forEach(t => t.stop());
       const type = r.mime.split(";")[0] || "video/webm", blob = new Blob(r.chunks, { type });
       const name = fileName("video", type.includes("mp4") ? "mp4" : "webm");
-      const it = { type: "video", url: URL.createObjectURL(blob), thumb: r.thumb, name, where: "…", dur: r.dur };
+      const it = { type: "video", url: URL.createObjectURL(blob), thumb: r.thumb, name, where: "…", dur: r.dur, nat: r.nat };
       addItem(it);
       captured(it, blob);
     };
@@ -1965,8 +2174,10 @@
   document.addEventListener("keydown", e => {
     if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
     const k = e.key.toLowerCase();
+    if (MT.open) { if (k === "escape" || k === "l") { e.preventDefault(); metricClose(); }
+      else if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); MT.shapes.pop(); mDraw(); mList(); } return; }
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
-                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", toggleAntesDepois], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "m": ["upSeg", () => setUP((upMethod + 1) % 4)], "n": ["btnCmp3", setCmp3], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
+                  "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", toggleAntesDepois], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "m": ["upSeg", () => setUP((upMethod + 1) % 3)], "l": ["btnMetric", metricFromCurrent], "n": ["btnCmp3", setCmp3], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
     if (!act || tab !== "imagem") return;
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
