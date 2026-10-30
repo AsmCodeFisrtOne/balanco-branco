@@ -430,7 +430,7 @@
       <div id="metric" hidden>
         <div id="mMain"><canvas id="mCv"></canvas>
           <div id="mBar"><span class="t">MÉTRICA</span>
-            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, verifica a perspectiva)">Ref. comum R</button><button class="btn sm" id="mHideR" title="Mostrar ou ocultar R1 e R2 na imagem (continuam valendo nas medidas)">Ocultar R</button>
+            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, verifica a perspectiva)">Ref. comum R</button><button class="btn sm sel" id="mSnap" title="Ímã: a linha gruda na horizontal/vertical quando está a até 5° dela (fora disso fica livre)">Ímã 0°/90°</button><button class="btn sm" id="mHideR" title="Mostrar ou ocultar R1 e R2 na imagem (continuam valendo nas medidas)">Ocultar R</button>
             <select id="mLw" title="Espessura da linha" style="height:32px"><option value="0.6">Linha fina</option><option value="1" selected>Linha média</option><option value="1.7">Linha grossa</option></select>
             <span class="sep"></span><button class="btn sm" id="mZout" title="Diminuir zoom (ou roda do mouse / pinça)">−</button><button class="btn sm" id="mZin" title="Aumentar zoom">+</button><button class="btn sm" id="mZfit" title="Ver a imagem inteira">Ajustar</button>
             <button class="btn sm" id="mView">Ver original</button>
@@ -2058,6 +2058,14 @@
     return S.t === "line" || S.t === "cref" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
   // pares: em cada ferramenta a 1ª é referência e a 2ª é medida contra ela, e assim por diante. As letras seguem a ordem geral (A, B, C…)
   const fR = v => (v >= 10 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
+  // ----- inclinação de linha (graus, −90…90; 0 = horizontal) e ímã 0°/90° -----
+  const lineDeg = (P, S) => { const W = P.src.width, H = P.src.height, M = P.lens && lensOn() ? lensMap(W, H) : (u, v) => [u * W, v * H], A = M(S.a[0], S.a[1]), B = M(S.b[0], S.b[1]);
+    let d = Math.atan2(B[1] - A[1], B[0] - A[0]) * 180 / Math.PI; if (d > 90) d -= 180; if (d <= -90) d += 180; return -d; };   // positivo = subindo para a direita
+  const fDeg = v => (Math.round(v * 10) / 10).toFixed(Math.abs(v) < 10 ? 1 : 0).replace(".", ",") + "°";
+  function snapPt(P, anchor, p) {                              // ímã: até 5° da horizontal/vertical → gruda
+    if (!MT.snap) return { p, tag: "" }; const W = P.src.width, H = P.src.height, dx = (p[0] - anchor[0]) * W, dy = (p[1] - anchor[1]) * H;
+    if (Math.hypot(dx, dy) < 4) return { p, tag: "" }; const a = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
+    if (a < 5 || a > 175) return { p: [p[0], anchor[1]], tag: "0° (ímã)" }; if (Math.abs(a - 90) < 5) return { p: [anchor[0], p[1]], tag: "90° (ímã)" }; return { p, tag: "" }; }
   const pLab = (P, i) => { if (!P.date) return "Exame " + (i + 1); const O = MT.panels[1 - i], same = O && O.date && O.date.slice(0, 10) === P.date.slice(0, 10);
     return (P.date.slice(0, 10) === isoNow().slice(0, 10) ? "Hoje" : brDate(P.date)) + (same ? " " + P.date.slice(11, 16) : ""); };
   // incerteza de marcação: ~1,5 px por ponto (com lupa) numa imagem de 400 px (menos com zoom). Vale para R1/R2 e para as medidas em R
@@ -2071,7 +2079,7 @@
     return list.map(S => {
       if (S.t === "cref") { nr++; const v = mVal(P, S), q = nr > 1 && R1 ? v / R1 : null;
         return { S, kind: "cref", idx: nr, col: RCOL, num: q, name: nr === 1 ? "R1 · referência comum" : "R" + nr + " · verificação de perspectiva", txt: nr === 1 ? "R1 · referência comum" : "R" + nr + " = " + fR(q || 0) + " R1",
-          val: nr === 1 ? "unidade R" : fR(q || 0) + " × R1" }; }
+          val: (nr === 1 ? "unidade R" : fR(q || 0) + " × R1") + " · incl. " + fDeg(lineDeg(P, S)) }; }
       if (S.t === "angle") { ang++; const v = mVal(P, S); return { S, kind: "angle", col: "#ffffff", idx: ang, num: v, name: "Ângulo " + ang, txt: "Ângulo " + ang + ": " + deg(v), val: deg(v) }; }
       if (S.t === "note") return { S, kind: "note", col: "#ffffff", name: "Anotação", txt: S.text || "", val: S.text ? "“" + S.text + "”" : "(sem texto)" };
       if (R1) {                                                // com R1: cada forma é uma medida independente, numerada por ferramenta, em R (áreas em R²)
@@ -2184,6 +2192,8 @@
         drawShapesM(mCtx, q => [cx + (q[0] - u) * s, cy + (q[1] - v) * R.dh * V.z * Z], dpr, P, list.filter(S => S.t !== "poly" || (MT.drag && MT.drag.S === S)), null, [cx - Rr, cy - Rr, cx + Rr, cy + Rr]);
         mCtx.restore(); mCtx.strokeStyle = "#fff"; mCtx.lineWidth = 1.5 * dpr; mCtx.beginPath(); mCtx.arc(cx, cy, Rr, 0, 2 * Math.PI); mCtx.stroke();
         mCtx.beginPath(); mCtx.moveTo(cx - 10 * dpr, cy); mCtx.lineTo(cx + 10 * dpr, cy); mCtx.moveTo(cx, cy - 10 * dpr); mCtx.lineTo(cx, cy + 10 * dpr); mCtx.stroke(); } });
+    if (MT.hint && MT.panels.includes(MT.hint.P)) { const [hx, hy] = toScr(MT.hint.P, MT.hint.q), t = MT.hint.txt; mCtx.save(); mCtx.font = mFont(Math.round(15 * dpr));   // inclinação enquanto arrasta
+      const tw = mCtx.measureText(t).width + 12 * dpr; mCtx.fillStyle = "rgba(0,0,0,.75)"; mCtx.fillRect(hx + 14 * dpr, hy - 34 * dpr, tw, 24 * dpr); mCtx.fillStyle = t.includes("ímã") ? "#7CFFB2" : "#fff"; mCtx.fillText(t, hx + 20 * dpr, hy - 17 * dpr); mCtx.restore(); }
     $("mDel").disabled = !MT.sel; }
   // ---------- lista de medidas e comparação ----------
   function mList() {
@@ -2224,6 +2234,12 @@
           MT.cmpMap.set(i.S, (i.S.t === "line" ? "" : "área ") + sg(d) + " vs " + pLab(PA, 0) + " · " + (!sig ? "sem mudança" : d < 0 ? "diminuiu" : "aumentou")); });
         if (!rows.length) rows.push("Trace as medidas na mesma ordem nas duas imagens (Reta 1 com Reta 1, Círculo 1 com Círculo 1…).");
         const q = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, q1 = q(IA), q2 = q(B);
+        const crefs = P => P.shapes.filter(S => S.t === "cref"), ang12 = P => { const [a, b] = crefs(P); let d = Math.abs(lineDeg(P, a) - lineDeg(P, b)) % 180; return d > 90 ? 180 - d : d; };
+        if (crefs(PA).length > 1 && crefs(PB).length > 1) {      // o ângulo ENTRE R1 e R2 não muda quando o aparelho gira: se mudou, alguma régua foi marcada torta
+          const a1 = ang12(PA), a2 = ang12(PB), dA = Math.abs(a2 - a1), angErr = P => crefs(P).reduce((s2, S) => s2 + (mSig(P) * Math.SQRT2 / Math.max(1, mRaw(P, S))) ** 2, 0);
+          const tolA = Math.max(3, 2 * Math.sqrt(angErr(PA) + angErr(PB)) * 180 / Math.PI);
+          rows.push(dA <= tolA ? "✓ Ângulo entre R1 e R2: " + fDeg(a1) + " → " + fDeg(a2) + " (difere " + fDeg(dA) + "; margem ±" + fDeg(tolA) + ")"
+            : "⚠ Ângulo entre R1 e R2: " + fDeg(a1) + " → " + fDeg(a2) + " (difere " + fDeg(dA) + ", margem ±" + fDeg(tolA) + ") — R1 ou R2 marcados em direção diferente; confira as pontas"); }
         if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1), R2 = P => P.shapes.filter(S => S.t === "cref")[1];
           const T = Math.max(5, 200 * Math.sqrt([PA, PB].reduce((s2, P) => s2 + relErr(P, P.shapes.find(S => S.t === "cref")) ** 2 + relErr(P, R2(P)) ** 2, 0)));   // margem de marcação (2 desvios)
           const lvl = d <= T ? 0 : d <= T * 1.5 ? 1 : 2; persp = { d, T, lvl };
@@ -2339,10 +2355,15 @@
     if (MT.pan) { const P = MT.pan.P, R = P.rect; P.view.cx = MT.pan.cx - (x - MT.pan.x) / (R.dw * P.view.z); P.view.cy = MT.pan.cy - (y - MT.pan.y) / (R.dh * P.view.z); clampView(P.view); mDraw(); return; }
     if (MT.lab) { const L = MT.lab, R = L.P.rect, V = L.P.view; if (Math.hypot(x - L.x, y - L.y) > 3 * R.dpr) L.moved = true;
       if (L.moved) { L.S.lo = [L.lo[0] + (x - L.x) / (R.dw * V.z), L.lo[1] + (y - L.y) / (R.dh * V.z)]; mDraw(); } return; }
-    if (MT.edit) { const P = MT.edit.P, p = fromScr(P, x, y).map(cl01); applyEdit(MT.edit, p); MT.loupe = { P, p }; mDraw(); return; }
+    if (MT.edit) { const P = MT.edit.P, E = MT.edit, S = E.S; let p = fromScr(P, x, y).map(cl01), tag = "";
+      if ((S.t === "line" || S.t === "cref") && (E.k === "a" || E.k === "b")) { const r = snapPt(P, E.k === "a" ? S.b : S.a, p); p = r.p; tag = r.tag; }
+      applyEdit(E, p); if (S.t === "line" || S.t === "cref") MT.hint = { P, q: E.k === "a" ? S.a : S.b, txt: (S.t === "cref" ? "R · " : "") + (tag || fDeg(lineDeg(P, S))) };
+      MT.loupe = { P, p }; mDraw(); return; }
     if (MT.drag) { const { P, S } = MT.drag, p = fromScr(P, x, y).map(cl01); MT.loupe = { P, p };
       if (S.t === "poly") { const L = S.pts[S.pts.length - 1], R = P.rect; if (Math.hypot((p[0] - L[0]) * R.dw * P.view.z, (p[1] - L[1]) * R.dh * P.view.z) > 3 * R.dpr) S.pts.push(p); }
-      else if (S.t === "angle" && S.c) S.c = p; else S.b = p; mDraw(); return; }
+      else if (S.t === "angle" && S.c) S.c = p;
+      else if (S.t === "line" || S.t === "cref") { const r = snapPt(P, S.a, p); S.b = r.p; MT.hint = { P, q: S.b, txt: (S.t === "cref" ? "R · " : "") + (r.tag || fDeg(lineDeg(P, S))) }; }
+      else S.b = p; mDraw(); return; }
     if (MT.pend && e.pointerType === "mouse") { const P = MT.pend.P; MT.pend.S.c = fromScr(P, x, y).map(cl01); mDraw(); } });
   const mEnd = e => {
     MT.ptrs.delete(e.pointerId);
@@ -2351,6 +2372,7 @@
     if (MT.lab) { const L = MT.lab; MT.lab = null; if (!L.moved) { MT.sel = { P: L.P, S: L.S }; mList(); }
       else { const b = (L.P.lbl || []).find(q => q[4] === L.S), R = L.P.rect, V = L.P.view; if (b) L.S.lo = [(b[0] - b[5]) / (R.dw * V.z), (b[1] - b[6]) / (R.dh * V.z)]; }   // fixa onde ficou (se bateu na borda)
       mDraw(); return; }
+    MT.hint = null;
     if (MT.edit) { MT.edit = null; MT.loupe = null; mDraw(); mList(); return; }
     if (!MT.drag) return; const { P, S } = MT.drag; MT.drag = null; MT.loupe = null;
     const len = Math.hypot((S.b ? S.b[0] - S.a[0] : 0) * P.src.width, (S.b ? S.b[1] - S.a[1] : 0) * P.src.height);
@@ -2391,6 +2413,8 @@
   MT.lw = +(store.get("mLw") || 1); $("mLw").value = String(MT.lw); if (!$("mLw").value) { MT.lw = 1; $("mLw").value = "1"; }
   $("mLw").onchange = e => { MT.lw = +e.target.value; store.set("mLw", MT.lw); mDraw(); };
   $("mFont").innerHTML = MFONTS.map(([n], i) => '<option value="' + i + '">' + n + '</option>').join(""); $("mFont").value = MT.font; $("mFs").value = String(MT.fs);
+  MT.snap = store.get("mSnap") !== false; $("mSnap").classList.toggle("sel", MT.snap);
+  $("mSnap").onclick = () => { MT.snap = !MT.snap; store.set("mSnap", MT.snap); $("mSnap").classList.toggle("sel", MT.snap); setStatus("Métrica · ímã 0°/90° " + (MT.snap ? "ligado: a linha gruda na horizontal/vertical quando está a até 5°." : "desligado: linhas totalmente livres."), "ok"); };
   MT.hideR = false; $("mHideR").onclick = () => { MT.hideR = !MT.hideR; $("mHideR").textContent = MT.hideR ? "Mostrar R" : "Ocultar R"; $("mHideR").classList.toggle("sel", MT.hideR);
     if (MT.hideR && MT.sel && MT.sel.S.t === "cref") MT.sel = null; mDraw(); setStatus(MT.hideR ? "Métrica · R1 e R2 ocultos na imagem (continuam valendo nas medidas e aparecem na lista)." : "Métrica · R1 e R2 visíveis.", "ok"); };
   $("mLbg").value = String(MT.lbg); $("mLbg").onchange = e => { MT.lbg = +e.target.value; store.set("mLbg", MT.lbg); mDraw(); };
