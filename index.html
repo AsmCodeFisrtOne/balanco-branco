@@ -2265,7 +2265,7 @@
   function metricOpen(im, origin, lens) {
     if (cmpMode) setCmpMode(0); if (zoomF > 1) setZoom(false); if (rec) { setStatus("Pare a gravação antes de abrir a Métrica.", "bad"); return; }
     esrStrength = 1;                                           // Contornos por IA começa com a redução de ruído no máximo
-    MT.open = true; MT.panels = [Object.assign(newPanel(im, origin, lens), { date: isoNow(), ref: null })]; MT.act = 0; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
+    MT.open = true; MT.panels = [Object.assign(newPanel(im, origin, lens), { date: isoNow(), ref: null })]; MT.act = 0; MT.hist = []; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
     $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
     $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
   function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
@@ -2291,11 +2291,11 @@
     const d = new Date(), z = n => String(n).padStart(2, "0");
     metricOpen(toNative(cv, cv.width, cv.height, null), "congelamento " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) + (frozenSR ? " (melhoria de resolução)" : "")); }
   // ---------- apagar / anotação ----------
-  function mDelete(P, S) { const i = P.shapes.indexOf(S); if (i >= 0) P.shapes.splice(i, 1); if (MT.sel && MT.sel.S === S) MT.sel = null; mDraw(); mList(); setStatus("Métrica · medida apagada.", "ok"); }
+  function mDelete(P, S, quiet) { const i = P.shapes.indexOf(S); if (i >= 0) { P.shapes.splice(i, 1); if (!quiet) MT.hist.push({ op: "del", P, S, i }); } if (MT.sel && MT.sel.S === S) MT.sel = null; mDraw(); mList(); setStatus("Métrica · medida apagada.", "ok"); }
   function noteEdit(P, S) { const inp = $("mNote"), [x, y] = toScr(P, S.a), d = P.rect.dpr; MT.note = { P, S };
     Object.assign(inp.style, { left: Math.max(4, x / d - 4) + "px", top: Math.max(4, y / d - 36) + "px" }); inp.value = S.text || ""; inp.hidden = false; inp.focus(); }
   function noteHide(commit) { const inp = $("mNote"), N = MT.note; if (!N) { inp.hidden = true; return; } MT.note = null; inp.hidden = true;
-    if (commit) N.S.text = inp.value.trim(); if (!N.S.text && Math.hypot(N.S.b[0] - N.S.a[0], N.S.b[1] - N.S.a[1]) < 0.01) mDelete(N.P, N.S); else { mDraw(); mList(); } }
+    if (commit) N.S.text = inp.value.trim(); if (!N.S.text && Math.hypot(N.S.b[0] - N.S.a[0], N.S.b[1] - N.S.a[1]) < 0.01) mDelete(N.P, N.S, true); else { mDraw(); mList(); } }
   $("mNote").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); noteHide(true); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); noteHide(false); } });
   $("mNote").addEventListener("blur", () => { if (MT.note) noteHide(true); });
   // ---------- ponteiro: desenhar, editar, zoom e arrastar ----------
@@ -2359,11 +2359,11 @@
     MT.tap = null; if (tiny && MT.sel && S.t !== "note") { MT.sel = null; mDraw(); mList(); return; }
     if (S.t === "angle") {
       if (!S.c) { if (len < 3) { mDraw(); return; } S.c = S.b.slice(); MT.pend = { P, S }; setStatus("Ângulo: agora indique o 2º lado — toque (ou arraste) onde ele termina.", "ok"); mDraw(); return; }
-      P.shapes.push(S); MT.sel = { P, S }; setStatus("Métrica · ângulo " + deg(mVal(P, S)) + ".", "ok"); mDraw(); mList(); return; }
-    if (S.t === "note") { if (len < 3) S.b = S.a.slice(); P.shapes.push(S); MT.sel = { P, S }; mDraw(); mList(); noteEdit(P, S); return; }
+      P.shapes.push(S); MT.hist.push({ op: "add", P, S }); MT.sel = { P, S }; setStatus("Métrica · ângulo " + deg(mVal(P, S)) + ".", "ok"); mDraw(); mList(); return; }
+    if (S.t === "note") { if (len < 3) S.b = S.a.slice(); P.shapes.push(S); MT.hist.push({ op: "add", P, S }); MT.sel = { P, S }; mDraw(); mList(); noteEdit(P, S); return; }
     if (S.t === "cref" && P.shapes.filter(q => q.t === "cref").length >= 2) { setStatus("Métrica · já há R1 e R2 nesta imagem. Apague uma para marcar de novo.", "bad"); mDraw(); return; }
     const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(P, S) > 16 : mVal(P, S) > (S.t === "line" || S.t === "cref" ? 4 : 16);
-    if (ok) { P.shapes.push(S); const inf = mInfo(P, P.shapes).find(i => i.S === S);
+    if (ok) { P.shapes.push(S); MT.hist.push({ op: "add", P, S }); const inf = mInfo(P, P.shapes).find(i => i.S === S);
       setStatus("Métrica · " + inf.name + (inf.kind === "cref" ? (inf.idx === 1 ? " marcada — agora cada forma é uma medida própria em R (sem precisar de referência). Marque a MESMA estrutura na outra imagem. Dica: R1/R2 no MESMO PLANO e perto do que vai medir — estruturas mais à frente ou mais ao fundo não são comparáveis em R; pontos nítidos e segmentos longos; use zoom (+)." : " = " + inf.val + ".") : inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
     mDraw(); mList(); };
   mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", e => { MT.ptrs.delete(e.pointerId); MT.drag = MT.edit = MT.pinch = MT.pan = MT.lab = null; MT.loupe = null; mDraw(); });
@@ -2371,8 +2371,18 @@
   // ---------- barra ----------
   document.querySelectorAll("#mBar [data-tool]").forEach(b => b.onclick = () => { MT.tool = b.dataset.tool; MT.pend = null; document.querySelectorAll("#mBar [data-tool]").forEach(x => x.classList.toggle("sel", x === b)); mDraw(); });
   $("mView").onclick = () => { const P = AP(); if (!P || !P.cIA) return; P.showIA = !P.showIA; mStatus(); mDraw(); };
-  $("mUndo").onclick = () => { const P = AP(); if (!P) return; const S = P.shapes.pop(); if (MT.sel && MT.sel.S === S) MT.sel = null; mDraw(); mList(); };
-  $("mClear").onclick = () => { const P = AP(); if (!P) return; P.shapes = []; MT.sel = null; MT.pend = null; mDraw(); mList(); };
+  // Desfazer: volta a ÚLTIMA ação em qualquer das imagens (desenhar, apagar ou limpar)
+  $("mUndo").onclick = () => { let h; while ((h = MT.hist.pop()) && !MT.panels.includes(h.P));
+    if (h) { const P = h.P;
+      if (h.op === "add") { const i = P.shapes.indexOf(h.S); if (i >= 0) P.shapes.splice(i, 1); if (MT.sel && MT.sel.S === h.S) MT.sel = null; }
+      else if (h.op === "del") P.shapes.splice(Math.min(h.i, P.shapes.length), 0, h.S);
+      else if (h.op === "clear") P.shapes = h.shapes;
+      MT.act = MT.panels.indexOf(P); setStatus("Métrica · desfeito" + (MT.panels.length > 1 ? " (imagem " + pLab(P, MT.act) + ")" : "") + ".", "ok"); }
+    else { const P = AP(); if (!P || !P.shapes.length) return; const S = P.shapes.pop(); if (MT.sel && MT.sel.S === S) MT.sel = null; }   // marcações carregadas de antes: tira a última da imagem ativa
+    mDraw(); mList(); mStatus(); };
+  $("mClear").onclick = () => { const P = AP(); if (!P || !P.shapes.length) { setStatus("Métrica · esta imagem não tem marcações." + (MT.panels.length > 1 ? " Toque na outra imagem e em Limpar para limpá-la." : ""), ""); return; }
+    MT.hist.push({ op: "clear", P, shapes: P.shapes }); P.shapes = []; MT.sel = null; MT.pend = null; mDraw(); mList();
+    setStatus("Métrica · marcações apagadas" + (MT.panels.length > 1 ? " da imagem " + pLab(P, MT.act) + " (a de borda destacada). Para a outra, toque nela e em Limpar" : "") + ". Desfazer traz de volta.", "ok"); };
   $("mDel").onclick = () => { if (MT.sel) mDelete(MT.sel.P, MT.sel.S); };
   $("mZin").onclick = () => { const P = AP(); if (!P || !P.rect) return; zoomAt(P, P.rect.ox + P.rect.dw / 2, P.rect.oy + P.rect.dh / 2, 1.5); mDraw(); };
   $("mZout").onclick = () => { const P = AP(); if (!P || !P.rect) return; zoomAt(P, P.rect.ox + P.rect.dw / 2, P.rect.oy + P.rect.dh / 2, 1 / 1.5); mDraw(); };
@@ -2441,10 +2451,10 @@
       b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name, !it.ext, it.ext ? null : { date: isoNow() }); };
       box.append(b); });
     $("mPick").hidden = false; }
-  function addPanel(im, origin, lens, extra) { const P = Object.assign(newPanel(im, origin, lens), extra || {}), A = MT.panels[0];
+  function addPanel(im, origin, lens, extra) { const P = Object.assign(newPanel(im, origin, lens), extra || {}, { added: true }), A = MT.panels[0];
     if (P.date && A.date && P.date < A.date) { MT.panels = [P, A]; MT.act = 0; } else { MT.panels = [A, P]; MT.act = 1; }   // exame mais antigo sempre à esquerda MT.sel = null; MT.pend = null;
     mDraw(); mList(); mStatus(); mRunIA(P); setStatus(P.shapes.length ? "Comparação: marcações da métrica anterior desta imagem carregadas (pode ajustar). Marque o mesmo na outra imagem." : "Comparação: meça o mesmo nas duas imagens (mesma ordem) para ver a diferença.", "ok"); }
-  $("mCmp").onclick = () => { if (MT.panels.length > 1) { const P = MT.panels.pop(); if (P.tok) P.tok.cancel = true; MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); return; } pickOpen(); };
+  $("mCmp").onclick = () => { if (MT.panels.length > 1) { const k = Math.max(0, MT.panels.findIndex(q => q.added)), P = MT.panels.splice(k, 1)[0]; if (P.tok) P.tok.cancel = true; /* fecha a imagem que veio da comparação (esquerda ou direita) */ MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); return; } pickOpen(); };
   $("mPickClose").onclick = () => { $("mPick").hidden = true; };
   $("mPickFile").onclick = () => $("mFile").click();
   $("mFile").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; $("mPick").hidden = true;
