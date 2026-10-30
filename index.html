@@ -2119,9 +2119,11 @@
         y = y + bh + 4 * scale > Y1 - bh ? y - (bh + 4 * scale) * (i + 1) : y + bh + 4 * scale;
       placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S, lx, ly]); paint(txt, x, y, tw, bh, col); };
     c.save(); c.font = mFont(fs); c.lineJoin = "round"; c.lineCap = "round";
-    info.forEach(({ S, txt, col, kind }) => {
+    const cmp2 = MT.panels.length > 1 && MT.panels.includes(P);
+    info.forEach(({ S, txt, col, kind, name, idx }) => {
       if (kind === "cref" && MT.hideR) return;
-      if (MT.cmpMap && MT.cmpMap.has(S) && MT.panels[1] === P) txt += " · " + MT.cmpMap.get(S);   // variação do mesmo trecho, escrita junto na imagem mais nova                 // R1/R2 ocultos: continuam valendo no cálculo
+      if (cmp2 && MT.panels[0] === P && kind !== "note") txt = kind === "cref" ? "R" + idx : name;   // comparação: na imagem antiga só o nome (valores na lateral e no rodapé)
+      else if (cmp2 && MT.cmpMap && MT.cmpMap.has(S)) txt = name + " · " + MT.cmpMap.get(S);       // na imagem nova: o resultado do mesmo trecho                 // R1/R2 ocultos: continuam valendo no cálculo
       c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
       let lx, ly, lxl;
       if (S.t === "poly") { const Q = S.pts.map(map); lxl = Math.min(...Q.map(q => q[0])) - 8 * scale; c.beginPath(); Q.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (!(MT.drag && MT.drag.S === S)) c.closePath(); c.stroke();
@@ -2219,7 +2221,7 @@
           const fat = i.rv / a.rv, sig = Math.abs(d) > 2 * e, vd = !sig ? "sem mudança além da margem de marcação" : d < 0 ? (i.S.t === "line" ? "diminuiu" : "a área diminuiu") : (i.S.t === "line" ? "aumentou" : "a área aumentou");
           rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + " ± " + pct(e) + "%" + (i.S.t === "line" ? "" : " na área · " + sg(100 * (i.deq / a.deq - 1)) + " no diâmetro eq.") + ")");
           rows.push("   ↳ mesmo trecho nas duas imagens: ficou ×" + fat.toFixed(2).replace(".", ",") + " do anterior → " + vd);
-          MT.cmpMap.set(i.S, sg(d) + " vs " + pLab(PA, 0) + (sig ? "" : " (≈ igual)")); });
+          MT.cmpMap.set(i.S, (i.S.t === "line" ? "" : "área ") + sg(d) + " vs " + pLab(PA, 0) + " · " + (!sig ? "sem mudança" : d < 0 ? "diminuiu" : "aumentou")); });
         if (!rows.length) rows.push("Trace as medidas na mesma ordem nas duas imagens (Reta 1 com Reta 1, Círculo 1 com Círculo 1…).");
         const q = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, q1 = q(IA), q2 = q(B);
         if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1), R2 = P => P.shapes.filter(S => S.t === "cref")[1];
