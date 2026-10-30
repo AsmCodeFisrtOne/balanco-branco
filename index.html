@@ -1927,37 +1927,39 @@
     S[E.k] = p; }
   const clone = S => JSON.parse(JSON.stringify(S));
   // ---------- desenho ----------
-  function drawShapesM(c, map, scale, P, list, sel) {
+  function drawShapesM(c, map, scale, P, list, sel, bounds) {   // bounds: [x0, y0, x1, y1] — etiquetas sempre dentro da imagem
     const info = mInfo(P, list), k = MT.lw, lw = 2.5 * scale * k, fs = Math.round(17 * scale), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)], placed = [];
     const plus = (x, y) => { const r = 9 * scale * (0.6 + 0.4 * k); c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
-    const label = (txt, lx, ly, col) => { if (!txt) return; c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, W = c.canvas.width, H = c.canvas.height, bh = fs * 1.6;
-      const x = Math.min(Math.max(4, lx), W - tw - 4); let y = Math.min(Math.max(4, ly), H - bh - 4);
+    const [X0, Y0, X1, Y1] = bounds || [0, 0, c.canvas.width, c.canvas.height], m = 4 * scale;
+    const label = (txt, lx, ly, col, lxl) => { if (!txt) return; c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, bh = fs * 1.6;
+      let x = lx; if (x + tw > X1 - m && lxl !== undefined && lxl - tw >= X0 + m) x = lxl - tw;   // não cabe à direita: vai para a esquerda da forma
+      x = Math.min(Math.max(X0 + m, x), X1 - tw - m); let y = Math.min(Math.max(Y0 + m, ly), Y1 - bh - m);
       for (let i = 0; i < 20 && placed.some(q => x < q[0] + q[2] && q[0] < x + tw && y < q[1] + q[3] + 3 * scale && q[1] < y + bh + 3 * scale); i++)   // não sobrepor etiquetas
-        y = y + bh + 4 * scale > H - bh ? y - (bh + 4 * scale) * (i + 1) : y + bh + 4 * scale;
+        y = y + bh + 4 * scale > Y1 - bh ? y - (bh + 4 * scale) * (i + 1) : y + bh + 4 * scale;
       placed.push([x, y, tw, bh]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); };
     c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round"; c.lineCap = "round";
     info.forEach(({ S, txt, col, kind }) => {
       c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
-      let lx, ly;
-      if (S.t === "poly") { const Q = S.pts.map(map); c.beginPath(); Q.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (!(MT.drag && MT.drag.S === S)) c.closePath(); c.stroke();
+      let lx, ly, lxl;
+      if (S.t === "poly") { const Q = S.pts.map(map); lxl = Math.min(...Q.map(q => q[0])) - 8 * scale; c.beginPath(); Q.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (!(MT.drag && MT.drag.S === S)) c.closePath(); c.stroke();
         lx = Math.max(...Q.map(q => q[0])) + 8 * scale; ly = Math.min(...Q.map(q => q[1])) - fs * 1.9; }
       else if (S.t === "angle") { const [ax, ay] = map(S.a), [bx, by] = map(S.b); c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by);
         if (S.c) { const [cx2, cy2] = map(S.c); c.moveTo(ax, ay); c.lineTo(cx2, cy2); c.stroke(); plus(cx2, cy2);
           const a1 = Math.atan2(by - ay, bx - ax), a2 = Math.atan2(cy2 - ay, cx2 - ax); let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
           c.setLineDash([]); c.beginPath(); c.arc(ax, ay, 26 * scale, a1, a1 + d, d < 0); c.stroke(); c.setLineDash(dash); }
         else c.stroke();
-        plus(ax, ay); plus(bx, by); lx = ax + 30 * scale; ly = ay + 10 * scale; }
+        plus(ax, ay); plus(bx, by); lx = ax + 30 * scale; ly = ay + 10 * scale; lxl = ax - 30 * scale; }
       else if (S.t === "note") { const [ax, ay] = map(S.a), [bx, by] = map(S.b); c.setLineDash([]);
         if (Math.hypot(bx - ax, by - ay) > 6 * scale) { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
           const an = Math.atan2(by - ay, bx - ax), h = 14 * scale * (0.6 + 0.4 * k); c.beginPath(); c.moveTo(bx, by);
           c.lineTo(bx - h * Math.cos(an - 0.45), by - h * Math.sin(an - 0.45)); c.lineTo(bx - h * Math.cos(an + 0.45), by - h * Math.sin(an + 0.45)); c.closePath(); c.fill(); }
-        lx = ax - 4 * scale; ly = ay - fs * 0.8; }
+        lx = ax - 4 * scale; ly = ay - fs * 0.8; lxl = ax + 4 * scale; }
       else { const [ax, ay] = map(S.a), [bx, by] = map(S.b);
-        if (S.t === "line") { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); plus(ax, ay); plus(bx, by); lx = bx + 8 * scale; ly = by - fs * 1.9; }
-        else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72 + 8 * scale; ly = ay - r * 0.72 - fs * 1.9; }
+        if (S.t === "line") { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); plus(ax, ay); plus(bx, by); lx = Math.max(ax, bx) + 8 * scale; ly = by - fs * 1.9; lxl = Math.min(ax, bx) - 8 * scale; }
+        else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72 + 8 * scale; ly = ay - r * 0.72 - fs * 1.9; lxl = ax - r * 0.72 - 8 * scale; }
         else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y);
-          lx = Math.max(ax, bx) + 8 * scale; ly = Math.min(ay, by) - fs * 1.9; } }
-      label(txt, lx, ly, kind === "note" ? "#ffffff" : col); });
+          lx = Math.max(ax, bx) + 8 * scale; ly = Math.min(ay, by) - fs * 1.9; lxl = Math.min(ax, bx) - 8 * scale; } }
+      label(txt, lx, ly, kind === "note" ? "#ffffff" : col, lxl); });
     if (sel && list.includes(sel)) { c.setLineDash([]); c.shadowBlur = 0; c.lineWidth = 2 * scale;   // alças da forma selecionada
       for (const [, q] of handles(sel)) { const [x, y] = map(q); c.beginPath(); c.arc(x, y, 7 * scale, 0, 2 * Math.PI); c.fillStyle = "rgba(255,255,255,.25)"; c.fill(); c.strokeStyle = "#fff"; c.stroke(); } }
     c.restore(); }
@@ -1978,7 +1980,7 @@
       mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high";
       mCtx.drawImage(b, (V.cx - 0.5 / V.z) * bw, (V.cy - 0.5 / V.z) * bh, bw / V.z, bh / V.z, R.ox, R.oy, R.dw, R.dh);
       let list = P.shapes; if (MT.drag && MT.drag.P === P && !list.includes(MT.drag.S)) list = list.concat([MT.drag.S]); if (MT.pend && MT.pend.P === P && !list.includes(MT.pend.S)) list = list.concat([MT.pend.S]);
-      drawShapesM(mCtx, q => toScr(P, q), dpr, P, list, MT.sel && MT.sel.P === P ? MT.sel.S : null);
+      drawShapesM(mCtx, q => toScr(P, q), dpr, P, list, MT.sel && MT.sel.P === P ? MT.sel.S : null, [R.ox, R.oy, R.ox + R.dw, R.oy + R.dh]);
       const tg = P.showIA && P.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : P.cIA ? "imagem ORIGINAL da câmera (sem IA)" : P.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA…";
       mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
       mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(R.ox + R.dw - tw - 6 * dpr, R.oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = P.showIA && P.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, R.ox + R.dw - tw + 2 * dpr, R.oy + 23 * dpr);
@@ -1991,7 +1993,7 @@
         const s = R.dw * V.z * Z, sw = 2 * Rr / s * bw, sh = 2 * Rr / (R.dh * V.z * Z) * bh;
         mCtx.save(); mCtx.beginPath(); mCtx.arc(cx, cy, Rr, 0, 2 * Math.PI); mCtx.clip(); mCtx.fillStyle = "#000"; mCtx.fill();
         mCtx.drawImage(b, u * bw - sw / 2, v * bh - sh / 2, sw, sh, cx - Rr, cy - Rr, 2 * Rr, 2 * Rr);
-        drawShapesM(mCtx, q => [cx + (q[0] - u) * s, cy + (q[1] - v) * R.dh * V.z * Z], dpr, P, list.filter(S => S.t !== "poly" || (MT.drag && MT.drag.S === S)), null);
+        drawShapesM(mCtx, q => [cx + (q[0] - u) * s, cy + (q[1] - v) * R.dh * V.z * Z], dpr, P, list.filter(S => S.t !== "poly" || (MT.drag && MT.drag.S === S)), null, [cx - Rr, cy - Rr, cx + Rr, cy + Rr]);
         mCtx.restore(); mCtx.strokeStyle = "#fff"; mCtx.lineWidth = 1.5 * dpr; mCtx.beginPath(); mCtx.arc(cx, cy, Rr, 0, 2 * Math.PI); mCtx.stroke();
         mCtx.beginPath(); mCtx.moveTo(cx - 10 * dpr, cy); mCtx.lineTo(cx + 10 * dpr, cy); mCtx.moveTo(cx, cy - 10 * dpr); mCtx.lineTo(cx, cy + 10 * dpr); mCtx.stroke(); } });
     $("mDel").disabled = !MT.sel; }
@@ -2195,7 +2197,7 @@
     c.height = Hd + wrap.length * lh + Math.round(fs * 1.2);
     x.fillStyle = "#0f1012"; x.fillRect(0, 0, Wt, c.height); x.imageSmoothingQuality = "high";
     imgs.forEach(({ P, b, H }, i) => { const ox = i * (Wp + gap); x.drawImage(b, ox, 0, Wp, H); x.save(); x.beginPath(); x.rect(ox, 0, Wp, H); x.clip();
-      drawShapesM(x, q => [ox + q[0] * Wp, q[1] * H], Wp / 900, P, P.shapes, null); x.restore();
+      drawShapesM(x, q => [ox + q[0] * Wp, q[1] * H], Wp / 900, P, P.shapes, null, [ox, 0, ox + Wp, H]); x.restore();
       if (two) { x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; const t = "Exame " + (i + 1), tw = x.measureText(t).width + fs; x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(ox + 8, 8, tw, fs * 1.6); x.fillStyle = "#cfe8ff"; x.fillText(t, ox + 8 + fs / 2, 8 + fs * 1.15); } });
     x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
     wrap.forEach(([t, col], i) => { x.fillStyle = col; x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
