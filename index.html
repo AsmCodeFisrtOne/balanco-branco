@@ -2206,9 +2206,10 @@
         const dot = document.createElement("span"); dot.textContent = "● "; dot.style.color = col; const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
         const b = document.createElement("b"); const ii = info.find(q => q.S === S); b.textContent = (ref ? "100% · referência" : val) + (ii.rs ? " · " + ii.rs : ""); const x = document.createElement("button"); x.className = "x"; x.textContent = "✕"; x.title = "Apagar esta medida";
         x.onclick = ev => { ev.stopPropagation(); mDelete(P, S); };
-        r.append(dot, nm, b, x); r.title = kind === "meas" ? "Tocar: selecionar · tocar de novo: trocar com a referência do par" : kind === "note" ? "Tocar: selecionar · tocar de novo: editar o texto" : "Tocar: selecionar";
+        r.append(dot, nm, b, x); r.title = kind === "meas" ? "Tocar: selecionar · tocar de novo: trocar com a referência do par" : kind === "note" ? "Tocar: selecionar · tocar de novo: editar o texto" : kind === "cref" ? "Tocar: selecionar · tocar de novo: trocar R1 e R2" : "Tocar: selecionar";
         r.onclick = () => { MT.act = pi;
           if (MT.sel && MT.sel.S === S) {                      // 2º toque: troca com a referência do par / edita texto
+            if (kind === "cref") { swapR(P); return; }
             if (kind === "meas") { const i = P.shapes.indexOf(S); let j = i - 1; while (j >= 0 && P.shapes[j].t !== S.t) j--; if (j >= 0) { P.shapes[i] = P.shapes[j]; P.shapes[j] = S; setStatus("Métrica · trocada com a referência do par.", "ok"); } }
             else if (kind === "note") noteEdit(P, S); }
           MT.sel = { P, S }; mDraw(); mList(); mStatus(); };
@@ -2223,7 +2224,12 @@
       // referência comum: mesma forma (ferramenta + letra + papel) medida em R nos dois exames → variação direta
       const IA = mInfo(MT.panels[0], MT.panels[0].shapes), sg = d => (Math.abs(d) < 0.05 ? "" : d > 0 ? "+" : "−") + pct(Math.abs(d)) + "%";
       const hasR = [IA, B].map(L => L.some(i => i.kind === "cref" && i.idx === 1)); let persp = null;
-      if (hasR[0] && hasR[1]) { const RA = new Map(); IA.forEach(i => { if (i.kind === "rmeas") RA.set(i.S.t + "|" + i.idx, i); });
+      const qR = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, qa = qR(IA), qb = qR(B);
+      MT.swapP = null;
+      if (hasR[0] && hasR[1] && qa && qb && Math.abs(qa * qb - 1) < 0.25 && Math.abs(qb / qa - 1) > 0.3) {   // R1 e R2 marcados em ordem invertida numa das imagens
+        MT.swapP = MT.panels[1];
+        rows.push("⚠ R1 e R2 estão em ordem trocada entre as imagens (R2 = " + fR(qa) + " × R1 numa e " + fR(qb) + " × R1 na outra). O R1 tem que ser a MESMA estrutura nas duas. Use o botão abaixo para trocar."); }
+      else if (hasR[0] && hasR[1]) { const RA = new Map(); IA.forEach(i => { if (i.kind === "rmeas") RA.set(i.S.t + "|" + i.idx, i); });
         const PA = MT.panels[0], PB = MT.panels[1], RA1 = PA.shapes.find(q => q.t === "cref"), RB1 = PB.shapes.find(q => q.t === "cref"), k2 = S => S.t === "line" ? 1 : 2;
         B.forEach(i => { const a = i.kind === "rmeas" && RA.get(i.S.t + "|" + i.idx); if (!a || !a.rv) return; const d = 100 * (i.rv / a.rv - 1), u = i.S.t === "line" ? " R" : " R²";
           const e = 100 * Math.sqrt(relErr(PA, a.S) ** 2 + relErr(PB, i.S) ** 2 + (k2(i.S) * relErr(PA, RA1)) ** 2 + (k2(i.S) * relErr(PB, RB1)) ** 2);   // margem (1 desvio) da marcação
@@ -2251,7 +2257,12 @@
       else if (hasR[0] || hasR[1]) rows.push("Marque a referência comum R1 nas DUAS imagens (a mesma estrutura) para comparar em R.");
       const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + ")"; el.append(h);
       const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
-      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t.startsWith("   ↳")) { d.style.cssText = "padding-left:14px;color:var(--dim);font-size:13px"; if (/aumentou|diminuiu/.test(t)) d.style.color = "var(--brand-tint)"; } else if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p); MT.cmpRows = rows; mDraw(); } else MT.cmpRows = []; }
+      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t.startsWith("   ↳")) { d.style.cssText = "padding-left:14px;color:var(--dim);font-size:13px"; if (/aumentou|diminuiu/.test(t)) d.style.color = "var(--brand-tint)"; } else if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p);
+      if (MT.swapP) { const bt = document.createElement("button"); bt.className = "btn sm primary"; bt.style.margin = "6px 0"; bt.textContent = "Trocar R1 e R2 na imagem " + pLab(MT.swapP, MT.panels.indexOf(MT.swapP)); bt.onclick = () => swapR(MT.swapP); el.append(bt); }
+      MT.cmpRows = rows; mDraw(); } else MT.cmpRows = []; }
+  function swapR(P) { const ix = P.shapes.map((S, i) => S.t === "cref" ? i : -1).filter(i => i >= 0); if (ix.length < 2) return;
+    const [i, j] = ix, t = P.shapes[i]; P.shapes[i] = P.shapes[j]; P.shapes[j] = t; MT.hist.push({ op: "swap", P });
+    setStatus("Métrica · R1 e R2 trocados na imagem " + pLab(P, MT.panels.indexOf(P)) + ".", "ok"); mDraw(); mList(); }
   function mStatus() {
     const P = AP(); if (!P) return; const n = P.n || 34, st = P.step || 0, two = MT.panels.length > 1;
     $("mOrigin").textContent = (two ? pLab(P, MT.act) + ": " : "") + P.origin; $("mRes").textContent = P.src.width + "×" + P.src.height;
@@ -2399,6 +2410,7 @@
       if (h.op === "add") { const i = P.shapes.indexOf(h.S); if (i >= 0) P.shapes.splice(i, 1); if (MT.sel && MT.sel.S === h.S) MT.sel = null; }
       else if (h.op === "del") P.shapes.splice(Math.min(h.i, P.shapes.length), 0, h.S);
       else if (h.op === "clear") P.shapes = h.shapes;
+      else if (h.op === "swap") { const ix = P.shapes.map((S, i) => S.t === "cref" ? i : -1).filter(i => i >= 0); if (ix.length > 1) { const t = P.shapes[ix[0]]; P.shapes[ix[0]] = P.shapes[ix[1]]; P.shapes[ix[1]] = t; } }
       MT.act = MT.panels.indexOf(P); setStatus("Métrica · desfeito" + (MT.panels.length > 1 ? " (imagem " + pLab(P, MT.act) + ")" : "") + ".", "ok"); }
     else { const P = AP(); if (!P || !P.shapes.length) return; const S = P.shapes.pop(); if (MT.sel && MT.sel.S === S) MT.sel = null; }   // marcações carregadas de antes: tira a última da imagem ativa
     mDraw(); mList(); mStatus(); };
