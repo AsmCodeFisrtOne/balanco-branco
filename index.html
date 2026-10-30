@@ -1891,7 +1891,7 @@
     if (!MT.open) return; const dpr = devicePixelRatio || 1, r = mCv.getBoundingClientRect();
     const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr); if (mCv.width !== W || mCv.height !== H) { mCv.width = W; mCv.height = H; }
     mCtx.fillStyle = "#000"; mCtx.fillRect(0, 0, W, H); if (!MT.src) return;
-    const top = ($("mBar").offsetHeight + 18) * dpr, ar = MT.src.width / MT.src.height;   // imagem sempre abaixo da barra (mesmo quando ela quebra linha) let dw = W - 16 * dpr, dh = dw / ar; if (dh > H - top - 8 * dpr) { dh = H - top - 8 * dpr; dw = dh * ar; }
+    const top = ($("mBar").offsetHeight + 18) * dpr, ar = MT.src.width / MT.src.height;   /* imagem sempre abaixo da barra, mesmo quando ela quebra linha */ let dw = W - 16 * dpr, dh = dw / ar; if (dh > H - top - 8 * dpr) { dh = H - top - 8 * dpr; dw = dh * ar; }
     const ox = (W - dw) / 2, oy = top + (H - top - dh) / 2; MT.rect = { ox, oy, dw, dh, dpr };
     const b = mBase(); mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high"; mCtx.drawImage(b, ox, oy, dw, dh);
     const map = q => [ox + q[0] * dw, oy + q[1] * dh], list = MT.drag ? MT.shapes.concat([MT.drag]) : MT.shapes;
