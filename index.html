@@ -286,18 +286,103 @@
   }
   :fullscreen header, :fullscreen aside { display: none !important; }
   :fullscreen #stage { height: 100vh !important; }
+  /* ---------- prontuário ---------- */
+  #prHdr { display: flex; align-items: center; gap: 8px; margin-left: 12px; font-size: 14px; color: var(--dim); white-space: nowrap; }
+  #prExam { display: flex; align-items: center; gap: 12px; padding: 6px 16px; background: #3a1712; border-bottom: 1px solid var(--brand); color: #ffd9d2; font-weight: 700; font-size: 14px; letter-spacing: .03em; }
+  #prExam[hidden] { display: none; }
+  #prExam .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5a4a; box-shadow: 0 0 8px #ff5a4a; animation: prPulse 1.4s infinite; }
+  #prExam .btn { margin-left: auto; }
+  @keyframes prPulse { 50% { opacity: .35; } }
+  #pront { overflow: hidden; }
+  #prWrap { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+  #prNav { display: flex; gap: 6px; align-items: center; padding: 10px 18px 0; flex-wrap: wrap; }
+  #prNav button { border: 1px solid var(--line); background: var(--surface-2); color: var(--dim); padding: 6px 14px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+  #prNav button.on { color: #fff; border-color: var(--brand); background: var(--surface-3); }
+  #prBackWarn { margin-left: auto; color: var(--warn); font-size: 14px; }
+  #prBackWarn[hidden] { display: none; }
+  #prMain { flex: 1; overflow-y: auto; padding: 12px 18px 40px; }
+  #pront input, #pront select, #pront textarea, #prAuth input, #prModal input, #prModal select, #prModal textarea {
+    width: 100%; background: var(--surface); color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 15px; }
+  #pront textarea, #prModal textarea { resize: vertical; }
+  #pront input:focus, #pront textarea:focus, #prAuth input:focus, #prModal input:focus, #prModal textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+  #pront label, #prAuth label, #prModal label { display: block; font-size: 13px; color: var(--dim); margin: 8px 0 3px; }
+  .pr-card { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+  .pr-card h3 { margin: 0 0 2px; font-size: 20px; } .pr-card h4 { margin: 0 0 8px; font-size: 16px; color: var(--brand-tint); }
+  .pr-empty { max-width: 520px; margin: 40px auto; text-align: center; }
+  .pr-dim { color: var(--dim); font-size: 14px; }
+  .pr-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  #pront .pr-bar input { flex: 1; min-width: 220px; width: auto; }
+  .pr-tbl { padding: 0; overflow-x: auto; }
+  .pr-tbl table, .pr-card table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .pr-tbl th, .pr-tbl td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .pr-tbl th { color: var(--dim); font-weight: 600; font-size: 13px; }
+  .pr-tbl tr[data-act] { cursor: pointer; } .pr-tbl tr[data-act]:hover td { background: var(--surface-3); }
+  .pill.warn { color: var(--warn); }
+  .pr-g2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0 12px; }
+  .pr-g3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0 12px; }
+  .pr-pat { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .pr-big { width: 54px; height: 54px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 20px; flex: none; }
+  .pr-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .pr-pat .pr-acts { margin-left: auto; }
+  .pr-tabs { display: flex; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .pr-tabs span { padding: 8px 14px; cursor: pointer; color: var(--dim); font-weight: 600; border-bottom: 2px solid transparent; }
+  .pr-tabs span.on { color: var(--txt); border-color: var(--brand); }
+  .pr-kv th { text-align: left; color: var(--dim); font-weight: 500; width: 200px; padding: 5px 8px 5px 0; vertical-align: top; } .pr-kv td { padding: 5px 0; }
+  .pr-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .pr-row a { color: var(--brand-tint); }
+  .pr-reg { border-left: 3px solid var(--brand); padding: 2px 0 2px 12px; margin-bottom: 12px; } .pr-reg p { margin: 4px 0 0; }
+  .pr-ev { border-left: 3px solid var(--line); padding: 2px 0 14px 14px; position: relative; }
+  .pr-ev::before { content: ""; position: absolute; left: -7px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--brand); }
+  .pr-thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .pr-thumbs img { width: 92px; height: 92px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); cursor: zoom-in; }
+  .pr-warn { margin-top: 10px; background: #3a2a10; border: 1px solid var(--warn); color: #ffd99a; padding: 8px 12px; border-radius: 8px; }
+  .pr-cols { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .pr-cols > * { min-width: 300px; }
+  .pr-sec { margin-bottom: 8px; } .pr-sec .pr-acts input { flex: 1; width: auto; font-weight: 700; }
+  .pr-sec textarea { margin-top: 4px; }
+  .pr-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .pr-pk { border: 2px solid var(--line); border-radius: 8px; padding: 4px; cursor: pointer; background: var(--surface); opacity: .55; }
+  .pr-pk.on { border-color: var(--brand); opacity: 1; }
+  .pr-pk img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; display: block; }
+  .pr-pk .cap { font-size: 12px; margin: 3px 0; } .pr-pk .n { background: var(--brand); color: #fff; border-radius: 99px; padding: 0 7px; font-weight: 700; }
+  #pront .pr-pk input.lcap { font-size: 12px; padding: 4px 6px; }
+  .pr-barg { background: var(--surface); height: 10px; border-radius: 5px; overflow: hidden; } .pr-barg i { display: block; height: 100%; background: var(--brand-tint); }
+  .pr-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+  .pr-kpi div { background: var(--surface); border-radius: 8px; padding: 8px; text-align: center; color: var(--dim); font-size: 13px; }
+  .pr-kpi b { display: block; color: var(--txt); font-size: 22px; }
+  .pr-card table th { text-align: left; color: var(--dim); font-weight: 600; font-size: 13px; padding: 10px 0 4px; } .pr-card table td { padding: 3px 8px 3px 0; }
+  .pr-log { font: 12px/1.6 ui-monospace, Consolas, monospace; color: var(--dim); max-height: 300px; overflow: auto; }
+  #prAuth, #prModal { position: fixed; inset: 0; z-index: 60; background: rgba(8,9,10,.86); display: grid; place-items: center; padding: 16px; overflow: auto; }
+  #prAuth[hidden], #prModal[hidden] { display: none; }
+  .au-card { width: min(520px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  .au-card h2 { margin: 6px 0 4px; } .au-sub { color: var(--dim); font-size: 14px; } .au-sub a { color: var(--brand-tint); }
+  .au-logo { width: 46px; height: 46px; border-radius: 12px; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+  .au-err { color: var(--bad); font-size: 14px; }
+  .au-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .au-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+  .pr-mbox { width: min(760px, 100%); max-height: 92vh; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  .pr-mhead, .pr-mfoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; }
+  .pr-mhead { border-bottom: 1px solid var(--line); } .pr-mfoot { border-top: 1px solid var(--line); justify-content: flex-end; }
+  .pr-mbody { padding: 6px 16px 14px; overflow: auto; }
+  .pr-mbody h4 { margin: 14px 0 0; color: var(--brand-tint); }
+  #prToast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 30px); opacity: 0; transition: .25s; z-index: 80; background: var(--surface-3); border: 1px solid var(--line);
+    padding: 10px 16px; border-radius: 10px; max-width: min(640px, 92vw); pointer-events: none; font-size: 15px; }
+  #prToast.on { opacity: 1; transform: translate(-50%, 0); } #prToast.ok { border-color: var(--ok); } #prToast.bad { border-color: var(--bad); color: #ffd0d0; }
+  @media (max-width: 700px) { .au-g2 { grid-template-columns: 1fr; } #prHdr span { display: none; } }
 </style>
 </head>
 <body>
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.3</small></h1>
+    <h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.0</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
+    <button data-tab="pront">Prontuário</button>
     <button data-tab="tutorial">Tutorial</button>
   </nav>
+  <div id="prHdr"><span id="prUser"></span><button class="btn sm" id="prLogout">Entrar</button></div>
   <div class="spacer"></div>
   <div class="hdr-ctl">
     <select id="cam" title="Câmera"></select>
@@ -316,6 +401,7 @@
     </button>
   </div>
 </header>
+<div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div>
 
 <main>
   <!-- ================= IMAGEM ================= -->
@@ -520,6 +606,10 @@
   </section>
 
   <!-- ================= TUTORIAL ================= -->
+  <section class="view" id="pront">
+    <div id="prWrap"><div id="prNav"><button data-scr="pacientes">Pacientes</button><button data-scr="config">Configurações</button><div id="prBackWarn" hidden></div></div>
+    <div id="prMain"></div></div>
+  </section>
   <section class="view" id="tutorial">
     <div class="tut">
       <div class="tut-head">
@@ -640,6 +730,7 @@
   </section>
 </main>
 
+<div id="prAuth" hidden></div><div id="prModal" hidden></div><div id="prToast"></div>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -1383,7 +1474,8 @@
   let frozen = null, frozenRaw = null, frozenSR = null, freezeReq = false, showRoi = true, frozenNR = 0, fzCache = null;   // frozenNR: nível de ruído usado ao congelar
   let rec = null; const items = []; let viewing = null, dirHandle = null, curTrack = null, wbDone = false;
 
-  function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
+  function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || "";
+    if (tab !== "imagem" || !$("prModal").hidden) { const q = $("prToast"); q.textContent = t; q.className = "on " + (cls || ""); clearTimeout(setStatus.t); setStatus.t = setTimeout(() => q.className = "", cls === "bad" ? 6000 : 3500); } }
   function showGains() { ["gR", "gG", "gB"].forEach((id, i) => $(id).textContent = gains[i].toFixed(2)); }
   function setGains(g) { gains = g; rebuildLuts(); showGains(); }
   const store = {
@@ -1550,8 +1642,9 @@
   const mmss = t => { t = Math.floor(t); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
 
   // ----- laço de vídeo -----
+  const authEl = $("prAuth");
   function frame() {
-    if (srCap || MT.open) {                                   // captura da melhoria ou Métrica aberta: tela parada, placa de vídeo livre
+    if (srCap || MT.open || (!rec && (tab !== "imagem" || !authEl.hidden))) {   // Métrica aberta, aba Prontuário/Tutorial ou tela de entrada: processamento parado, notebook livre
       if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
       return;
     }
@@ -1826,6 +1919,7 @@
   function captured(it, blob) {
     if (!items.includes(it)) return;                         // excluída antes de terminar de gerar o arquivo
     it.blob = blob;
+    if (PR.exam || it.target) { examSave(it, blob).then(ok => { if (!ok) { it.el.classList.add("unsaved"); setWhere(it, "não gravado no exame"); } }); return; }   // exame em andamento: vai direto para a pasta do exame
     if (autoSaveOn() || dirHandle) saveItem(it);
     else { it.el.classList.add("unsaved"); setWhere(it, "não salvo"); refreshSaveUi();
       setStatus((it.type === "foto" ? "Foto" : "Vídeo") + " na galeria. Toque em Salvar para baixar, ou exclua se não quiser.", ""); }
@@ -1860,6 +1954,7 @@
     fit();
     const kind = it.type === "foto" ? "Foto" : "Vídeo", fem = it.type === "foto" ? "a" : "o";
     it.blob = null; refreshSaveUi();
+    if (it.exam) { setStatus((await examRemove(it)) ? kind + " excluíd" + fem + " do exame (movid" + fem + " para a lixeira do consultório)." : "Não consegui retirar do exame.", "ok"); return; }
     if (!it.saved) { setStatus(kind + " excluíd" + fem + ". Nenhum arquivo foi salvo.", "ok"); return; }
     if (it.ext) { setStatus(kind + " fechad" + fem + " (o arquivo original não foi alterado).", "ok"); return; }
     if (dirHandle && it.where === dirHandle.name) {
@@ -2056,7 +2151,7 @@
     $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
     $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
   function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
-    MT.open = false; MT.loupe = null; MT.pend = null; $("metric").hidden = true; }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
+    MT.open = false; MT.loupe = null; MT.pend = null; MT.target = null; MT.patient = null; $("metric").hidden = true; }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
   const nowTxt = () => { const d = new Date(), z = n => String(n).padStart(2, "0"); return z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
   const mmssc = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, "0") + ":" + s.toFixed(2).padStart(5, "0").replace(".", ","); };
   async function imageOfItem(it) {                             // foto da galeria → imagem na resolução da câmera
@@ -2161,8 +2256,20 @@
   $("mStr").oninput = e => { esrStrength = +e.target.value; $("mStrTxt").textContent = fmtStr(esrStrength); store.set("esrStr", esrStrength); };
   $("mStr").onchange = () => { if (MT.open && UP.esr) MT.panels.forEach(P => mRunIA(P)); };
   // ---------- comparar com outro exame ----------
-  function pickOpen() {
+  async function pickOpen() {
     const box = $("mPickList"); box.innerHTML = "";
+    const pid = MT.patient || (PR.exam && PR.exam.pid);
+    $("mPickFile").style.display = pid ? "none" : "";
+    if (pid) {                                                  // prontuário: só imagens deste paciente
+      const list = await patientPhotos(pid);
+      if (!list.length) box.innerHTML = '<p class="desc">Este paciente ainda não tem fotos gravadas.</p>';
+      for (const { base, x, m } of list) { const f = await readBlob([...base, ...m.arquivo.split("/")]); if (!f) continue;
+        const b = document.createElement("button"); b.className = "pk"; const im = document.createElement("img"); im.src = URL.createObjectURL(f);
+        const sp = document.createElement("span"); sp.textContent = brDate(x.inicio) + " · " + x.tipo.split(" —")[0] + " · " + m.arquivo.split("/").pop(); b.append(im, sp);
+        b.onclick = async () => { $("mPick").hidden = true; const g = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); const bmp = await createImageBitmap(g);
+          addPanel(toNative(bmp, bmp.width, bmp.height, null), x.tipo.split(" —")[0] + " " + brDate(x.inicio) + " · " + m.arquivo.split("/").pop()); };
+        box.append(b); }
+      $("mPick").hidden = false; return; }
     const fotos = items.filter(it => it.type === "foto");
     if (!fotos.length) box.innerHTML = '<p class="desc">Nenhuma foto na galeria. Use “Abrir arquivo de imagem…”.</p>';
     fotos.forEach(it => { const b = document.createElement("button"); b.className = "pk"; b.title = it.name;
@@ -2203,7 +2310,10 @@
     wrap.forEach(([t, col], i) => { x.fillStyle = col; x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(two ? "metrica_comparacao" : "metrica", "png");
     const it = { type: "foto", url: c.toDataURL("image/jpeg", 0.85), thumb: null, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
-    it.thumb = it.url; addItem(it);
+    it.thumb = it.url; it.kind = "metrica"; it.target = MT.target || null;
+    try { it.mdata = JSON.parse(JSON.stringify({ data: nowTxt(), origens: MT.panels.map(P => P.origin), base_ia: MT.panels.map(P => !!(P.showIA && P.cIA)), reducao_ruido_ia: esrStrength,
+      medidas: MT.panels.map(P => mInfo(P, P.shapes).map(i => ({ nome: i.name, tipo: i.kind, valor: i.val, texto: i.S && i.S.text }))), comparacao: MT.cmpRows || [], formas: MT.panels.map(P => P.shapes) })); } catch (e) { it.mdata = {}; }
+    addItem(it);
     c.toBlob(blob => { if (!blob) { setStatus("Falha ao gerar a imagem da métrica.", "bad"); return; } it.url = URL.createObjectURL(blob); captured(it, blob);
       setStatus("Imagem da métrica na galeria (" + name + ")." + (autoSaveOn() || dirHandle ? "" : " Toque em Salvar para baixar."), "ok"); }, "image/png"); };
   // ----- vídeo no visualizador: quadro a quadro e quadro mais nítido -----
@@ -2291,7 +2401,7 @@
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(isSR ? "foto_MR" : "foto", "png");
     const thumb = src.toDataURL("image/jpeg", 0.8);        // miniatura imediata
     const it = { type: "foto", url: thumb, thumb, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
-    cv.toBlob(b => { it.native = b; }, "image/png");             // versão na resolução da câmera (não aparece na galeria) — base da Métrica
+    it.nativeP = new Promise(r => cv.toBlob(b => { it.native = b; r(b); }, "image/png"));             // versão na resolução da câmera (não aparece na galeria) — base da Métrica
     addItem(it);
     src.toBlob(async blob => {
       if (!blob) { setStatus("Falha ao gerar a foto.", "bad"); return; }
@@ -2422,7 +2532,7 @@
   else $("btnDir").style.display = "none";
 
   document.addEventListener("keydown", e => {
-    if (e.target.tagName === "SELECT" || (e.target.tagName === "INPUT" && e.target.type === "text") || e.repeat) return;
+    if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.repeat || !$("prAuth").hidden || !$("prModal").hidden) return;
     const k = e.key.toLowerCase();
     if (MT.open) {
       if (k === "escape") { e.preventDefault(); if (!$("mPick").hidden) $("mPick").hidden = true; else if (MT.pend) { MT.pend = null; mDraw(); } else if (MT.sel) { MT.sel = null; mDraw(); mList(); } else metricClose(); }
@@ -2721,6 +2831,576 @@
     requestAnimationFrame(demoLoop);
   }
   requestAnimationFrame(demoLoop);
+  // =====================================================================================================
+  // ===================== PRONTUÁRIO E LAUDOS — banco local numa pasta do consultório ====================
+  // Estrutura (ver _sistema/formato.json):  _sistema/ · cadastros/ · pacientes/Pnnnnnn/ · avulsos/ · exportacoes/ · lixeira/
+  // Pastas de paciente só com o código (sem nome/CPF). Dados dentro dos .json. Nada é apagado na hora: vai para lixeira/.
+  // =====================================================================================================
+  const PR = { root: null, opfs: false, user: null, cons: {}, users: [], meds: [], insts: [], equips: [], index: null, pac: null, pacTab: "exames",
+    exam: null, scr: "pacientes", urls: [], camOnly: false };
+  const FMT = 1, TIPOS = ["Nasofibrolaringoscopia", "Nasofibroscopia", "Laringoscopia flexível", "FEES — videoendoscopia da deglutição", "Sonoendoscopia (DISE)"];
+  const z2 = n => String(n).padStart(2, "0");
+  const isoNow = () => { const d = new Date(), tz = -d.getTimezoneOffset(), sg = tz >= 0 ? "+" : "-";
+    return d.getFullYear() + "-" + z2(d.getMonth() + 1) + "-" + z2(d.getDate()) + "T" + z2(d.getHours()) + ":" + z2(d.getMinutes()) + ":" + z2(d.getSeconds()) + sg + z2(Math.floor(Math.abs(tz) / 60)) + ":" + z2(Math.abs(tz) % 60); };
+  const brDate = s => s ? s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4) : "";
+  const brDT = s => s ? brDate(s) + " " + s.slice(11, 16) : "";
+  const age = n => { if (!n) return ""; const b = new Date(n + "T12:00:00"), d = new Date(); let a = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) a--; return a + " a"; };
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const isMed = () => PR.user && PR.user.perfil === "medico";
+  // ---------- arquivos ----------
+  async function dirAt(parts, create) { let d = PR.root; for (const p of parts) d = await d.getDirectoryHandle(p, { create: !!create }); return d; }
+  async function fileAt(parts, create) { const d = await dirAt(parts.slice(0, -1), create); return d.getFileHandle(parts[parts.length - 1], { create: !!create }); }
+  async function readJSON(parts, def = null) { try { return JSON.parse(await (await (await fileAt(parts)).getFile()).text()); } catch (e) { return def; } }
+  async function readBlob(parts) { try { return await (await fileAt(parts)).getFile(); } catch (e) { return null; } }
+  // createWritable grava num arquivo temporário e só substitui o definitivo no close(): se o notebook desligar no meio, o anterior fica inteiro
+  async function writeFile(parts, data) { const w = await (await fileAt(parts, true)).createWritable(); await w.write(data); await w.close(); }
+  async function writeJSON(parts, obj) { await writeFile(parts, new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" })); }
+  async function listDir(parts) { const out = []; try { for await (const [name, h] of (await dirAt(parts)).entries()) out.push({ name, h }); } catch (e) {} return out.sort((a, b) => a.name < b.name ? -1 : 1); }
+  async function copyDir(src, dst, skip) { for await (const [n, h] of src.entries()) { if (skip && skip(n)) continue;
+    if (h.kind === "file") { const w = await (await dst.getFileHandle(n, { create: true })).createWritable(); await w.write(await h.getFile()); await w.close(); }
+    else await copyDir(h, await dst.getDirectoryHandle(n, { create: true }), null); } }
+  async function toTrash(parts) {                              // "apagar" = mover para lixeira/AAAA-MM-DD/<mesmo caminho>
+    const name = parts[parts.length - 1], src = await dirAt(parts.slice(0, -1)); let h; try { h = await src.getFileHandle(name); } catch (e) { h = await src.getDirectoryHandle(name); }
+    const dst = await dirAt(["lixeira", isoNow().slice(0, 10), ...parts.slice(0, -1)], true);
+    if (h.kind === "file") { const w = await (await dst.getFileHandle(name, { create: true })).createWritable(); await w.write(await h.getFile()); await w.close(); }
+    else await copyDir(h, await dst.getDirectoryHandle(name, { create: true }));
+    await src.removeEntry(name, { recursive: true }); }
+  async function audit(acao, ref) { try { const parts = ["_sistema", "auditoria", isoNow().slice(0, 7) + ".log"], f = await readBlob(parts);
+    await writeFile(parts, (f ? await f.text() : "") + isoNow().slice(0, 19).replace("T", " ") + " · " + (PR.user ? PR.user.login : "-") + " · " + acao + (ref ? " · " + ref : "") + "\n"); } catch (e) { console.warn(e); } }
+  async function nextId(key, prefix, width) { const c = await readJSON(["_sistema", "contador.json"], {}); c[key] = (c[key] || 0) + 1; await writeJSON(["_sistema", "contador.json"], c); return prefix + String(c[key]).padStart(width, "0"); }
+  async function saveIndex() { await writeJSON(["_sistema", "indice.json"], PR.index);
+    await writeJSON(["_sistema", "backups", "indice_" + isoNow().slice(0, 10) + ".json"], PR.index); }      // cópia do dia (uma por dia)
+  async function rebuildIndex() {                              // o índice é só um atalho: dá para refazer varrendo as pastas
+    const idx = { formato: FMT, pacientes: {} };
+    for (const { name } of await listDir(["pacientes"])) { const p = await readJSON(["pacientes", name, "paciente.json"]); if (!p) continue; const ent = idxEntry(p);
+      for (const e of await listDir(["pacientes", name, "exames"])) { const x = await readJSON(["pacientes", name, "exames", e.name, "exame.json"]); if (x) ent.exames.push(examSummary(x, e.name)); }
+      idx.pacientes[p.id] = ent; }
+    PR.index = idx; await saveIndex(); }
+  const idxEntry = p => ({ id: p.id, nome: p.nome, cpf: p.cpf || "", nascimento: p.nascimento || "", convenio: (p.convenio || {}).nome || "", exames: [] });
+  const examSummary = (x, dir) => ({ id: x.id, dir, data: x.inicio, tipo: x.tipo, medico: x.medico ? x.medico.id : "", convenio: (x.convenio || {}).nome || "", status: x.status });
+  // ---------- senha (PBKDF2-SHA256, 150 mil iterações; só o resultado fica gravado) ----------
+  const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a))), unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  async function passHash(pass, saltB64) { const salt = saltB64 ? unb64(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 150000 }, key, 256); return { salt: b64(salt), hash: b64(bits) }; }
+  // ---------- pasta do consultório ----------
+  async function rootFromStore() { if (new URLSearchParams(location.search).get("opfs") === "1" && navigator.storage && navigator.storage.getDirectory) { PR.opfs = true; return navigator.storage.getDirectory(); } return idbGet("prRoot"); }
+  async function rootPerm(h, ask) { if (PR.opfs) return true; try { let st = await h.queryPermission({ mode: "readwrite" }); if (st !== "granted" && ask) st = await h.requestPermission({ mode: "readwrite" }); return st === "granted"; } catch (e) { return false; } }
+  async function loadAll() {
+    PR.cons = await readJSON(["_sistema", "consultorio.json"], {}); PR.users = await readJSON(["cadastros", "usuarios.json"], []);
+    const L = async k => { const o = []; for (const { name } of await listDir(["cadastros", k])) if (name.endsWith(".json")) { const j = await readJSON(["cadastros", k, name]); if (j) o.push(j); } return o; };
+    PR.meds = await L("medicos"); PR.insts = await L("instituicoes"); PR.equips = await L("equipamentos");
+    PR.index = await readJSON(["_sistema", "indice.json"]); if (!PR.index || PR.index.formato !== FMT) await rebuildIndex(); }
+  // ---------- tela de entrada / primeira configuração ----------
+  const AU = $("prAuth");
+  function authShow(html) { AU.innerHTML = '<div class="au-card"><div class="au-logo">N</div>' + html + '</div>'; AU.hidden = false; }
+  async function authStart() {
+    PR.root = await rootFromStore();
+    if (!PR.root) return authSetup1();
+    const users = PR.opfs || (await rootPerm(PR.root, false)) ? await readJSON(["cadastros", "usuarios.json"], null) : "?";
+    if (users !== "?" && (!users || !users.length)) return authSetup2();
+    authLogin(); }
+  function authLogin(msg) {
+    authShow('<h2>Prontuário e laudos</h2><p class="au-sub">Pasta do consultório: <b>' + esc(PR.opfs ? "(pasta interna de teste)" : PR.root.name) + '</b></p>' +
+      '<label>Usuário</label><input id="auU" autocomplete="username"><label>Senha</label><input id="auP" type="password" autocomplete="current-password">' +
+      (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
+      '<div class="au-row"><button class="btn primary" id="auGo">Entrar</button><button class="btn" id="auCam" title="Usa a câmera sem acessar pacientes (bancada, testes)">Só câmera</button></div>' +
+      '<p class="au-sub"><a href="#" id="auOther">Usar outra pasta do consultório…</a></p>');
+    $("auU").focus(); $("auP").onkeydown = e => { if (e.key === "Enter") $("auGo").click(); };
+    $("auGo").onclick = async () => {
+      if (!(await rootPerm(PR.root, true))) return authLogin("Sem permissão para a pasta do consultório. Clique em Entrar e permita o acesso.");
+      const users = await readJSON(["cadastros", "usuarios.json"], []); const u = users.find(x => x.login === $("auU").value.trim().toLowerCase() && x.ativo !== false);
+      if (!u || (await passHash($("auP").value, u.salt)).hash !== u.hash) { await audit("tentativa de acesso negada", $("auU").value.trim()); return authLogin("Usuário ou senha incorretos."); }
+      PR.user = u; PR.camOnly = false; PR.pacOpened = null; await loadAll(); await audit("entrou"); AU.hidden = true; prSession(); };
+    $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); };
+    $("auOther").onclick = e => { e.preventDefault(); authSetup1(true); }; }
+  function authSetup1(back) {
+    authShow('<h2>Configurar o consultório</h2><p class="au-sub">Escolha (ou crie) a pasta onde ficarão pacientes, exames, imagens e laudos — de preferência num disco com criptografia (BitLocker) e com backup.</p>' +
+      (window.showDirectoryPicker ? '<div class="au-row"><button class="btn primary" id="auPick">Escolher pasta…</button>' + (back ? '<button class="btn" id="auBack">Voltar</button>' : '') + '</div>'
+        : '<p class="au-err">Este navegador não permite gravar numa pasta do computador. Use o Microsoft Edge ou o Google Chrome.</p>') +
+      '<div class="au-row"><button class="btn" id="auCam">Só câmera (sem prontuário)</button></div>');
+    if ($("auPick")) $("auPick").onclick = async () => { let h; try { h = await window.showDirectoryPicker({ id: "consultorio", mode: "readwrite" }); } catch (e) { return; }
+      PR.root = h; PR.opfs = false; await idbSet("prRoot", h); const users = await readJSON(["cadastros", "usuarios.json"], []); if (users.length) authLogin(); else authSetup2(); };
+    if ($("auBack")) $("auBack").onclick = authLogin;
+    $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); }; }
+  function authSetup2(msg) {
+    authShow('<h2>Primeiro acesso</h2><p class="au-sub">Dados do consultório e do primeiro médico (que poderá cadastrar outros usuários).</p>' +
+      '<label>Nome do consultório / clínica</label><input id="s1">' +
+      '<div class="au-g2"><div><label>Nome do médico</label><input id="s2"></div><div><label>CRM</label><input id="s3" placeholder="000000"></div><div><label>UF</label><input id="s4" maxlength="2" placeholder="SP"></div><div><label>RQE (opcional)</label><input id="s5"></div></div>' +
+      '<div class="au-g2"><div><label>Usuário</label><input id="s6" placeholder="ex.: ana.silva"></div><div><label>Senha (mín. 6)</label><input id="s7" type="password"></div></div>' +
+      (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') + '<div class="au-row"><button class="btn primary" id="sGo">Criar e entrar</button></div>');
+    $("sGo").onclick = async () => { const v = i => $("s" + i).value.trim();
+      if (!v(1) || !v(2) || !v(3) || !v(6) || v(7).length < 6) return authSetup2("Preencha consultório, médico, CRM, usuário e senha (mínimo 6 caracteres).");
+      if (!(await rootPerm(PR.root, true))) return authSetup2("Sem permissão para gravar na pasta.");
+      await writeJSON(["_sistema", "formato.json"], { formato: FMT, criado_em: isoNow(), app: "Ajuste de Imagem — Nasofibrolaringoscopia" });
+      PR.cons = { nome: v(1), termo: TERMO_PADRAO }; await writeJSON(["_sistema", "consultorio.json"], PR.cons);
+      const inst = { id: "INS001", nome: v(1), tipo: "clínica", cnpj: "", cnes: "", endereco: "", telefone: "" }; await writeJSON(["cadastros", "instituicoes", "INS001.json"], inst);
+      const med = { id: "MED001", nome: v(2), crm: v(3), uf: v(4).toUpperCase(), rqe: v(5), especialidade: "Otorrinolaringologia" }; await writeJSON(["cadastros", "medicos", "MED001.json"], med);
+      await writeJSON(["cadastros", "modelos_laudo", "MED001.json"], modelosPadrao());
+      await writeJSON(["_sistema", "contador.json"], { medico: 1, instituicao: 1, equipamento: 0, paciente: 0 });
+      const ph = await passHash(v(7)); const u = { login: v(6).toLowerCase(), nome: v(2), perfil: "medico", medico: "MED001", salt: ph.salt, hash: ph.hash, ativo: true };
+      await writeJSON(["cadastros", "usuarios.json"], [u]); PR.user = u; await loadAll(); await audit("criou o consultório e o primeiro usuário"); AU.hidden = true; prSession(); }; }
+  const TERMO_PADRAO = "Eu, {paciente}, autorizo a realização do exame de {exame} e declaro ter sido informado(a) sobre o procedimento, seus riscos e alternativas. " +
+    "Autorizo o registro de imagens e vídeos para fins de diagnóstico e de prontuário. [ ] Autorizo também o uso para ensino e pesquisa, sem identificação.\n\nLocal e data: {data}\n\nAssinatura do paciente ou responsável: ______________________________";
+  const modelosPadrao = () => [
+    { id: "regioes", nome: "Por regiões", secoes: [{ titulo: "Técnica", texto: "Exame realizado com videonasofibrolaringoscópio flexível, via fossa nasal ___, sob anestesia tópica. Boa tolerância." },
+      { titulo: "Fossas nasais", texto: "" }, { titulo: "Rinofaringe", texto: "" }, { titulo: "Orofaringe", texto: "" }, { titulo: "Hipofaringe", texto: "" }, { titulo: "Laringe", texto: "" }], conclusao: "" },
+    { id: "livre", nome: "Texto livre", secoes: [{ titulo: "Achados", texto: "" }], conclusao: "" }];
+  // ---------- sessão ----------
+  function prSession() {
+    const med = isMed(), sec = PR.user && PR.user.perfil === "secretaria";
+    $("prUser").textContent = PR.user ? PR.user.nome + " · " + (med ? "Médico" : "Secretária") : PR.camOnly ? "Só câmera" : "";
+    $("prLogout").textContent = PR.user ? "Sair" : "Entrar";
+    document.querySelector('.tabs [data-tab="imagem"]').style.display = sec ? "none" : "";
+    if (sec || (PR.user && tab === "tutorial")) showTab("pront"); else if (PR.camOnly) showTab("imagem"); else showTab("pront");
+    PR.scr = "pacientes"; PR.pac = null; prRender(); exBadge(); backupReminder(); }
+  $("prLogout").onclick = async () => { if (PR.exam) { setStatus("Encerre o exame em andamento antes de sair.", "bad"); return; }
+    if (PR.user) { await audit("saiu"); PR.user = null; } PR.pac = null; PR.camOnly = false; prRender(); authStart(); };
+  async function backupReminder() { if (!isMed()) return; const b = await readJSON(["_sistema", "backup.json"], {}); const days = b.ultimo ? (Date.now() - new Date(b.ultimo)) / 864e5 : 999;
+    $("prBackWarn").hidden = days < 1; $("prBackWarn").textContent = b.ultimo ? "Último backup há " + Math.floor(days) + " dia(s) — faça um backup (Configurações)." : "Ainda não há backup — faça um em Configurações."; }
+  // ---------- navegação da aba Prontuário ----------
+  const PM = $("prMain");
+  function go(scr, extra) { PR.scr = scr; Object.assign(PR, extra || {}); prRender(); }
+  function freeUrls() { PR.urls.forEach(u => URL.revokeObjectURL(u)); PR.urls = []; }
+  const objUrl = b => { const u = URL.createObjectURL(b); PR.urls.push(u); return u; };
+  async function prRender() {
+    freeUrls();
+    document.querySelectorAll("#prNav button").forEach(b => b.classList.toggle("on", b.dataset.scr === PR.scr || (PR.scr === "paciente" && b.dataset.scr === "pacientes")));
+    $("prNav").querySelector('[data-scr="config"]').style.display = isMed() ? "" : "none";
+    if (!PR.user) { PM.innerHTML = '<div class="pr-card pr-empty"><h3>Prontuário</h3><p>Entre com usuário e senha para acessar pacientes, exames e laudos.</p><button class="btn primary" data-act="login">Entrar</button></div>'; return; }
+    try { await ({ pacientes: scrPacientes, paciente: scrPaciente, exame: scrNovoExame, laudo: scrLaudo, config: scrConfig }[PR.scr] || scrPacientes)(); }
+    catch (e) { console.error(e); PM.innerHTML = '<div class="pr-card"><p class="au-err">Erro ao abrir: ' + esc(e.message) + '</p></div>'; } }
+  document.querySelectorAll("#prNav button").forEach(b => b.onclick = () => go(b.dataset.scr, { pac: b.dataset.scr === "pacientes" ? null : PR.pac }));
+  // ---------- modal genérico ----------
+  const MD = $("prModal");
+  function modal(title, html, buttons) { MD.innerHTML = '<div class="pr-mbox"><div class="pr-mhead"><b>' + esc(title) + '</b><button class="btn sm" data-x>Fechar</button></div><div class="pr-mbody">' + html + '</div><div class="pr-mfoot"></div></div>';
+    const f = MD.querySelector(".pr-mfoot"); (buttons || []).forEach(([t, fn, cls]) => { const b = document.createElement("button"); b.className = "btn " + (cls || ""); b.textContent = t; b.onclick = fn; f.append(b); });
+    MD.querySelector("[data-x]").onclick = () => { MD.hidden = true; }; MD.hidden = false; }
+  const mv = id => { const e = MD.querySelector("#" + id); return e ? (e.type === "checkbox" ? e.checked : e.value.trim()) : ""; };
+  const field = (id, label, val, attrs) => '<div><label>' + label + '</label><input id="' + id + '" value="' + esc(val) + '" ' + (attrs || "") + '></div>';
+  // ================= PACIENTES =================
+  async function scrPacientes() {
+    const q = (PR.q || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""), dig = q.replace(/\D/g, "");
+    const all = Object.values(PR.index.pacientes), list = all.filter(p => !q || p.nome.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q) || p.id.toLowerCase().includes(q) || (dig && p.cpf.replace(/\D/g, "").includes(dig)))
+      .sort((a, b) => ((b.exames.slice(-1)[0] || {}).data || "").localeCompare((a.exames.slice(-1)[0] || {}).data || "") || a.nome.localeCompare(b.nome)).slice(0, 200);
+    const nEx = all.reduce((s, p) => s + p.exames.length, 0), av = await listDir(["avulsos"]);
+    const st = s => s === "laudado" ? '<span class="pill ok">laudado</span>' : s === "aguardando laudo" ? '<span class="pill warn">laudo pendente</span>' : s === "em andamento" ? '<span class="pill warn">em andamento</span>' : s ? '<span class="pill">' + esc(s) + '</span>' : "";
+    PM.innerHTML = '<div class="pr-bar"><input id="prQ" placeholder="Buscar por nome, CPF ou código…" value="' + esc(PR.q || "") + '"><button class="btn primary" data-act="novoPac">+ Novo paciente</button>' +
+      (isMed() ? '<button class="btn" data-act="avulso">Exame avulso (urgência)</button>' : '') + '<span class="pr-dim">' + all.length + ' pacientes · ' + nEx + ' exames</span></div>' +
+      (av.length && isMed() ? '<div class="pr-card"><h4>Exames avulsos sem paciente</h4>' + av.map(a => '<div class="pr-row"><span>' + esc(a.name) + '</span><button class="btn sm" data-act="vincular" data-id="' + esc(a.name) + '">Vincular a um paciente…</button></div>').join("") + '</div>' : '') +
+      '<div class="pr-card pr-tbl"><table><tr><th>Código</th><th>Nome</th><th>Nascimento</th><th>Convênio</th><th>Último exame</th><th>Exames</th><th></th></tr>' +
+      (list.length ? list.map(p => { const l = p.exames.slice(-1)[0];
+        return '<tr data-act="abrirPac" data-id="' + p.id + '"><td>' + p.id + '</td><td><b>' + esc(p.nome) + '</b></td><td>' + brDate(p.nascimento) + (p.nascimento ? ' (' + age(p.nascimento) + ')' : '') + '</td><td>' + esc(p.convenio) +
+          '</td><td>' + (l ? brDate(l.data) + ' · ' + esc(l.tipo) : '—') + '</td><td>' + p.exames.length + '</td><td>' + (l && isMed() ? st(l.status) : '') + '</td></tr>'; }).join("")
+        : '<tr><td colspan="7" class="pr-dim">Nenhum paciente' + (q ? ' encontrado' : ' cadastrado') + '.</td></tr>') + '</table></div>' +
+      (isMed() ? '' : '<p class="pr-dim">Perfil secretária: cadastro e documentos. Imagens, laudos e dados clínicos ficam restritos aos médicos.</p>');
+    const qi = $("prQ"); qi.oninput = () => { PR.q = qi.value; clearTimeout(PR.qt); PR.qt = setTimeout(() => { const pos = qi.selectionStart; scrPacientes().then(() => { const n = $("prQ"); n.focus(); n.setSelectionRange(pos, pos); }); }, 200); }; }
+  function pacForm(p) {
+    p = p || {}; const c = p.convenio || {}, r = p.responsavel || {};
+    return '<div class="pr-g3">' + field("fNome", "Nome completo *", p.nome) + field("fSocial", "Nome social", p.nome_social) + field("fNasc", "Nascimento *", p.nascimento, 'type="date"') +
+      '<div><label>Sexo</label><select id="fSexo">' + ["", "F", "M", "Outro"].map(s => '<option' + (p.sexo === s ? " selected" : "") + '>' + s + '</option>').join("") + '</select></div>' +
+      field("fCpf", "CPF", p.cpf, 'placeholder="000.000.000-00"') + field("fDoc", "Outro documento", p.documento_alternativo) + field("fTel", "Telefone", p.telefone) + field("fMail", "E-mail", p.email) + field("fConv", "Convênio", c.nome) + field("fCart", "Carteirinha", c.carteirinha) +
+      field("fProntH", "Prontuário no hospital (opcional)", p.prontuario_externo) + '</div><h4>Responsável (crianças)</h4><div class="pr-g3">' + field("fRNome", "Nome", r.nome) + field("fRPar", "Parentesco", r.parentesco) + field("fRCpf", "CPF", r.cpf) + '</div>' +
+      '<label>Observações</label><textarea id="fObs" rows="2">' + esc(p.observacoes) + '</textarea>'; }
+  const cpfOk = s => { const d = s.replace(/\D/g, ""); if (!d) return true; if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+    const dv = n => { let t = 0; for (let i = 0; i < n; i++) t += +d[i] * (n + 1 - i); const r = (t * 10) % 11; return r === 10 ? 0 : r; }; return dv(9) === +d[9] && dv(10) === +d[10]; };
+  async function savePac(old) {
+    if (!mv("fNome") || !mv("fNasc")) { setStatus("Preencha nome e data de nascimento.", "bad"); return null; }
+    if (!cpfOk(mv("fCpf"))) { setStatus("CPF inválido — confira os números.", "bad"); return null; }
+    const dupe = mv("fCpf") && Object.values(PR.index.pacientes).find(x => x.cpf && x.cpf.replace(/\D/g, "") === mv("fCpf").replace(/\D/g, "") && (!old || x.id !== old.id));
+    if (dupe) { setStatus("Já existe paciente com este CPF: " + dupe.id + " · " + dupe.nome + ".", "bad"); return null; }
+    const p = Object.assign({}, old || {}, { formato: FMT, nome: mv("fNome"), nome_social: mv("fSocial"), nascimento: mv("fNasc"), sexo: mv("fSexo"), cpf: mv("fCpf"), documento_alternativo: mv("fDoc"),
+      telefone: mv("fTel"), email: mv("fMail"), convenio: { nome: mv("fConv"), carteirinha: mv("fCart") }, prontuario_externo: mv("fProntH"),
+      responsavel: { nome: mv("fRNome"), parentesco: mv("fRPar"), cpf: mv("fRCpf") }, observacoes: mv("fObs"), atualizado_em: isoNow() });
+    if (!old) { p.id = await nextId("paciente", "P", 6); p.criado_em = p.atualizado_em; }
+    else await writeJSON(["pacientes", p.id, "historico", "paciente_" + old.atualizado_em.replace(/[:+]/g, "-") + ".json"], old);   // versão anterior guardada
+    await writeJSON(["pacientes", p.id, "paciente.json"], p);
+    const ent = PR.index.pacientes[p.id] || idxEntry(p); Object.assign(ent, idxEntry(p), { exames: ent.exames || [] }); PR.index.pacientes[p.id] = ent; await saveIndex();
+    await audit(old ? "editou cadastro" : "cadastrou paciente", p.id); return p; }
+  // ================= PRONTUÁRIO DO PACIENTE =================
+  async function scrPaciente() {
+    const id = PR.pac, p = await readJSON(["pacientes", id, "paciente.json"]); if (!p) { go("pacientes"); return; }
+    if (!PR.pacOpened || PR.pacOpened !== id) { PR.pacOpened = id; await audit("abriu prontuário", id); }
+    const an = await readJSON(["pacientes", id, "antecedentes.json"], {}), med = isMed();
+    const tabs = med ? [["ficha", "Ficha"], ["antecedentes", "Antecedentes"], ["evolucao", "Evolução"], ["exames", "Exames"], ["documentos", "Documentos"]] : [["ficha", "Ficha"], ["exames", "Exames"], ["documentos", "Documentos"]];
+    if (!tabs.find(t => t[0] === PR.pacTab)) PR.pacTab = med ? "exames" : "ficha";
+    const ini = p.nome.split(/\s+/).filter(Boolean).map(s => s[0]).slice(0, 2).join("").toUpperCase();
+    let html = '<div class="pr-card pr-pat"><div class="pr-big">' + esc(ini) + '</div><div><h3>' + esc(p.nome) + '</h3><div class="pr-dim"><b>' + p.id + '</b> · ' + age(p.nascimento) + ' (' + brDate(p.nascimento) + ')' + (p.sexo ? ' · ' + esc(p.sexo) : '') +
+      ((p.convenio || {}).nome ? ' · ' + esc(p.convenio.nome) + (p.convenio.carteirinha ? ' (' + esc(p.convenio.carteirinha) + ')' : '') : '') + (p.telefone ? ' · ' + esc(p.telefone) : '') + '</div>' +
+      (med && an.alergias ? '<div style="margin-top:6px"><span class="pill bad">Alergias: ' + esc(an.alergias) + '</span></div>' : '') + '</div>' +
+      '<div class="pr-acts"><button class="btn" data-act="editPac">Editar ficha</button>' + (med ? '<button class="btn primary" data-act="novoExame">+ Novo exame</button>' : '') + '</div></div>' +
+      '<div class="pr-tabs">' + tabs.map(([k, t]) => '<span data-act="pacTab" data-id="' + k + '" class="' + (k === PR.pacTab ? "on" : "") + '">' + t + '</span>').join("") + '</div><div id="prTabBody"></div>';
+    PM.innerHTML = html; const B = $("prTabBody");
+    if (PR.pacTab === "ficha") {
+      const r = p.responsavel || {}, row = (k, v) => v ? '<tr><th>' + k + '</th><td>' + esc(v) + '</td></tr>' : '';
+      B.innerHTML = '<div class="pr-card"><table class="pr-kv">' + row("Nome", p.nome) + row("Nome social", p.nome_social) + row("Nascimento", brDate(p.nascimento) + " (" + age(p.nascimento) + ")") + row("Sexo", p.sexo) + row("CPF", p.cpf) +
+        row("Outro documento", p.documento_alternativo) + row("Telefone", p.telefone) + row("E-mail", p.email) + row("Convênio", (p.convenio || {}).nome) + row("Carteirinha", (p.convenio || {}).carteirinha) + row("Prontuário no hospital", p.prontuario_externo) +
+        row("Responsável", r.nome ? r.nome + (r.parentesco ? " (" + r.parentesco + ")" : "") + (r.cpf ? " · CPF " + r.cpf : "") : "") + row("Observações", p.observacoes) + row("Cadastrado em", brDT(p.criado_em)) + '</table></div>'; }
+    else if (PR.pacTab === "antecedentes") {
+      const F = [["queixa", "Queixa principal / história"], ["doencas", "Doenças"], ["cirurgias", "Cirurgias anteriores"], ["medicacoes", "Medicações em uso"], ["alergias", "Alergias"], ["outros", "Outros (hábitos, antecedentes familiares…)"]];
+      B.innerHTML = '<div class="pr-card">' + F.map(([k, t]) => '<label>' + t + '</label><textarea id="an_' + k + '" rows="2">' + esc(an[k]) + '</textarea>').join("") +
+        '<div class="pr-acts" style="margin-top:10px"><button class="btn primary" data-act="saveAnt">Salvar antecedentes</button>' + (an.atualizado_em ? '<span class="pr-dim">atualizado em ' + brDT(an.atualizado_em) + ' por ' + esc(an.por || "") + '</span>' : '') + '</div></div>'; }
+    else if (PR.pacTab === "evolucao") {
+      const ev = []; for (const { name } of (await listDir(["pacientes", id, "evolucao"])).reverse()) { const j = await readJSON(["pacientes", id, "evolucao", name]); if (j) ev.push(j); }
+      B.innerHTML = '<div class="pr-card"><label>Nova anotação</label><textarea id="evTxt" rows="3"></textarea><div class="pr-acts" style="margin-top:8px"><button class="btn primary" data-act="addEv">Adicionar</button></div></div>' +
+        '<div class="pr-card">' + (ev.length ? ev.map(e => '<div class="pr-reg"><b>' + brDT(e.data) + ' · ' + esc(e.autor) + '</b><p>' + esc(e.texto).replace(/\n/g, "<br>") + '</p></div>').join("") : '<p class="pr-dim">Sem anotações.</p>') + '</div>'; }
+    else if (PR.pacTab === "exames") {
+      const ex = []; for (const { name } of (await listDir(["pacientes", id, "exames"])).reverse()) { const x = await readJSON(["pacientes", id, "exames", name, "exame.json"]); if (x) ex.push([name, x]); }
+      let h = '<div class="pr-card"><div class="pr-tl">';
+      if (!ex.length) h += '<p class="pr-dim">Nenhum exame.</p>';
+      for (const [dir, x] of ex) {
+        const st = x.status === "laudado" ? '<span class="pill ok">laudo v' + (x.laudos || []).length + '</span>' : x.status === "em andamento" ? '<span class="pill warn">em andamento</span>' : '<span class="pill warn">laudo pendente</span>';
+        h += '<div class="pr-ev"><b>' + brDT(x.inicio) + ' · ' + esc(x.tipo) + '</b> ' + (med ? st : '') + '<div class="pr-dim">' + esc((x.medico || {}).nome || "") + (x.local ? ' · ' + esc(x.local.nome) : '') + (med && x.indicacao ? ' · indicação: ' + esc(x.indicacao) : '') + '</div>';
+        if (med) {
+          const th = (x.midias || []).filter(m => m.tipo === "foto" || m.tipo === "metrica").slice(0, 6); h += '<div class="pr-thumbs" data-dir="' + dir + '">';
+          for (const m of th) { const f = await readBlob(["pacientes", id, "exames", dir, ...m.arquivo.split("/")]); if (f) h += '<img src="' + objUrl(f) + '" title="' + esc(m.legenda || m.arquivo) + (m.tipo === "foto" ? " — abrir na Métrica" : "") + '" data-act="' + (m.tipo === "foto" ? "metricaDe" : "verArq") + '" data-id="' + dir + '|' + esc(m.arquivo) + '">'; }
+          h += (x.midias || []).filter(m => m.tipo === "video").length ? '<span class="pr-dim">+ ' + x.midias.filter(m => m.tipo === "video").length + ' vídeo(s)</span>' : '';
+          h += '</div><div class="pr-acts" style="margin-top:8px">' + (x.status === "em andamento" && !PR.exam ? '<button class="btn sm" data-act="retomar" data-id="' + dir + '">Retomar exame</button>' : '') +
+            '<button class="btn sm" data-act="laudo" data-id="' + dir + '">' + (x.status === "laudado" ? "Laudo (nova versão)" : "Fazer laudo") + '</button>' +
+            ((x.laudos || []).length ? '<button class="btn sm" data-act="verPdf" data-id="' + dir + '">Abrir laudo (PDF)</button><button class="btn sm" data-act="copiaPdf" data-id="' + dir + '">Salvar cópia (pendrive)</button><button class="btn sm" data-act="email" data-id="' + dir + '">E-mail</button>' : '') +
+            '<button class="btn sm" data-act="dicom" data-id="' + dir + '">Exportar DICOM</button></div>'; }
+        h += '</div>'; }
+      B.innerHTML = h + '</div></div>' + (med ? '<p class="pr-dim">Toque numa imagem para abrir na Métrica (a comparação mostra só imagens deste paciente).</p>' : ''); }
+    else if (PR.pacTab === "documentos") {
+      const docs = await listDir(["pacientes", id, "documentos"]);
+      B.innerHTML = '<div class="pr-card"><div class="pr-acts"><button class="btn" data-act="termoImp">Imprimir termo de consentimento</button><button class="btn" data-act="termoAss">Assinar termo na tela</button>' +
+        '<button class="btn primary" data-act="anexar">Anexar documento…</button><input type="file" id="prDocIn" hidden multiple accept="image/*,application/pdf"></div>' +
+        '<p class="pr-dim">Termos assinados, pedidos médicos, exames externos (PDF ou foto). O nome do arquivo começa pela data.</p>' +
+        (docs.length ? docs.map(d => '<div class="pr-row"><a href="#" data-act="abrirDoc" data-id="' + esc(d.name) + '">' + esc(d.name) + '</a></div>').join("") : '<p class="pr-dim">Nenhum documento.</p>') + '</div>';
+      $("prDocIn").onchange = async e => { for (const f of e.target.files) { const n = isoNow().slice(0, 10) + "_" + f.name.replace(/[\\/:*?"<>|]+/g, "-"); await writeFile(["pacientes", id, "documentos", n], f); await audit("anexou documento", id + " · " + n); } prRender(); }; } }
+  // ---------- termo de consentimento ----------
+  function termoTexto(p, tipo) { return (PR.cons.termo || TERMO_PADRAO).replace(/\{paciente\}/g, p.nome).replace(/\{exame\}/g, (tipo || "nasofibrolaringoscopia").toLowerCase()).replace(/\{data\}/g, (PR.cons.cidade ? PR.cons.cidade + ", " : "") + brDate(isoNow())); }
+  function termoPrint(p, tipo) { const w = window.open("", "_blank"); if (!w) { setStatus("O navegador bloqueou a janela de impressão.", "bad"); return; }
+    w.document.write('<!doctype html><meta charset="utf-8"><title>Termo de consentimento</title><body style="font:15px/1.6 Georgia,serif;max-width:680px;margin:40px auto"><h2 style="font:700 18px Arial">' + esc(PR.cons.nome || "") +
+      '</h2><h3 style="font:700 15px Arial">TERMO DE CONSENTIMENTO — ' + esc((tipo || "").toUpperCase()) + '</h3><p>Paciente: ' + esc(p.nome) + ' · ' + p.id + '</p><p style="white-space:pre-wrap">' + esc(termoTexto(p, tipo)) + '</p><script>print()<\/script></body>'); w.document.close(); }
+  function termoSign(p, tipo, done) {
+    modal("Termo de consentimento — assinatura na tela", '<p style="white-space:pre-wrap;font-size:14px">' + esc(termoTexto(p, tipo)) + '</p><canvas id="sigCv" width="640" height="180" style="width:100%;background:#fff;border-radius:8px;touch-action:none"></canvas><p class="pr-dim">Assine no quadro (dedo, caneta ou mouse).</p>',
+      [["Limpar", () => { const c = $("sigCv"); c.getContext("2d").clearRect(0, 0, c.width, c.height); }], ["Salvar termo assinado", async () => {
+        const c = $("sigCv"), out = document.createElement("canvas"); out.width = 900; const x = out.getContext("2d"); x.font = "18px Georgia"; const lines = [];
+        termoTexto(p, tipo).split("\n").forEach(par => { let s = ""; par.split(" ").forEach(wd => { if (x.measureText(s + wd).width > 840) { lines.push(s); s = ""; } s += wd + " "; }); lines.push(s); });
+        out.height = 120 + lines.length * 26 + 220; x.fillStyle = "#fff"; x.fillRect(0, 0, out.width, out.height); x.fillStyle = "#111"; x.font = "bold 20px Arial"; x.fillText("TERMO DE CONSENTIMENTO — " + (tipo || "").toUpperCase(), 30, 50);
+        x.font = "15px Arial"; x.fillText((PR.cons.nome || "") + " · Paciente: " + p.nome + " · " + p.id + " · " + brDT(isoNow()), 30, 80); x.font = "18px Georgia"; lines.forEach((l, i) => x.fillText(l, 30, 120 + i * 26));
+        x.drawImage(c, 30, 120 + lines.length * 26 + 10, 640, 180);
+        const blob = await new Promise(r => out.toBlob(r, "image/png")), n = isoNow().slice(0, 10) + "_termo_consentimento_" + isoNow().slice(11, 16).replace(":", "h") + ".png";
+        await writeFile(["pacientes", p.id, "documentos", n], blob); await audit("termo assinado na tela", p.id); MD.hidden = true; setStatus("Termo assinado anexado ao prontuário.", "ok"); if (done) done(n); else prRender(); }, "primary"]]);
+    const c = $("sigCv"), g = c.getContext("2d"); g.lineWidth = 2.5; g.lineCap = "round"; g.strokeStyle = "#111"; let on = false;
+    const pt = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
+    c.onpointerdown = e => { on = true; c.setPointerCapture(e.pointerId); const [x, y] = pt(e); g.beginPath(); g.moveTo(x, y); };
+    c.onpointermove = e => { if (!on) return; const [x, y] = pt(e); g.lineTo(x, y); g.stroke(); }; c.onpointerup = () => { on = false; }; }
+  // ================= NOVO EXAME =================
+  async function scrNovoExame() {
+    const p = await readJSON(["pacientes", PR.pac, "paciente.json"]), an = PR.pac ? await readJSON(["pacientes", PR.pac, "antecedentes.json"], {}) : {}, um = PR.meds.find(m => m.id === PR.user.medico);
+    const opt = (arr, sel, lab) => arr.map(o => '<option value="' + esc(o.id) + '"' + (o.id === sel ? " selected" : "") + '>' + esc(lab(o)) + '</option>').join("");
+    PM.innerHTML = '<div class="pr-cols"><div class="pr-card" style="flex:1.2"><h4>Novo exame · ' + (p ? esc(p.nome) + ' (' + p.id + ')' : 'avulso (sem paciente)') + '</h4><div class="pr-g2">' +
+      '<div><label>Tipo de exame</label><select id="xTipo">' + TIPOS.map(t => '<option>' + t + '</option>').join("") + '</select></div>' +
+      '<div><label>Médico executante</label><select id="xMed">' + opt(PR.meds, um ? um.id : "", m => m.nome + " — CRM-" + m.uf + " " + m.crm + (m.rqe ? " · RQE " + m.rqe : "")) + '</select></div>' +
+      '<div><label>Local</label><select id="xLoc"><option value="">—</option>' + opt(PR.insts, PR.cons.local_padrao || (PR.insts[0] || {}).id, i => i.nome) + '</select></div>' +
+      '<div><label>Equipamento</label><select id="xEq"><option value="">—</option>' + opt(PR.equips, (PR.equips[0] || {}).id, e => e.modelo + (e.serie ? " · nº série " + e.serie : "")) + '</select></div>' +
+      field("xConv", "Convênio", p ? (p.convenio || {}).nome : "") + field("xGuia", "Guia / autorização", "") + '</div>' +
+      '<label>Médico solicitante</label><input id="xSol" placeholder="Nome e CRM"><label>Indicação clínica</label><textarea id="xInd" rows="2"></textarea>' +
+      (an.alergias ? '<div class="pr-warn">⚠ Alergias registradas: <b>' + esc(an.alergias) + '</b>. Confirmar antes da anestesia tópica.</div>' : '') + '</div>' +
+      '<div class="pr-card" style="flex:1"><h4>Termo de consentimento</h4>' + (p ? '<p class="pr-dim">Imprima para assinatura no papel (e anexe a foto depois em Documentos) ou assine na tela.</p>' +
+        '<div class="pr-acts"><button class="btn" data-act="termoImp">Imprimir termo</button><button class="btn" data-act="termoAssEx">Assinar na tela</button></div><p id="xTermoOk" class="pr-dim"></p>' : '<p class="pr-dim">Exame avulso: anexe o termo depois de vincular ao paciente.</p>') +
+      '<div class="pr-acts" style="margin-top:16px"><button class="btn primary" data-act="iniciar">Iniciar exame →</button><button class="btn" data-act="voltarPac">Cancelar</button></div>' +
+      '<p class="pr-dim">Ao iniciar, fotos, vídeos e métricas são gravados direto na pasta deste exame.</p></div></div>'; }
+  async function startExam(resume) {
+    if (items.some(it => !it.saved)) { setStatus("Há capturas não salvas na galeria. Salve ou exclua antes de iniciar o exame.", "bad"); return; }
+    let pid = PR.pac, x, dir, base;
+    if (resume) { dir = resume; base = ["pacientes", pid, "exames", dir]; x = await readJSON([...base, "exame.json"]); }
+    else {
+      const tipo = $("xTipo").value, med = PR.meds.find(m => m.id === $("xMed").value), loc = PR.insts.find(i => i.id === $("xLoc").value), eq = PR.equips.find(e => e.id === $("xEq").value);
+      const d = new Date(), eid = "E" + d.getFullYear() + z2(d.getMonth() + 1) + z2(d.getDate()) + "-" + z2(d.getHours()) + z2(d.getMinutes()) + z2(d.getSeconds());
+      dir = eid + "_" + tipo.split(" ")[0].toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      base = pid ? ["pacientes", pid, "exames", dir] : ["avulsos", dir];
+      x = { formato: FMT, id: eid, paciente: pid || null, tipo, inicio: isoNow(), fim: null, status: "em andamento", medico: med ? { id: med.id, nome: med.nome, crm: med.crm, uf: med.uf, rqe: med.rqe } : null,
+        local: loc ? { id: loc.id, nome: loc.nome } : null, equipamento: eq ? { id: eq.id, modelo: eq.modelo, serie: eq.serie } : null, convenio: { nome: $("xConv").value.trim(), guia: $("xGuia").value.trim() },
+        solicitante: $("xSol").value.trim(), indicacao: $("xInd").value.trim(), termo: PR.termoArq || null, midias: [], metricas: [], laudos: [], dicom_study_uid: dicomUid() };
+      await writeJSON([...base, "exame.json"], x);
+      if (pid) { PR.index.pacientes[pid].exames.push(examSummary(x, dir)); await saveIndex(); }
+      await audit("iniciou exame", (pid || "avulso") + " · " + eid); }
+    const p = pid ? await readJSON(["pacientes", pid, "paciente.json"]) : null;
+    PR.exam = { pid, dir, base, x, nome: p ? p.nome : "Exame avulso" }; PR.termoArq = null;
+    const k = { F: 0, V: 0, M: 0 }; (x.midias || []).concat(x.metricas || []).forEach(m => { const mm = /\/([FVM])(\d{3})/.exec(m.arquivo || m.imagem || ""); if (mm) k[mm[1]] = Math.max(k[mm[1]], +mm[2]); }); PR.exam.k = k;
+    clearGallery(); exBadge(); showTab("imagem"); setStatus("Exame iniciado: " + PR.exam.nome + " · " + x.tipo + ". As capturas vão direto para o exame.", "ok"); }
+  function clearGallery() { while (items.length) { const it = items.pop(); try { it.el.remove(); } catch (e) {} } $("gallery").classList.remove("has"); refreshSaveUi(); fit(); }
+  function exBadge() { const b = $("prExam"); if (!PR.exam) { b.hidden = true; return; } b.hidden = false; $("prExamTxt").textContent = "EXAME EM ANDAMENTO · " + PR.exam.nome + " · " + PR.exam.x.tipo; }
+  $("prExamEnd").onclick = async () => {
+    if (!PR.exam) return; if (rec) { setStatus("Pare a gravação do vídeo antes de encerrar.", "bad"); return; } if (MT.open) metricClose();
+    if (PR.saving) { setStatus("Terminando de gravar as capturas…", ""); while (PR.saving) await new Promise(r => setTimeout(r, 150)); }
+    const E = PR.exam; E.x.fim = isoNow(); E.x.status = "aguardando laudo"; await writeJSON([...E.base, "exame.json"], E.x);
+    if (E.pid) { const s = PR.index.pacientes[E.pid].exames.find(e => e.id === E.x.id); if (s) s.status = E.x.status; await saveIndex(); }
+    await audit("encerrou exame", (E.pid || "avulso") + " · " + E.x.id); PR.exam = null; clearGallery(); exBadge();
+    if (frozen) toggleFreeze();
+    showTab("pront"); if (E.pid) go("laudo", { pac: E.pid, ldir: E.dir, lbase: E.base }); else go("pacientes"); };
+  // ---------- capturas → pasta do exame ----------
+  async function examSave(it, blob) { PR.saving = (PR.saving || 0) + 1; try { return await examSave1(it, blob); } finally { PR.saving--; } }
+  async function examSave1(it, blob) {
+    const T = it.target || (PR.exam ? { pid: PR.exam.pid, dir: PR.exam.dir, base: PR.exam.base } : null); if (!T) return false;
+    const E = PR.exam && PR.exam.dir === T.dir ? PR.exam : null, x = E ? E.x : await readJSON([...T.base, "exame.json"]); if (!x) return false;
+    const cnt = E ? E.k : (() => { const k = { F: 0, V: 0, M: 0 }; (x.midias || []).concat(x.metricas || []).forEach(m => { const mm = /\/([FVM])(\d{3})/.exec(m.arquivo || m.imagem || ""); if (mm) k[mm[1]] = Math.max(k[mm[1]], +mm[2]); }); return k; })();
+    const L = it.kind === "metrica" ? "M" : it.type === "video" ? "V" : "F", n = L + String(++cnt[L]).padStart(3, "0"), d = new Date(), hora = z2(d.getHours()) + ":" + z2(d.getMinutes()) + ":" + z2(d.getSeconds());
+    try {
+      if (L === "M") { await writeFile([...T.base, "metricas", n + ".png"], blob); await writeJSON([...T.base, "metricas", n + ".json"], it.mdata || {});
+        (x.metricas = x.metricas || []).push({ imagem: "metricas/" + n + ".png", dados: "metricas/" + n + ".json", hora, origem: it.mdata && it.mdata.origens ? it.mdata.origens.join(" | ") : "" });
+        (x.midias = x.midias || []).push({ arquivo: "metricas/" + n + ".png", tipo: "metrica", hora, legenda: "Métrica", no_laudo: true }); }
+      else if (L === "V") { const ext = (blob.type || "").includes("mp4") ? "mp4" : "webm"; await writeFile([...T.base, "midia", n + "." + ext], blob);
+        x.midias.push({ arquivo: "midia/" + n + "." + ext, tipo: "video", hora, duracao: it.dur || null }); }
+      else { await writeFile([...T.base, "midia", n + ".png"], blob); const m = { arquivo: "midia/" + n + ".png", tipo: "foto", hora, legenda: "", no_laudo: true, ajustes: capAjustes() };
+        const nat = it.nativeP ? await it.nativeP : it.native; if (nat) { await writeFile([...T.base, "midia", n + "_camera.png"], nat); m.original = "midia/" + n + "_camera.png"; }
+        if (it.extra && it.extra.blob) { await writeFile([...T.base, "midia", n + "_quadro.png"], it.extra.blob); m.quadro_unico = "midia/" + n + "_quadro.png"; }
+        x.midias.push(m); }
+      await writeJSON([...T.base, "exame.json"], x); await audit("gravou " + (L === "M" ? "métrica" : L === "V" ? "vídeo" : "foto"), (T.pid || "avulso") + " · " + x.id + " · " + n);
+      it.saved = true; it.exam = { base: T.base, n, L }; setWhere(it, "exame " + x.id); try { it.el.classList.remove("unsaved"); } catch (e) {}
+      setStatus((L === "M" ? "Métrica" : L === "V" ? "Vídeo" : "Foto") + " gravada no exame (" + n + ").", "ok"); refreshSaveUi(); return true;
+    } catch (e) { console.error(e); setStatus("Falha ao gravar no exame: " + e.message, "bad"); return false; } }
+  function capAjustes() { return { balanco_branco: (typeof gains !== "undefined" && gains ? gains.map(v => +v.toFixed(3)) : null), anti_vermelho: arLevel, evitar_estouro: (EVL[evlLevel] || {}).name,
+    realce: SHP[shpLevel].name, ruido: NR[nrLevel].name, ampliacao: UPM[curUp()].name, melhoria_resolucao: !!(frozen && frozenSR) }; }
+  async function examRemove(it) { const E = it.exam; if (!E) return false; try {
+    const x = await readJSON([...E.base, "exame.json"]); const keep = m => !(m.arquivo || m.imagem || "").includes("/" + E.n);
+    for (const m of (x.midias || []).concat(x.metricas || []).filter(m => !keep(m))) for (const f of [m.arquivo, m.original, m.quadro_unico, m.imagem, m.dados].filter(Boolean)) { try { await toTrash([...E.base, ...f.split("/")]); } catch (e) {} }
+    x.midias = (x.midias || []).filter(keep); x.metricas = (x.metricas || []).filter(keep); await writeJSON([...E.base, "exame.json"], x);
+    if (PR.exam && PR.exam.base.join("/") === E.base.join("/")) PR.exam.x = x; await audit("excluiu captura (lixeira)", x.id + " · " + E.n); return true; } catch (e) { console.warn(e); return false; } }
+  // ---------- métrica: abrir imagem do prontuário e comparar só com o mesmo paciente ----------
+  async function openMetricFrom(pid, dir, arquivo) {
+    const base = ["pacientes", pid, "exames", dir], x = await readJSON([...base, "exame.json"]), m = (x.midias || []).find(q => q.arquivo === arquivo) || { arquivo };
+    const f = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); if (!f) return;
+    const bmp = await createImageBitmap(f); showTab("imagem"); metricOpen(toNative(bmp, bmp.width, bmp.height, null), x.tipo + " " + brDate(x.inicio) + " · " + m.arquivo.split("/").pop());
+    MT.target = { pid, dir, base }; MT.patient = pid; }
+  async function patientPhotos(pid) {
+    const out = []; for (const { name } of (await listDir(["pacientes", pid, "exames"])).reverse()) { const base = ["pacientes", pid, "exames", name], x = await readJSON([...base, "exame.json"]); if (!x) continue;
+      for (const m of (x.midias || []).filter(q => q.tipo === "foto")) out.push({ base, x, m }); } return out; }
+  // ================= LAUDO =================
+  async function scrLaudo(keep) {
+    const K = keep && PR.L, base = K ? PR.L.base : PR.lbase || ["pacientes", PR.pac, "exames", PR.ldir], x = K ? PR.L.x : await readJSON([...base, "exame.json"]), p = K ? PR.L.p : x.paciente ? await readJSON(["pacientes", x.paciente, "paciente.json"]) : null;
+    const medId = (x.medico || {}).id || PR.user.medico, mods = K ? PR.L.mods : await readJSON(["cadastros", "modelos_laudo", medId + ".json"], modelosPadrao());
+    const L = K ? PR.L.L : x.laudo_rascunho || (x.laudos && x.laudos.length ? x.laudos[x.laudos.length - 1].conteudo : null) || { modelo: mods[0].id, secoes: JSON.parse(JSON.stringify(mods[0].secoes)), conclusao: mods[0].conclusao || "", imagens: null };
+    if (!L.imagens) L.imagens = (x.midias || []).filter(m => m.tipo !== "video" && m.no_laudo !== false).map(m => ({ arquivo: m.arquivo, legenda: m.legenda || (m.tipo === "metrica" ? "Métrica (medida relativa)" : "") }));
+    PR.L = { base, x, p, L, mods, medId };
+    const imgs = (x.midias || []).filter(m => m.tipo !== "video"); let gal = "";
+    for (const m of imgs) { const f = await readBlob([...base, ...m.arquivo.split("/")]); const i = L.imagens.findIndex(q => q.arquivo === m.arquivo);
+      gal += '<div class="pr-pk' + (i >= 0 ? " on" : "") + '" data-act="lImg" data-id="' + esc(m.arquivo) + '">' + (f ? '<img src="' + objUrl(f) + '">' : '') + '<div class="cap">' + (i >= 0 ? '<span class="n">' + (i + 1) + '</span>' : '<span class="pr-dim">não incluída</span>') + '</div>' +
+        (i >= 0 ? '<input class="lcap" data-id="' + esc(m.arquivo) + '" value="' + esc(L.imagens[i].legenda) + '" placeholder="Legenda">' : '') + '</div>'; }
+    PM.innerHTML = '<div class="pr-cols"><div class="pr-card" style="flex:1.15"><h4>Laudo · ' + esc(x.tipo) + ' · ' + brDate(x.inicio) + (p ? ' · ' + esc(p.nome) : '') + (x.laudos && x.laudos.length ? ' · nova versão (v' + (x.laudos.length + 1) + ')' : '') + '</h4>' +
+      '<div class="pr-acts"><select id="lMod">' + mods.map(m => '<option value="' + esc(m.id) + '"' + (m.id === L.modelo ? " selected" : "") + '>' + esc(m.nome) + '</option>').join("") + '</select><button class="btn sm" data-act="lAplicar">Aplicar modelo</button><button class="btn sm" data-act="lSalvarMod">Salvar como meu modelo…</button></div>' +
+      '<div id="lSecs">' + L.secoes.map((s, i) => '<div class="pr-sec"><div class="pr-acts"><input class="lt" data-i="' + i + '" value="' + esc(s.titulo) + '"><button class="btn sm" data-act="lDel" data-id="' + i + '" title="Remover seção">✕</button></div><textarea class="lx" data-i="' + i + '" rows="2">' + esc(s.texto) + '</textarea></div>').join("") + '</div>' +
+      '<div class="pr-acts"><button class="btn sm" data-act="lAdd">+ seção</button></div><label>Conclusão</label><textarea id="lConc" rows="2">' + esc(L.conclusao) + '</textarea>' +
+      '<p class="pr-dim">O modelo é do próprio médico: apague seções que não interessam e escreva livremente.</p></div>' +
+      '<div class="pr-card" style="flex:1"><h4>Imagens do laudo</h4><p class="pr-dim">Toque para incluir/retirar (a ordem é a do toque). Escreva a legenda abaixo de cada uma.</p><div class="pr-pick">' + (gal || '<p class="pr-dim">Sem imagens neste exame.</p>') + '</div>' +
+      '<div class="pr-acts" style="margin-top:12px"><button class="btn" data-act="lPrev">Pré-visualizar PDF</button><button class="btn primary" data-act="lFinal">Finalizar laudo</button><button class="btn" data-act="lRasc">Salvar rascunho</button><button class="btn" data-act="voltarPac">Voltar</button></div>' +
+      '<p class="pr-dim">Finalizar grava laudo_v' + ((x.laudos || []).length + 1) + '.pdf na pasta do exame; correções futuras geram nova versão (as anteriores ficam guardadas). Assinatura digital ICP-Brasil: 2ª fase.</p></div></div>'; }
+  function lCollect() { const L = PR.L.L; L.modelo = $("lMod").value; L.secoes = [...document.querySelectorAll("#lSecs .pr-sec")].map(d => ({ titulo: d.querySelector(".lt").value.trim(), texto: d.querySelector(".lx").value }));
+    L.conclusao = $("lConc").value; document.querySelectorAll(".lcap").forEach(i => { const q = L.imagens.find(m => m.arquivo === i.dataset.id); if (q) q.legenda = i.value; }); return L; }
+  // ---------- PDF (jsPDF local) ----------
+  let jspdfP = null;
+  const loadJsPDF = () => jspdfP || (jspdfP = new Promise((res, rej) => { if (window.jspdf) return res(window.jspdf); const s = document.createElement("script"); s.src = "jspdf.umd.min.js";
+    s.onload = () => res(window.jspdf); s.onerror = () => { jspdfP = null; rej(new Error("não encontrei o arquivo jspdf.umd.min.js")); }; document.head.append(s); }));
+  const blobToDataURL = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+  async function imgJpeg(blob, max) { const bmp = await createImageBitmap(blob), k = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    return { url: c.toDataURL("image/jpeg", 0.9), w: c.width, h: c.height }; }
+  async function buildPdf(x, p, L, ver) {
+    const { jsPDF } = await loadJsPDF(), doc = new jsPDF({ unit: "mm", format: "a4" }), W = 210, M = 18, CW = W - 2 * M, BR = [131, 63, 52];
+    const inst = x.local ? PR.insts.find(i => i.id === x.local.id) : null, med = PR.meds.find(m => m.id === (x.medico || {}).id) || x.medico || {};
+    let y = M;
+    const logo = inst ? await readBlob(["cadastros", "instituicoes", inst.id + "_logo.png"]) : null;
+    if (logo) { const im = await imgJpeg(logo, 300), h = 14, w = Math.min(40, h * im.w / im.h); doc.addImage(im.url, "JPEG", M, y, w, h); }
+    const lx = logo ? M + 44 : M; doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text(inst ? inst.nome : (PR.cons.nome || ""), lx, y + 4);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(90); doc.text(doc.splitTextToSize([inst && inst.endereco, inst && inst.telefone, inst && inst.cnes ? "CNES " + inst.cnes : ""].filter(Boolean).join(" · "), 95), lx, y + 9);
+    doc.setTextColor(0); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("LAUDO DE " + x.tipo.split(" —")[0].toUpperCase(), W - M, y + 4, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(90); doc.text("Exame " + x.id + " · " + brDT(x.inicio), W - M, y + 9, { align: "right" }); doc.setTextColor(0);
+    y += 17; doc.setDrawColor(...BR); doc.setLineWidth(0.6); doc.line(M, y, W - M, y); y += 6;
+    const kv = (k, v) => { doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.text(k, M, y); doc.setFont("helvetica", "normal"); const t = doc.splitTextToSize(v || "—", CW - 30); doc.text(t, M + 30, y); y += 4.6 * t.length; };
+    kv("Paciente:", p ? p.nome + " · " + age(p.nascimento) + " · nasc. " + brDate(p.nascimento) + " · " + p.id : "—");
+    kv("Convênio:", ((x.convenio || {}).nome || "") + ((x.convenio || {}).guia ? " · guia " + x.convenio.guia : ""));
+    kv("Solicitante:", x.solicitante); kv("Indicação:", x.indicacao);
+    if (x.equipamento) kv("Equipamento:", x.equipamento.modelo + (x.equipamento.serie ? " · nº série " + x.equipamento.serie : ""));
+    y += 2;
+    const need = h => { if (y + h > 297 - 22) { doc.addPage(); y = M; } };
+    const sec = (t, txt, bold) => { if (!txt || !txt.trim()) return; need(12); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...BR); doc.text(t.toUpperCase(), M, y); y += 4.8; doc.setTextColor(0);
+      doc.setFont("times", bold ? "bold" : "normal"); doc.setFontSize(11); doc.splitTextToSize(txt.trim(), CW).forEach(l => { need(5.2); doc.text(l, M, y); y += 5.2; }); y += 2.5; };
+    L.secoes.forEach(s => sec(s.titulo || "", s.texto)); sec("Conclusão", L.conclusao, true);
+    if (L.imagens.length) { const cols = 3, gw = (CW - 2 * 5) / cols; need(gw + 10); let col = 0, rowH = 0;
+      for (const [i, q] of L.imagens.entries()) { const f = await readBlob([...PR.L.base, ...q.arquivo.split("/")]); if (!f) continue; const im = await imgJpeg(f, 900);
+        const ih = gw * im.h / im.w, capL = doc.splitTextToSize((i + 1) + ". " + (q.legenda || ""), gw); const h = ih + 3.5 * capL.length + 4;
+        if (col === 0) { need(h); rowH = 0; } const xx = M + col * (gw + 5); doc.addImage(im.url, "JPEG", xx, y, gw, ih); doc.setFont("helvetica", "normal"); doc.setFontSize(7.8); doc.setTextColor(60); doc.text(capL, xx, y + ih + 3.5); doc.setTextColor(0);
+        rowH = Math.max(rowH, h); col++; if (col === cols) { col = 0; y += rowH; } }
+      if (col) y += rowH; y += 2; }
+    need(34); y += 8; const sig = med.id ? await readBlob(["cadastros", "medicos", med.id + "_assinatura.png"]) : null;
+    if (sig) { const im = await imgJpeg(sig, 500), h = 14, w = Math.min(60, h * im.w / im.h); doc.addImage(im.url, "JPEG", W / 2 - w / 2, y - 12, w, h); }
+    doc.setDrawColor(60); doc.setLineWidth(0.3); doc.line(W / 2 - 40, y + 3, W / 2 + 40, y + 3); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.text((med.nome || "") + (med.especialidade ? " · " + med.especialidade : ""), W / 2, y + 7.5, { align: "center" }); doc.text("CRM-" + (med.uf || "") + " " + (med.crm || "") + (med.rqe ? " · RQE " + med.rqe : ""), W / 2, y + 12, { align: "center" });
+    const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(110);
+      doc.text("Laudo v" + ver + " · gerado em " + brDT(isoNow()) + " · documento para impressão e assinatura (assinatura digital ICP-Brasil prevista para a 2ª fase)", M, 297 - 10); doc.text(i + "/" + n, W - M, 297 - 10, { align: "right" }); }
+    return doc.output("blob"); }
+  async function pdfOf(base, x) { const l = (x.laudos || []).slice(-1)[0]; return l ? readBlob([...base, ...l.arquivo.split("/")]) : null; }
+  function openBlob(b) { const u = URL.createObjectURL(b), w = window.open(u, "_blank"); if (!w) { const a = document.createElement("a"); a.href = u; a.download = "laudo.pdf"; a.click(); } setTimeout(() => URL.revokeObjectURL(u), 60000); }
+  // ================= DICOM (Secondary Capture, Explicit VR Little Endian, RGB sem compressão) =================
+  function dicomUid() { const r = crypto.getRandomValues(new Uint8Array(16)); let n = 0n; for (const b of r) n = (n << 8n) | BigInt(b); return "2.25." + n.toString(); }
+  function dicomSC(img, meta) {
+    const enc = new TextEncoder(), parts = []; let len = 0;
+    const el = (g, e, vr, val) => { let b = typeof val === "string" ? enc.encode(val) : val; if (b.length % 2) { const p = new Uint8Array(b.length + 1); p.set(b); p[b.length] = vr === "UI" || vr === "OB" ? 0 : 0x20; b = p; }
+      const long = ["OB", "OW", "SQ", "UN", "UT"].includes(vr), h = new DataView(new ArrayBuffer(long ? 12 : 8)); h.setUint16(0, g, true); h.setUint16(2, e, true); h.setUint8(4, vr.charCodeAt(0)); h.setUint8(5, vr.charCodeAt(1));
+      if (long) h.setUint32(8, b.length, true); else h.setUint16(6, b.length, true); return [new Uint8Array(h.buffer), b]; };
+    const us = v => { const a = new Uint8Array(2); new DataView(a.buffer).setUint16(0, v, true); return a; }, ul = v => { const a = new Uint8Array(4); new DataView(a.buffer).setUint32(0, v, true); return a; };
+    const SC = "1.2.840.10008.5.1.4.1.1.7", TS = "1.2.840.10008.1.2.1", IMPL = "2.25.329800735698586629295641978511506172918";
+    const metaEls = [el(2, 1, "OB", new Uint8Array([0, 1])), el(2, 2, "UI", SC), el(2, 3, "UI", meta.sop), el(2, 0x10, "UI", TS), el(2, 0x12, "UI", IMPL), el(2, 0x13, "SH", "NASOFIBRO_1")];
+    const mlen = metaEls.reduce((s, [a, b]) => s + a.length + b.length, 0);
+    const w = img.width, h = img.height, rgb = new Uint8Array(w * h * 3); for (let i = 0, j = 0; i < w * h; i++, j += 3) { rgb[j] = img.data[i * 4]; rgb[j + 1] = img.data[i * 4 + 1]; rgb[j + 2] = img.data[i * 4 + 2]; }
+    const ds = [el(8, 5, "CS", "ISO_IR 192"), el(8, 8, "CS", "DERIVED\\SECONDARY"), el(8, 0x16, "UI", SC), el(8, 0x18, "UI", meta.sop), el(8, 0x20, "DA", meta.date), el(8, 0x30, "TM", meta.time),
+      el(8, 0x50, "SH", meta.acc), el(8, 0x60, "CS", "ES"), el(8, 0x64, "CS", "WSD"), el(8, 0x70, "LO", "Ajuste de Imagem"), el(8, 0x80, "LO", meta.inst), el(8, 0x90, "PN", meta.ref),
+      el(8, 0x1030, "LO", meta.desc), el(8, 0x103E, "LO", meta.series), el(0x10, 0x10, "PN", meta.name), el(0x10, 0x20, "LO", meta.pid), el(0x10, 0x30, "DA", meta.birth), el(0x10, 0x40, "CS", meta.sex),
+      el(0x10, 0x1000, "LO", meta.otherId), el(0x20, 0xD, "UI", meta.study), el(0x20, 0xE, "UI", meta.seriesUid), el(0x20, 0x10, "SH", meta.acc.slice(0, 16)), el(0x20, 0x11, "IS", "1"), el(0x20, 0x13, "IS", String(meta.inum)),
+      el(0x20, 0x20, "CS", ""), el(0x28, 2, "US", us(3)), el(0x28, 4, "CS", "RGB"), el(0x28, 6, "US", us(0)), el(0x28, 0x10, "US", us(h)), el(0x28, 0x11, "US", us(w)),
+      el(0x28, 0x100, "US", us(8)), el(0x28, 0x101, "US", us(8)), el(0x28, 0x102, "US", us(7)), el(0x28, 0x103, "US", us(0)), el(0x7FE0, 0x10, "OB", rgb)];
+    const pre = new Uint8Array(132); pre.set(enc.encode("DICM"), 128);
+    return new Blob([pre, ...el(2, 0, "UL", ul(mlen)), ...metaEls.flat(), ...ds.flat()], { type: "application/dicom" }); }
+  async function exportDicom(base, x) {
+    const p = x.paciente ? await readJSON(["pacientes", x.paciente, "paciente.json"]) : null, fotos = (x.midias || []).filter(m => m.tipo === "foto" || m.tipo === "metrica");
+    if (!fotos.length) { setStatus("Este exame não tem imagens para exportar.", "bad"); return; }
+    const d = x.inicio.replace(/-/g, "").slice(0, 8), t = x.inicio.slice(11, 19).replace(/:/g, ""), seriesUid = dicomUid(), out = [...base, "dicom"];
+    const nm = p ? p.nome.trim().split(/\s+/) : ["Avulso"], name = nm.length > 1 ? nm.slice(-1)[0] + "^" + nm.slice(0, -1).join(" ") : nm[0];
+    let i = 0; for (const m of fotos) { const f = await readBlob([...base, ...m.arquivo.split("/")]); if (!f) continue; const bmp = await createImageBitmap(f), c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+      const g = c.getContext("2d"); g.drawImage(bmp, 0, 0); const img = g.getImageData(0, 0, c.width, c.height); i++;
+      const blob = dicomSC(img, { sop: dicomUid(), date: d, time: t, acc: x.id, inst: x.local ? x.local.nome : (PR.cons.nome || ""), ref: x.solicitante || "", desc: x.tipo, series: m.tipo === "metrica" ? "Métrica" : "Imagens",
+        name, pid: p && p.cpf ? p.cpf.replace(/\D/g, "") : (p ? p.id : x.id), otherId: p ? p.id : "", birth: p && p.nascimento ? p.nascimento.replace(/-/g, "") : "", sex: p ? ({ F: "F", M: "M" }[p.sexo] || "O") : "O",
+        study: x.dicom_study_uid || (x.dicom_study_uid = dicomUid()), seriesUid, inum: i });
+      await writeFile([...out, "IM" + String(i).padStart(4, "0") + ".dcm"], blob); }
+    await writeJSON([...base, "exame.json"], x); await audit("exportou DICOM", (x.paciente || "avulso") + " · " + x.id + " · " + i + " imagens");
+    if (window.showDirectoryPicker && !PR.opfs) { try { const dst = await window.showDirectoryPicker({ id: "dicom", mode: "readwrite" }); const sub = await dst.getDirectoryHandle("DICOM_" + x.id, { create: true }); await copyDir(await dirAt(out), sub);
+      setStatus(i + " imagens DICOM gravadas no exame e copiadas para " + dst.name + "/DICOM_" + x.id + ".", "ok"); return; } catch (e) {} }
+    setStatus(i + " imagens DICOM gravadas na pasta do exame (dicom/).", "ok"); }
+  // ================= CONFIGURAÇÕES =================
+  async function scrConfig() {
+    const rows = (arr, lab, kind) => arr.map(o => '<div class="pr-row"><span>' + lab(o) + '</span><button class="btn sm" data-act="cfgEdit" data-id="' + kind + '|' + esc(o.id || o.login) + '">Editar</button></div>').join("") +
+      '<div class="pr-row"><span></span><button class="btn sm primary" data-act="cfgEdit" data-id="' + kind + '|">+ Novo</button></div>';
+    const b = await readJSON(["_sistema", "backup.json"], {}), per = PR.per || "mes";
+    const all = Object.values(PR.index.pacientes).flatMap(p => p.exames), now = new Date(), from = per === "mes" ? new Date(now.getFullYear(), now.getMonth(), 1) : per === "mesant" ? new Date(now.getFullYear(), now.getMonth() - 1, 1) : per === "ano" ? new Date(now.getFullYear(), 0, 1) : new Date(0);
+    const to = per === "mesant" ? new Date(now.getFullYear(), now.getMonth(), 1) : new Date(8.64e15), sel = all.filter(e => { const d = new Date(e.data); return d >= from && d < to; });
+    const grp = k => { const m = {}; sel.forEach(e => { const v = k(e) || "—"; m[v] = (m[v] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+    const medN = id => (PR.meds.find(m => m.id === id) || {}).nome || id, mx = Math.max(1, ...grp(e => e.convenio).map(r => r[1]));
+    const bars = arr => arr.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + v + '</td><td style="width:45%"><div class="pr-barg"><i style="width:' + Math.round(100 * v / mx) + '%"></i></div></td></tr>').join("");
+    const logs = await readBlob(["_sistema", "auditoria", isoNow().slice(0, 7) + ".log"]), logTxt = logs ? (await logs.text()).trim().split("\n").slice(-40).reverse() : [];
+    PM.innerHTML = '<div class="pr-cols"><div style="flex:1;min-width:0">' +
+      '<div class="pr-card"><h4>Consultório</h4><div class="pr-g2">' + '<div><label>Nome</label><input id="cNome" value="' + esc(PR.cons.nome) + '"></div><div><label>Cidade (para o termo)</label><input id="cCid" value="' + esc(PR.cons.cidade) + '"></div></div>' +
+      '<label>Termo de consentimento (use {paciente}, {exame}, {data})</label><textarea id="cTermo" rows="5">' + esc(PR.cons.termo || TERMO_PADRAO) + '</textarea><div class="pr-acts" style="margin-top:8px"><button class="btn primary" data-act="cfgCons">Salvar</button></div></div>' +
+      '<div class="pr-card"><h4>Médicos</h4>' + rows(PR.meds, m => esc(m.nome) + ' · CRM-' + esc(m.uf) + ' ' + esc(m.crm) + (m.rqe ? ' · RQE ' + esc(m.rqe) : ''), "med") + '</div>' +
+      '<div class="pr-card"><h4>Locais (hospital, clínica, laboratório)</h4>' + rows(PR.insts, i => esc(i.nome) + ' <span class="pr-dim">(' + esc(i.tipo) + ')</span>', "inst") + '</div>' +
+      '<div class="pr-card"><h4>Equipamentos</h4>' + rows(PR.equips, e => esc(e.modelo) + (e.serie ? ' · nº série ' + esc(e.serie) : ''), "eq") + '</div>' +
+      '<div class="pr-card"><h4>Usuários e perfis</h4>' + rows(PR.users.map(u => Object.assign({ id: u.login }, u)), u => esc(u.login) + ' · ' + esc(u.nome) + ' · <b>' + (u.perfil === "medico" ? "Médico" : "Secretária") + '</b>' + (u.ativo === false ? ' <span class="pill">inativo</span>' : ''), "user") +
+      '<p class="pr-dim">Secretária: cadastra pacientes e documentos; não vê imagens, laudos nem dados clínicos.</p></div>' +
+      '<div class="pr-card"><h4>Modelos de laudo (seus)</h4><p class="pr-dim">Crie e edite os modelos direto no editor de laudo (“Salvar como meu modelo…”).</p></div></div>' +
+      '<div style="flex:1;min-width:0"><div class="pr-card"><h4>Backup</h4><p>Último backup: <b>' + (b.ultimo ? brDT(b.ultimo) + '</b> em <b>' + esc(b.destino || "") : 'nunca') + '</b></p>' +
+      '<div class="pr-acts"><button class="btn primary" data-act="backup">Fazer backup agora…</button><button class="btn" data-act="restaurar">Restaurar (usar pasta de backup)…</button><button class="btn" data-act="reindex">Refazer índice</button></div>' +
+      '<p class="pr-dim">O backup copia a pasta inteira (pacientes, imagens, laudos) para outro disco. Lembrete na entrada quando passar de 1 dia.</p></div>' +
+      '<div class="pr-card"><h4>Relatórios</h4><div class="pr-acts"><select id="rPer">' + [["mes", "Mês atual"], ["mesant", "Mês anterior"], ["ano", "Ano atual"], ["tudo", "Tudo"]].map(([k, t]) => '<option value="' + k + '"' + (k === per ? " selected" : "") + '>' + t + '</option>').join("") + '</select><button class="btn sm" data-act="csv">Exportar planilha (CSV)</button></div>' +
+      '<div class="pr-kpi"><div><b>' + sel.length + '</b>exames</div><div><b>' + sel.filter(e => e.status === "laudado").length + '</b>laudados</div><div><b>' + sel.filter(e => e.status !== "laudado").length + '</b>pendentes</div><div><b>' + new Set(sel.map(e => e.id.slice(0, 0) + Object.values(PR.index.pacientes).find(p => p.exames.includes(e)).id)).size + '</b>pacientes</div></div>' +
+      '<table><tr><th colspan="3">Por convênio</th></tr>' + bars(grp(e => e.convenio)) + '<tr><th colspan="3">Por médico</th></tr>' + bars(grp(e => medN(e.medico))) + '<tr><th colspan="3">Por tipo</th></tr>' + bars(grp(e => e.tipo)) + '</table></div>' +
+      '<div class="pr-card"><h4>Auditoria (mês atual)</h4><div class="pr-log">' + (logTxt.length ? logTxt.map(esc).join("<br>") : '<span class="pr-dim">vazio</span>') + '</div></div></div></div>';
+    $("rPer").onchange = e => { PR.per = e.target.value; prRender(); }; }
+  function cfgEdit(kind, id) {
+    if (kind === "med") { const m = PR.meds.find(q => q.id === id) || {};
+      modal(m.id ? "Médico " + m.id : "Novo médico", '<div class="pr-g2">' + field("mNome", "Nome", m.nome) + field("mEsp", "Especialidade", m.especialidade || "Otorrinolaringologia") + field("mCrm", "CRM", m.crm) + field("mUf", "UF", m.uf) + field("mRqe", "RQE", m.rqe) + '</div>' +
+        '<label>Imagem da assinatura (PNG, fundo branco)</label><input type="file" id="mSig" accept="image/*">', [["Salvar", async () => { if (!mv("mNome") || !mv("mCrm")) return setStatus("Preencha nome e CRM.", "bad");
+          const o = Object.assign(m, { nome: mv("mNome"), especialidade: mv("mEsp"), crm: mv("mCrm"), uf: mv("mUf").toUpperCase(), rqe: mv("mRqe") }); if (!o.id) { o.id = await nextId("medico", "MED", 3); await writeJSON(["cadastros", "modelos_laudo", o.id + ".json"], modelosPadrao()); }
+          await writeJSON(["cadastros", "medicos", o.id + ".json"], o); const f = MD.querySelector("#mSig").files[0]; if (f) await writeFile(["cadastros", "medicos", o.id + "_assinatura.png"], f);
+          await audit("salvou cadastro de médico", o.id); await loadAll(); MD.hidden = true; prRender(); }, "primary"]]); }
+    else if (kind === "inst") { const i = PR.insts.find(q => q.id === id) || {};
+      modal(i.id ? "Local " + i.id : "Novo local", '<div class="pr-g2">' + field("iNome", "Nome", i.nome) + '<div><label>Tipo</label><select id="iTipo">' + ["clínica", "hospital", "laboratório"].map(t => '<option' + (t === i.tipo ? " selected" : "") + '>' + t + '</option>').join("") + '</select></div>' +
+        field("iCnpj", "CNPJ", i.cnpj) + field("iCnes", "CNES", i.cnes) + field("iEnd", "Endereço", i.endereco) + field("iTel", "Telefone", i.telefone) + '</div><label>Logo (para o cabeçalho do laudo)</label><input type="file" id="iLogo" accept="image/*">' +
+        '<label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="iPad" style="width:auto"' + (PR.cons.local_padrao === i.id ? " checked" : "") + '> Local padrão dos exames</label>',
+        [["Salvar", async () => { if (!mv("iNome")) return; const o = Object.assign(i, { nome: mv("iNome"), tipo: mv("iTipo"), cnpj: mv("iCnpj"), cnes: mv("iCnes"), endereco: mv("iEnd"), telefone: mv("iTel") });
+          if (!o.id) o.id = await nextId("instituicao", "INS", 3); await writeJSON(["cadastros", "instituicoes", o.id + ".json"], o); const f = MD.querySelector("#iLogo").files[0]; if (f) await writeFile(["cadastros", "instituicoes", o.id + "_logo.png"], f);
+          if (mv("iPad")) { PR.cons.local_padrao = o.id; await writeJSON(["_sistema", "consultorio.json"], PR.cons); } await audit("salvou local", o.id); await loadAll(); MD.hidden = true; prRender(); }, "primary"]]); }
+    else if (kind === "eq") { const e = PR.equips.find(q => q.id === id) || {};
+      modal(e.id ? "Equipamento " + e.id : "Novo equipamento", '<div class="pr-g2">' + field("eMod", "Modelo", e.modelo || "Videonasofibrolaringoscópio") + field("eSer", "Número de série", e.serie) + '</div>',
+        [["Salvar", async () => { const o = Object.assign(e, { modelo: mv("eMod"), serie: mv("eSer") }); if (!o.id) o.id = await nextId("equipamento", "EQP", 3);
+          await writeJSON(["cadastros", "equipamentos", o.id + ".json"], o); await audit("salvou equipamento", o.id); await loadAll(); MD.hidden = true; prRender(); }, "primary"]]); }
+    else if (kind === "user") { const u = PR.users.find(q => q.login === id), novo = !u;
+      modal(novo ? "Novo usuário" : "Usuário " + u.login, '<div class="pr-g2">' + field("uLog", "Usuário", u ? u.login : "", novo ? "" : "disabled") + field("uNome", "Nome", u ? u.nome : "") +
+        '<div><label>Perfil</label><select id="uPer"><option value="medico"' + (u && u.perfil === "medico" ? " selected" : "") + '>Médico</option><option value="secretaria"' + (u && u.perfil === "secretaria" ? " selected" : "") + '>Secretária</option></select></div>' +
+        '<div><label>Médico vinculado</label><select id="uMed"><option value="">—</option>' + PR.meds.map(m => '<option value="' + m.id + '"' + (u && u.medico === m.id ? " selected" : "") + '>' + esc(m.nome) + '</option>').join("") + '</select></div>' +
+        field("uPw", novo ? "Senha (mín. 6)" : "Nova senha (deixe vazio para manter)", "", 'type="password"') + '</div>' + (novo ? '' : '<label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="uAt" style="width:auto"' + (u.ativo !== false ? " checked" : "") + '> Ativo</label>'),
+        [["Salvar", async () => { const login = (novo ? mv("uLog") : u.login).toLowerCase(), pw = MD.querySelector("#uPw").value;
+          if (!login || !mv("uNome")) return setStatus("Preencha usuário e nome.", "bad"); if (novo && PR.users.some(q => q.login === login)) return setStatus("Este usuário já existe.", "bad");
+          if ((novo || pw) && pw.length < 6) return setStatus("Senha com no mínimo 6 caracteres.", "bad"); if (mv("uPer") === "medico" && !mv("uMed")) return setStatus("Vincule o usuário médico a um cadastro de médico.", "bad");
+          const o = u || { login, ativo: true }; Object.assign(o, { nome: mv("uNome"), perfil: mv("uPer"), medico: mv("uMed") || null }); if (!novo) o.ativo = MD.querySelector("#uAt").checked;
+          if (pw) Object.assign(o, await passHash(pw)); if (novo) PR.users.push(o); await writeJSON(["cadastros", "usuarios.json"], PR.users); await audit((novo ? "criou" : "editou") + " usuário", login); MD.hidden = true; prRender(); }, "primary"]]); } }
+  // ================= AÇÕES (delegação de cliques) =================
+  PM.addEventListener("click", async e => {
+    const t = e.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, id = t.dataset.id;
+    if (t.tagName === "A") e.preventDefault();
+    try { switch (a) {
+      case "login": authStart(); break;
+      case "abrirPac": go("paciente", { pac: id, pacTab: isMed() ? "exames" : "ficha" }); break;
+      case "pacTab": PR.pacTab = id; prRender(); break;
+      case "novoPac": modal("Novo paciente", pacForm(), [["Salvar", async () => { const p = await savePac(); if (p) { MD.hidden = true; go("paciente", { pac: p.id, pacTab: isMed() ? "exames" : "ficha" }); } }, "primary"]]); break;
+      case "editPac": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); modal("Editar ficha · " + p.id, pacForm(p), [["Salvar", async () => { if (await savePac(p)) { MD.hidden = true; prRender(); } }, "primary"]]); break; }
+      case "saveAnt": { const old = await readJSON(["pacientes", PR.pac, "antecedentes.json"]); if (old) await writeJSON(["pacientes", PR.pac, "historico", "antecedentes_" + (old.atualizado_em || isoNow()).replace(/[:+]/g, "-") + ".json"], old);
+        const o = { formato: FMT, atualizado_em: isoNow(), por: PR.user.nome }; ["queixa", "doencas", "cirurgias", "medicacoes", "alergias", "outros"].forEach(k => o[k] = $("an_" + k).value.trim());
+        await writeJSON(["pacientes", PR.pac, "antecedentes.json"], o); await audit("atualizou antecedentes", PR.pac); setStatus("Antecedentes salvos.", "ok"); prRender(); break; }
+      case "addEv": { const txt = $("evTxt").value.trim(); if (!txt) return; const d = isoNow(); await writeJSON(["pacientes", PR.pac, "evolucao", d.slice(0, 19).replace(/[:T]/g, "-") + ".json"], { formato: FMT, data: d, autor: PR.user.nome, texto: txt });
+        await audit("anotou evolução", PR.pac); prRender(); break; }
+      case "anexar": $("prDocIn").click(); break;
+      case "abrirDoc": { const f = await readBlob(["pacientes", PR.pac, "documentos", id]); if (f) openBlob(f); await audit("abriu documento", PR.pac + " · " + id); break; }
+      case "termoImp": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); termoPrint(p, $("xTipo") ? $("xTipo").value : "Nasofibrolaringoscopia"); break; }
+      case "termoAss": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); termoSign(p, "Nasofibrolaringoscopia"); break; }
+      case "termoAssEx": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); termoSign(p, $("xTipo").value, n => { PR.termoArq = "documentos/" + n; $("xTermoOk").textContent = "✓ Termo assinado e anexado (" + n + ")."; }); break; }
+      case "novoExame": if (PR.exam) { setStatus("Já há um exame em andamento (" + PR.exam.nome + "). Encerre-o antes.", "bad"); return; } go("exame"); break;
+      case "avulso": if (PR.exam) { setStatus("Já há um exame em andamento.", "bad"); return; } go("exame", { pac: null }); break;
+      case "voltarPac": if (PR.pac) go("paciente"); else go("pacientes"); break;
+      case "iniciar": await startExam(null); break;
+      case "retomar": await startExam(id); break;
+      case "verArq": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) openBlob(f); break; }
+      case "metricaDe": { const [dir, arq] = id.split("|"); await openMetricFrom(PR.pac, dir, arq); break; }
+      case "laudo": go("laudo", { ldir: id, lbase: ["pacientes", PR.pac, "exames", id] }); break;
+      case "verPdf": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), f = await pdfOf(base, x); if (f) { openBlob(f); await audit("abriu laudo", PR.pac + " · " + x.id); } break; }
+      case "copiaPdf": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), f = await pdfOf(base, x); if (!f) return; const nm = "laudo_" + x.id + ".pdf";
+        if (window.showSaveFilePicker) { try { const h = await window.showSaveFilePicker({ suggestedName: nm, types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] }); const w = await h.createWritable(); await w.write(f); await w.close(); setStatus("Cópia do laudo salva.", "ok"); } catch (er) { return; } }
+        else { const u = URL.createObjectURL(f), aa = document.createElement("a"); aa.href = u; aa.download = nm; aa.click(); } await audit("salvou cópia do laudo (entrega)", PR.pac + " · " + x.id); break; }
+      case "email": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), p = await readJSON(["pacientes", PR.pac, "paciente.json"]), f = await pdfOf(base, x); if (!f) return;
+        const u = URL.createObjectURL(f), aa = document.createElement("a"); aa.href = u; aa.download = "laudo_" + x.id + ".pdf"; aa.click();
+        location.href = "mailto:" + encodeURIComponent(p.email || "") + "?subject=" + encodeURIComponent("Laudo de " + x.tipo + " — " + brDate(x.inicio)) + "&body=" + encodeURIComponent("Segue em anexo o laudo do exame realizado em " + brDate(x.inicio) + ".\n\n" + (PR.cons.nome || ""));
+        setStatus("O PDF foi baixado: anexe-o no e-mail que abriu.", "ok"); await audit("preparou e-mail do laudo", PR.pac + " · " + x.id); break; }
+      case "dicom": { const base = ["pacientes", PR.pac, "exames", id]; await exportDicom(base, await readJSON([...base, "exame.json"])); break; }
+      case "vincular": { const av = id, opts = Object.values(PR.index.pacientes).sort((a, b) => a.nome.localeCompare(b.nome));
+        modal("Vincular exame avulso " + av, '<label>Paciente</label><select id="vPac">' + opts.map(p => '<option value="' + p.id + '">' + esc(p.nome) + ' · ' + p.id + '</option>').join("") + '</select>', [["Vincular", async () => {
+          const pid = mv("vPac"), src = await dirAt(["avulsos", av]), dst = await dirAt(["pacientes", pid, "exames", av], true); await copyDir(src, dst);
+          const x = await readJSON(["pacientes", pid, "exames", av, "exame.json"]); x.paciente = pid; await writeJSON(["pacientes", pid, "exames", av, "exame.json"], x);
+          await toTrash(["avulsos", av]); PR.index.pacientes[pid].exames.push(examSummary(x, av)); await saveIndex(); await audit("vinculou exame avulso", pid + " · " + x.id); MD.hidden = true; go("paciente", { pac: pid, pacTab: "exames" }); }, "primary"]]); break; }
+      // laudo
+      case "lImg": { if (e.target.classList.contains("lcap")) return; lCollect(); const L = PR.L.L, i = L.imagens.findIndex(q => q.arquivo === id);
+        if (i >= 0) L.imagens.splice(i, 1); else { const m = PR.L.x.midias.find(q => q.arquivo === id); L.imagens.push({ arquivo: id, legenda: (m && m.legenda) || (m && m.tipo === "metrica" ? "Métrica (medida relativa)" : "") }); }
+        PR.L.x.laudo_rascunho = L; await scrLaudoKeep(); break; }
+      case "lAdd": { lCollect(); PR.L.L.secoes.push({ titulo: "Nova seção", texto: "" }); PR.L.x.laudo_rascunho = PR.L.L; await scrLaudoKeep(); break; }
+      case "lDel": { lCollect(); PR.L.L.secoes.splice(+id, 1); PR.L.x.laudo_rascunho = PR.L.L; await scrLaudoKeep(); break; }
+      case "lAplicar": { lCollect(); const m = PR.L.mods.find(q => q.id === $("lMod").value); if (!m) return; Object.assign(PR.L.L, { modelo: m.id, secoes: JSON.parse(JSON.stringify(m.secoes)), conclusao: m.conclusao || "" }); PR.L.x.laudo_rascunho = PR.L.L; await scrLaudoKeep(); break; }
+      case "lSalvarMod": { const L = lCollect(); modal("Salvar como meu modelo", field("mdNome", "Nome do modelo", (PR.L.mods.find(q => q.id === L.modelo) || {}).nome || "Meu modelo") + '<p class="pr-dim">Se já existir um modelo com este nome, ele será substituído.</p>', [["Salvar", async () => {
+          const nome = mv("mdNome") || "Meu modelo", mods = PR.L.mods, ex = mods.find(q => q.nome === nome), o = { id: ex ? ex.id : "m" + Date.now(), nome, secoes: L.secoes, conclusao: L.conclusao };
+          if (ex) Object.assign(ex, o); else mods.push(o); L.modelo = o.id; await writeJSON(["cadastros", "modelos_laudo", PR.L.medId + ".json"], mods); MD.hidden = true; setStatus("Modelo “" + nome + "” salvo.", "ok"); await scrLaudoKeep(); }, "primary"]]); break; }
+      case "lRasc": { PR.L.x.laudo_rascunho = lCollect(); await writeJSON([...PR.L.base, "exame.json"], PR.L.x); setStatus("Rascunho do laudo salvo.", "ok"); break; }
+      case "lPrev": { const L = lCollect(); setStatus("Gerando PDF…", ""); openBlob(await buildPdf(PR.L.x, PR.L.p, L, (PR.L.x.laudos || []).length + 1)); setStatus("Pré-visualização aberta (ainda não finalizado).", "ok"); break; }
+      case "lFinal": { const L = lCollect(), x = PR.L.x; if (!L.secoes.some(s => s.texto.trim()) && !L.conclusao.trim()) { setStatus("O laudo está vazio.", "bad"); return; }
+        setStatus("Gerando PDF…", ""); const v = (x.laudos || []).length + 1, pdf = await buildPdf(x, PR.L.p, L, v), arq = "laudo/laudo_v" + v + ".pdf";
+        await writeFile([...PR.L.base, ...arq.split("/")], pdf); (x.laudos = x.laudos || []).push({ arquivo: arq, versao: v, gerado_em: isoNow(), por: PR.user.nome, conteudo: JSON.parse(JSON.stringify(L)) });
+        delete x.laudo_rascunho; x.status = "laudado"; L.imagens.forEach(q => { const m = x.midias.find(mm => mm.arquivo === q.arquivo); if (m) m.legenda = q.legenda; });
+        await writeJSON([...PR.L.base, "exame.json"], x); if (x.paciente) { const s = PR.index.pacientes[x.paciente].exames.find(q => q.id === x.id); if (s) s.status = "laudado"; await saveIndex(); }
+        await audit("finalizou laudo v" + v, (x.paciente || "avulso") + " · " + x.id); setStatus("Laudo v" + v + " finalizado e gravado no exame.", "ok"); openBlob(pdf); go("paciente", { pac: x.paciente, pacTab: "exames" }); break; }
+      // configurações
+      case "cfgCons": Object.assign(PR.cons, { nome: $("cNome").value.trim(), cidade: $("cCid").value.trim(), termo: $("cTermo").value }); await writeJSON(["_sistema", "consultorio.json"], PR.cons); await audit("editou dados do consultório"); setStatus("Consultório salvo.", "ok"); break;
+      case "cfgEdit": { const [k, i] = id.split("|"); cfgEdit(k, i); break; }
+      case "reindex": await rebuildIndex(); setStatus("Índice refeito a partir das pastas.", "ok"); prRender(); break;
+      case "backup": { if (!window.showDirectoryPicker) return; let dst; try { dst = await window.showDirectoryPicker({ id: "backup", mode: "readwrite" }); } catch (er) { return; }
+        if (await PR.root.isSameEntry(dst) || await PR.root.resolve(dst)) { setStatus("Escolha uma pasta FORA da pasta do consultório (de preferência outro disco ou pendrive).", "bad"); return; }
+        const nm = "Backup_" + isoNow().slice(0, 16).replace(/[:T]/g, "-"); setStatus("Fazendo backup… não feche o programa.", ""); await copyDir(PR.root, await dst.getDirectoryHandle(nm, { create: true }));
+        await writeJSON(["_sistema", "backup.json"], { ultimo: isoNow(), destino: dst.name + "/" + nm }); await audit("fez backup", dst.name + "/" + nm); setStatus("Backup concluído em " + dst.name + "/" + nm + ".", "ok"); backupReminder(); prRender(); break; }
+      case "restaurar": authSetup1(true); break;
+      case "csv": { const all = Object.values(PR.index.pacientes).flatMap(p => p.exames.map(e => [e.data.slice(0, 10), e.id, p.id, e.tipo, (PR.meds.find(m => m.id === e.medico) || {}).nome || e.medico, e.convenio, e.status]));
+        const csv = "﻿data;exame;paciente;tipo;medico;convenio;status\n" + all.map(r => r.map(v => '"' + String(v || "").replace(/"/g, '""') + '"').join(";")).join("\n");
+        const aa = document.createElement("a"); aa.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); aa.download = "exames_" + isoNow().slice(0, 10) + ".csv"; aa.click(); await audit("exportou relatório CSV"); break; }
+    } } catch (er) { console.error(er); setStatus("Erro: " + er.message, "bad"); } });
+  async function scrLaudoKeep() { const sy = PM.scrollTop; freeUrls(); await scrLaudo(true); PM.scrollTop = sy; }
+  // ---------- início ----------
+  authStart();
 })();
 </script>
 </body>
