@@ -319,7 +319,7 @@
         </div>
         <div id="mSide">
           <div class="card"><h2>Medidas</h2><div id="mList"></div>
-            <p class="desc" style="margin:8px 0 0">Cada ferramenta tem a sua referência (amarela): a 1ª reta, o 1º círculo, o 1º retângulo e o 1º contorno. As seguintes do mesmo tipo mostram a % dela (retas: comprimento; demais: área). Toque numa medida da lista para torná-la a referência. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência A</b> (amarela) e a 2ª é medida contra ela; a 3ª é a referência B e a 4ª é medida contra B, e assim por diante (retas: comprimento; demais: área). Toque numa medida da lista para trocá-la com a referência do par. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
           <div class="card"><h2>Imagem da medição</h2>
             <div class="row"><span class="lbl">Origem</span><span id="mOrigin" style="text-align:right;max-width:170px;overflow-wrap:anywhere">–</span></div>
             <div class="row"><span class="lbl">Câmera</span><span id="mRes">–</span></div>
@@ -1858,11 +1858,13 @@
     const dx = (S.b[0] - S.a[0]) * W, dy = (S.b[1] - S.a[1]) * H;
     return S.t === "line" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
   const pct = v => (Math.round(v * 10) / 10).toFixed(v < 10 ? 1 : 0).replace(".", ",");
-  function mInfo(list) { const ref = {}, cnt = {}; return list.map(S => { const f = fam(S.t), v = mVal(S); cnt[f] = (cnt[f] || 0) + 1;
-    const name = NAMES[S.t] + " " + cnt[f], isLine = S.t === "line";
-    if (!ref[f]) { ref[f] = v; return { S, ref: true, name, txt: "REFERÊNCIA (" + NAMES[S.t].toLowerCase() + ")", val: "referência" }; }
+  // em cada ferramenta as formas formam PARES: 1ª = referência A, 2ª = medida contra A; 3ª = referência B, 4ª = medida contra B…
+  function mInfo(list) { const ref = {}, cnt = {}; return list.map(S => { const f = fam(S.t), v = mVal(S), c = cnt[f] = (cnt[f] || 0) + 1;
+    const L = String.fromCharCode(65 + ((c - 1) >> 1) % 26), isLine = S.t === "line", isRef = (c - 1) % 2 === 0;
+    if (isRef) { ref[f] = v; return { S, ref: true, pair: L, name: NAMES[S.t] + " " + L + " · referência", txt: "REFERÊNCIA " + L + " (" + NAMES[S.t].toLowerCase() + ")", val: "referência" }; }
     const p = ref[f] ? 100 * v / ref[f] : 0, val = pct(p) + "%" + (p <= 100 ? " · livre " + pct(100 - p) + "%" : "");
-    return { S, ref: false, name, txt: (isLine ? "" : "área ") + val, val: (isLine ? "" : "área ") + pct(p) + "% da referência" + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
+    return { S, ref: false, pair: L, name: NAMES[S.t] + " " + L + " · medida", txt: L + ": " + (isLine ? "" : "área ") + val,
+      val: (isLine ? "" : "área ") + pct(p) + "% da ref. " + L + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
   // desenho: tracejado + marcador "+" (como no ultrassom)
   function drawShapesM(c, map, scale, list) {
     const k = MT.lw, info = mInfo(list), lw = 2.5 * scale * k, fs = Math.round(17 * scale), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)];
@@ -1889,7 +1891,7 @@
     if (!MT.open) return; const dpr = devicePixelRatio || 1, r = mCv.getBoundingClientRect();
     const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr); if (mCv.width !== W || mCv.height !== H) { mCv.width = W; mCv.height = H; }
     mCtx.fillStyle = "#000"; mCtx.fillRect(0, 0, W, H); if (!MT.src) return;
-    const top = 64 * dpr, ar = MT.src.width / MT.src.height; let dw = W - 16 * dpr, dh = dw / ar; if (dh > H - top - 8 * dpr) { dh = H - top - 8 * dpr; dw = dh * ar; }
+    const top = ($("mBar").offsetHeight + 18) * dpr, ar = MT.src.width / MT.src.height;   // imagem sempre abaixo da barra (mesmo quando ela quebra linha) let dw = W - 16 * dpr, dh = dw / ar; if (dh > H - top - 8 * dpr) { dh = H - top - 8 * dpr; dw = dh * ar; }
     const ox = (W - dw) / 2, oy = top + (H - top - dh) / 2; MT.rect = { ox, oy, dw, dh, dpr };
     const b = mBase(); mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high"; mCtx.drawImage(b, ox, oy, dw, dh);
     const map = q => [ox + q[0] * dw, oy + q[1] * dh], list = MT.drag ? MT.shapes.concat([MT.drag]) : MT.shapes;
@@ -1909,8 +1911,9 @@
     const info = mInfo(MT.shapes), el = $("mList");
     el.innerHTML = info.length ? "" : '<p class="desc" style="margin:0">Escolha a ferramenta e arraste na imagem. A primeira forma será a referência.</p>';
     info.forEach(({ S, ref, name, val }) => { const r = document.createElement("div"); r.className = "mrow";
-      if (!ref) { r.style.cursor = "pointer"; r.title = "Tocar para tornar esta a referência"; r.onclick = () => {   // vira a 1ª do seu tipo
-        const i = MT.shapes.indexOf(S), j = MT.shapes.findIndex(x => x.t === S.t); MT.shapes.splice(i, 1); MT.shapes.splice(j, 0, S); mDraw(); mList();
+      if (!ref) { r.style.cursor = "pointer"; r.title = "Tocar para trocar: esta vira a referência do par"; r.onclick = () => {   // troca dentro do par
+        const i = MT.shapes.indexOf(S); let j = i - 1; while (j >= 0 && MT.shapes[j].t !== S.t) j--; if (j < 0) return;
+        MT.shapes[i] = MT.shapes[j]; MT.shapes[j] = S; mDraw(); mList();
         setStatus("Métrica · " + NAMES[S.t] + " escolhido(a) como referência.", "ok"); }; }
       r.innerHTML = '<span class="' + (ref ? "dotY" : "dotR") + '">● </span>'; r.firstChild.after(name); const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; r.append(b); el.append(r); }); }
   function mStatus() {
@@ -1973,7 +1976,7 @@
     else MT.drag.b = p; mDraw(); });
   const mEnd = () => { if (!MT.drag) return; const S = MT.drag; MT.drag = null; MT.loupe = null;
     const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(S) > 16 : mVal(S) > (S.t === "line" ? 4 : 16);
-    if (ok) { MT.shapes.push(S); const inf = mInfo(MT.shapes).find(x => x.S === S); setStatus("Métrica · " + inf.name + ": " + (inf.ref ? "referência (100%) — agora meça o que quer comparar." : inf.val), "ok"); }
+    if (ok) { MT.shapes.push(S); const inf = mInfo(MT.shapes).find(x => x.S === S); setStatus("Métrica · " + inf.name + (inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
     mDraw(); mList(); };
   mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", () => { MT.drag = null; MT.loupe = null; mDraw(); });
   new ResizeObserver(() => mDraw()).observe(mCv);
@@ -1991,7 +1994,7 @@
     const info = mInfo(MT.shapes), fs = Math.round(Wd / 48), lh = Math.round(fs * 1.45);
     const lines = ["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "Origem: " + MT.origin + " · câmera " + MT.src.width + "×" + MT.src.height,
       "Base: " + (MT.showIA && MT.cIA ? "Contornos por IA ×4 (redução de ruído " + fmtStr(esrStrength) + ") — Processada por IA — pode conter detalhes inexistentes; confira no original" : "imagem original da câmera (sem IA)")]
-      .concat(info.length ? info.map(i => i.name + ": " + (i.ref ? "referência (100%)" : i.val)) : ["(sem medidas)"]);
+      .concat(info.length ? info.map(i => i.ref ? i.name + " (100%)" : i.name + ": " + i.val) : ["(sem medidas)"]);
     const c = document.createElement("canvas"); c.width = Wd; c.height = Hd + lines.length * lh + Math.round(fs * 1.2); const x = c.getContext("2d");
     x.imageSmoothingQuality = "high"; x.drawImage(b, 0, 0, Wd, Hd); drawShapesM(x, q => [q[0] * Wd, q[1] * Hd], Wd / 900, MT.shapes);
     x.fillStyle = "#0f1012"; x.fillRect(0, Hd, Wd, c.height - Hd); x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
