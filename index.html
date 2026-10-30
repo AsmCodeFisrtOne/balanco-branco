@@ -448,6 +448,7 @@
           <div class="card"><h2>Escritas</h2>
             <div class="row"><span class="lbl">Tamanho</span><select id="mFs"><option value="0.8">Pequeno</option><option value="1" selected>Normal</option><option value="1.3">Grande</option><option value="1.7">Muito grande</option></select></div>
             <div class="row"><span class="lbl">Fonte</span><select id="mFont"></select></div>
+            <div class="row"><span class="lbl">Fundo</span><select id="mLbg"><option value="2">Sem fundo (contorno)</option><option value="1">Semitransparente</option><option value="0">Caixa escura</option></select></div>
             <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="mLblReset">Reposicionar automaticamente</button></div>
             <p class="desc" style="margin:6px 0 0">Para mudar uma escrita de lugar, arraste-a. Vale também para a imagem salva.</p></div>
           <div class="card"><h2>Imagem da medição</h2>
@@ -2011,7 +2012,7 @@
   const MT = { lw: 1, open: false, panels: [], act: 0, tool: "line", drag: null, edit: null, pend: null, sel: null, loupe: null, ptrs: new Map(), pinch: null, pan: null, note: null };
   const mCv = $("mCv"), mCtx = mCv.getContext("2d");
   const MFONTS = [["Padrão", "600 {}px Bonnie, Segoe UI, sans-serif"], ["Arial", "700 {}px Arial, Helvetica, sans-serif"], ["Serifada", "700 {}px Georgia, 'Times New Roman', serif"], ["Monoespaçada", "600 {}px Consolas, 'Courier New', monospace"]];
-  MT.fs = +(store.get("mFs") || 1); MT.font = Math.min(MFONTS.length - 1, +(store.get("mFont") || 0));
+  MT.lbg = store.get("mLbg") == null ? 2 : +store.get("mLbg"); MT.fs = +(store.get("mFs") || 1); MT.font = Math.min(MFONTS.length - 1, +(store.get("mFont") || 0));
   const mFont = px => MFONTS[MT.font][1].replace("{}", px);
   const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno", angle: "Ângulo", note: "Anotação" };
   const PCOL = [["#ffd400", "#ff5a5a"], ["#3fe0ff", "#5b8cff"], ["#b6ff5c", "#22c55e"], ["#ff8ae6", "#c084fc"], ["#ffffff", "#fb923c"]];   // [referência, medida] por par
@@ -2105,14 +2106,18 @@
     const plus = (x, y) => { const r = 9 * scale * (0.6 + 0.4 * k); c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
     const [X0, Y0, X1, Y1] = bounds || [0, 0, c.canvas.width, c.canvas.height], m = 4 * scale;
     const o0 = map([0, 0]);
+    const paint = (txt, x, y, tw, bh, col) => {                // fundo da escrita: caixa escura · semitransparente · sem fundo (só contorno)
+      if (MT.lbg < 2) { c.fillStyle = MT.lbg ? "rgba(0,0,0,.35)" : "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); }
+      if (MT.lbg > 0) { c.lineJoin = "round"; c.lineWidth = Math.max(2, fs * (MT.lbg === 2 ? 0.24 : 0.14)); c.strokeStyle = "rgba(0,0,0,.92)"; c.strokeText(txt, x + fs * 0.4, y + fs * 1.15); }
+      c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); };
     const label = (txt, lx, ly, col, lxl, S) => { if (!txt) return; c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, bh = fs * 1.6;
       if (S && S.lo) { const o = map(S.lo); let x = Math.min(Math.max(X0 + m, lx + o[0] - o0[0]), X1 - tw - m), y = Math.min(Math.max(Y0 + m, ly + o[1] - o0[1]), Y1 - bh - m);   // posição escolhida pelo médico
-        placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); return; }
+        placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S, lx, ly]); paint(txt, x, y, tw, bh, col); return; }
       let x = lx; if (x + tw > X1 - m && lxl !== undefined && lxl - tw >= X0 + m) x = lxl - tw;   // não cabe à direita: vai para a esquerda da forma
       x = Math.min(Math.max(X0 + m, x), X1 - tw - m); let y = Math.min(Math.max(Y0 + m, ly), Y1 - bh - m);
       for (let i = 0; i < 20 && placed.some(q => x < q[0] + q[2] && q[0] < x + tw && y < q[1] + q[3] + 3 * scale && q[1] < y + bh + 3 * scale); i++)   // não sobrepor etiquetas
         y = y + bh + 4 * scale > Y1 - bh ? y - (bh + 4 * scale) * (i + 1) : y + bh + 4 * scale;
-      placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); };
+      placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S, lx, ly]); paint(txt, x, y, tw, bh, col); };
     c.save(); c.font = mFont(fs); c.lineJoin = "round"; c.lineCap = "round";
     info.forEach(({ S, txt, col, kind }) => {
       c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
@@ -2312,7 +2317,8 @@
     const h = hitTest(x, y);                                   // só a forma SELECIONADA é editável (assim dá para começar outra forma no mesmo ponto)
     if (h && MT.sel && h.S === MT.sel.S) { MT.edit = { P: h.P, S: h.S, k: h.k, start: p, orig: clone(h.S) }; MT.loupe = { P: h.P, p }; mDraw(); return; }
     const lb = (P.lbl || []).slice().reverse().find(q => q[4] && x >= q[0] && x <= q[0] + q[2] && y >= q[1] && y <= q[1] + q[3]);
-    if (lb) { MT.lab = { P, S: lb[4], x, y, lo: (lb[4].lo || [0, 0]).slice(), moved: false }; return; }   // arrastar a escrita
+    if (lb) { const R = P.rect, V = P.view, S = lb[4];                // começa exatamente onde a escrita está (sem pular para outra posição)
+      const lo = [(lb[0] - lb[5]) / (R.dw * V.z), (lb[1] - lb[6]) / (R.dh * V.z)]; MT.lab = { P, S, x, y, lo, moved: false }; return; }   // arrastar a escrita
     MT.tap = h;                                                // toque curto numa marca "+" (sem arrastar) = selecionar
     const t = MT.tool, S = t === "poly" ? { t, pts: [p] } : t === "angle" ? { t, a: p, b: p, c: null } : t === "note" ? { t, a: p, b: p, text: "" } : { t, a: p, b: p };
     MT.drag = { P, S }; MT.loupe = { P, p }; mDraw(); });
@@ -2333,7 +2339,9 @@
     MT.ptrs.delete(e.pointerId);
     if (MT.pinch) { if (MT.ptrs.size < 2) MT.pinch = null; return; }
     if (MT.pan) { MT.pan = null; return; }
-    if (MT.lab) { const L = MT.lab; MT.lab = null; if (!L.moved) { MT.sel = { P: L.P, S: L.S }; mList(); } mDraw(); return; }
+    if (MT.lab) { const L = MT.lab; MT.lab = null; if (!L.moved) { MT.sel = { P: L.P, S: L.S }; mList(); }
+      else { const b = (L.P.lbl || []).find(q => q[4] === L.S), R = L.P.rect, V = L.P.view; if (b) L.S.lo = [(b[0] - b[5]) / (R.dw * V.z), (b[1] - b[6]) / (R.dh * V.z)]; }   // fixa onde ficou (se bateu na borda)
+      mDraw(); return; }
     if (MT.edit) { MT.edit = null; MT.loupe = null; mDraw(); mList(); return; }
     if (!MT.drag) return; const { P, S } = MT.drag; MT.drag = null; MT.loupe = null;
     const len = Math.hypot((S.b ? S.b[0] - S.a[0] : 0) * P.src.width, (S.b ? S.b[1] - S.a[1] : 0) * P.src.height);
@@ -2364,6 +2372,7 @@
   MT.lw = +(store.get("mLw") || 1); $("mLw").value = String(MT.lw); if (!$("mLw").value) { MT.lw = 1; $("mLw").value = "1"; }
   $("mLw").onchange = e => { MT.lw = +e.target.value; store.set("mLw", MT.lw); mDraw(); };
   $("mFont").innerHTML = MFONTS.map(([n], i) => '<option value="' + i + '">' + n + '</option>').join(""); $("mFont").value = MT.font; $("mFs").value = String(MT.fs);
+  $("mLbg").value = String(MT.lbg); $("mLbg").onchange = e => { MT.lbg = +e.target.value; store.set("mLbg", MT.lbg); mDraw(); };
   $("mFs").onchange = e => { MT.fs = +e.target.value; store.set("mFs", MT.fs); mDraw(); };
   $("mFont").onchange = e => { MT.font = +e.target.value; store.set("mFont", MT.font); mDraw(); };
   $("mLblReset").onclick = () => { MT.panels.forEach(P => P.shapes.forEach(S => delete S.lo)); mDraw(); setStatus("Métrica · escritas reposicionadas automaticamente.", "ok"); };
