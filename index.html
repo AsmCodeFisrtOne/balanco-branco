@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v5.3 — 2026-10-30: Métrica completa — pares com letra/cor própria, editar/apagar, ângulo, anotação, zoom/arrastar, comparar dois exames
+<!-- Ajuste de Imagem — Videonasofibrolaringoscopia  v6.1 — 2026-10-30: Métrica — correção de lente (FOV/distorção, card de bancada com visualização), referência comum R entre exames com verificação de perspectiva (R2), escritas com tamanho/fonte/posição
+     v6.0 — 2026-10-30: prontuário local (pacientes, exames, laudos PDF, DICOM, termo, usuários/perfis, backup, relatórios, auditoria)
+     v5.3 — 2026-10-30: Métrica completa — pares com letra/cor própria, editar/apagar, ângulo, anotação, zoom/arrastar, comparar dois exames
      v5.2 — 2026-10-30: barra de ajustes na imagem congelada (ampliação, realce, ruído — ruído por filtro bilateral no quadro parado)
      v5.1 — 2026-10-30: nomes com "IA" e o benefício (Nitidez por IA ao vivo; Contornos por IA na Métrica, ruído no máximo), espessura de linha na Métrica, referência por ferramenta
      v5.0 — 2026-10-30: MÉTRICA — régua (reta, círculo, retângulo, contorno) em qualquer imagem parada (congelamento, foto, vídeo pausado, arquivo aberto), com a IA forte aplicada só ali e texto das medidas gravado na imagem; IA forte saiu do ao vivo
@@ -148,6 +150,10 @@
   #mList .mrow .x { background: none; border: 0; color: var(--dim); cursor: pointer; font-size: 14px; padding: 0 4px; } #mList .mrow .x:hover { color: var(--bad); }
   #mList .mhead { margin: 10px 0 2px; font-size: 12px; letter-spacing: .05em; color: var(--brand-tint); text-transform: uppercase; }
   #mList .mcmp div { font-size: 14px; padding: 3px 0; }
+  #mList .mcmp .warn { color: var(--warn); } #mList .mcmp .ok { color: var(--ok); }
+  .lensg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+  .lensg label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--dim); }
+  .lensg input, .lensg select { width: 100%; background: var(--surface); color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 14px; }
   #mNote { position: absolute; z-index: 3; width: 260px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--brand-tint); background: #0f1012; color: #fff; font-size: 15px; }
   #mPick { position: absolute; inset: 0; z-index: 4; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; }
   #mPick[hidden] { display: none; }
@@ -375,7 +381,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.0</small></h1>
+    <h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.1</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -423,7 +429,7 @@
       <div id="metric" hidden>
         <div id="mMain"><canvas id="mCv"></canvas>
           <div id="mBar"><span class="t">MÉTRICA</span>
-            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button>
+            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, verifica a perspectiva)">Ref. comum R</button>
             <select id="mLw" title="Espessura da linha" style="height:32px"><option value="0.6">Linha fina</option><option value="1" selected>Linha média</option><option value="1.7">Linha grossa</option></select>
             <span class="sep"></span><button class="btn sm" id="mZout" title="Diminuir zoom (ou roda do mouse / pinça)">−</button><button class="btn sm" id="mZin" title="Aumentar zoom">+</button><button class="btn sm" id="mZfit" title="Ver a imagem inteira">Ajustar</button>
             <button class="btn sm" id="mView">Ver original</button>
@@ -437,11 +443,17 @@
         </div>
         <div id="mSide">
           <div class="card"><h2>Medidas</h2><div id="mList"></div>
-            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência</b> e a 2ª é medida contra ela; a 3ª é nova referência, e assim por diante (retas: comprimento; demais: área). Cada par tem letra e cor próprias. <b>Ângulo</b>: arraste o 1º lado a partir do vértice e toque onde termina o 2º. <b>Anotação</b>: arraste do texto até o ponto indicado. Para ajustar: toque numa marca <b>+</b> (ou na lista) para selecionar e arraste as marcas brancas; <b>Apagar</b> remove a selecionada. Zoom: roda do mouse, pinça ou +/−; arraste com o botão direito ou dois dedos. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência</b> e a 2ª é medida contra ela; a 3ª é nova referência, e assim por diante (retas: comprimento; demais: área). Cada par tem letra e cor próprias. <b>Ângulo</b>: arraste o 1º lado a partir do vértice e toque onde termina o 2º. <b>Anotação</b>: arraste do texto até o ponto indicado. <b>Ref. comum R</b>: marque a mesma estrutura anatômica (que não muda entre exames) nas duas imagens — todas as medidas passam a valer também em unidades de R (áreas em R²) e a comparação fica direta; uma 2ª (R2) verifica se o ângulo/distância da câmera foram parecidos. Para ajustar: toque numa marca <b>+</b> (ou na lista) para selecionar e arraste as marcas brancas; <b>Apagar</b> remove a selecionada. Zoom: roda do mouse, pinça ou +/−; arraste com o botão direito ou dois dedos. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+          <div class="card"><h2>Escritas</h2>
+            <div class="row"><span class="lbl">Tamanho</span><select id="mFs"><option value="0.8">Pequeno</option><option value="1" selected>Normal</option><option value="1.3">Grande</option><option value="1.7">Muito grande</option></select></div>
+            <div class="row"><span class="lbl">Fonte</span><select id="mFont"></select></div>
+            <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="mLblReset">Reposicionar automaticamente</button></div>
+            <p class="desc" style="margin:6px 0 0">Para mudar uma escrita de lugar, arraste-a. Vale também para a imagem salva.</p></div>
           <div class="card"><h2>Imagem da medição</h2>
             <div class="row"><span class="lbl">Origem</span><span id="mOrigin" style="text-align:right;max-width:170px;overflow-wrap:anywhere">–</span></div>
             <div class="row"><span class="lbl">Câmera</span><span id="mRes">–</span></div>
             <div class="row"><span class="lbl">Base</span><span id="mBase">–</span></div>
+            <div class="row"><span class="lbl">Lente</span><span id="mLens" style="text-align:right;max-width:190px">–</span></div>
             <div id="mProg"><i></i></div><p class="desc" id="mMsg" style="margin:6px 0 0"></p>
             <div class="sl" style="margin-top:8px"><span class="name">Contornos por IA · redução de ruído</span><span class="val" id="mStrTxt">0,50</span>
               <input type="range" id="mStr" min="0" max="1" step="0.05" value="0.5"></div>
@@ -527,6 +539,24 @@
         <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — <b>Original</b> (pixels da câmera, sem interpolar) · Lanczos-3 · FSR · Nitidez por IA.</p>
         <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="btnTrio">Salvar as imagens de cada método (PNG)</button></div>
         <p class="desc" style="margin:4px 0 0">Salva a imagem inteira de saída feita por cada método, em arquivos separados (mais a entrada da câmera), com o mesmo horário no nome. Congele antes para todas serem do mesmo quadro. (A IA forte agora fica só na <b>Métrica</b>.)</p>
+      </div>
+
+      <div class="card">
+        <h2>Lente · calibração da Métrica</h2>
+        <p class="desc" style="margin:0 0 8px">A lente grande-angular deforma a imagem (barril): objetos na borda parecem menores que no centro. Com os dados da lente, a Métrica corrige as medidas.</p>
+        <div class="lensg">
+          <label>Ângulo de abertura (°)<input type="number" id="lnFov" min="20" max="170" step="1"></label>
+          <label>Medido na<select id="lnFovT"><option value="D">diagonal</option><option value="H">horizontal</option></select></label>
+          <label>Distorção óptica (%)<input type="text" id="lnDist" placeholder="do datasheet, ex.: -28"></label>
+          <label>Modelo da lente<select id="lnMod"><option value="ftheta">f-theta (grande-angular)</option><option value="reti">retilínea</option></select></label>
+          <label style="grid-column:span 2">Origem dos dados<select id="lnOrig"><option value="estimado">Estimado (não usado na Métrica do médico)</option><option value="datasheet">Datasheet do fabricante</option><option value="conferido">Conferido com régua</option></select></label>
+        </div>
+        <p class="desc" id="lnInfo" style="margin:6px 0"></p>
+        <div class="btnrow"><button class="btn sm" id="lnView">Ver correção</button><button class="btn sm" id="lnDef">Voltar à estimativa</button></div>
+        <div id="lnBox" hidden><div class="seg" id="lnSeg" style="grid-template-columns:1fr 1fr;margin:8px 0 6px"><button class="btn sm" data-ln="0">Original</button><button class="btn sm sel" data-ln="1">Corrigida</button></div>
+          <canvas id="lnCv" style="width:100%;border-radius:8px;background:#000;display:block"></canvas>
+          <p class="desc" style="margin:6px 0 0">Aponte para uma régua ou borda reta passando <b>perto da borda</b> da imagem. Na “Corrigida” ela deve ficar reta (paralela à grade). Se ainda curvar para fora, aumente o ângulo; se curvar para dentro, diminua.</p></div>
+        <p class="desc" style="margin:6px 0 0">Se o datasheet trouxer a <b>distorção (%)</b>, ela tem prioridade sobre o ângulo/modelo. Com origem <b>Estimado</b> a correção só aparece aqui, para teste.</p>
       </div>
 
       <div class="card">
@@ -1979,35 +2009,72 @@
   // Zoom/arrastar por painel (roda do mouse, pinça, botão direito/do meio, +/−). As marcas "+" são alças: arraste para ajustar.
   const MT = { lw: 1, open: false, panels: [], act: 0, tool: "line", drag: null, edit: null, pend: null, sel: null, loupe: null, ptrs: new Map(), pinch: null, pan: null, note: null };
   const mCv = $("mCv"), mCtx = mCv.getContext("2d");
+  const MFONTS = [["Padrão", "600 {}px Bonnie, Segoe UI, sans-serif"], ["Arial", "700 {}px Arial, Helvetica, sans-serif"], ["Serifada", "700 {}px Georgia, 'Times New Roman', serif"], ["Monoespaçada", "600 {}px Consolas, 'Courier New', monospace"]];
+  MT.fs = +(store.get("mFs") || 1); MT.font = Math.min(MFONTS.length - 1, +(store.get("mFont") || 0));
+  const mFont = px => MFONTS[MT.font][1].replace("{}", px);
   const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno", angle: "Ângulo", note: "Anotação" };
   const PCOL = [["#ffd400", "#ff5a5a"], ["#3fe0ff", "#5b8cff"], ["#b6ff5c", "#22c55e"], ["#ff8ae6", "#c084fc"], ["#ffffff", "#fb923c"]];   // [referência, medida] por par
   const pct = v => (Math.round(v * 10) / 10).toFixed(v < 10 ? 1 : 0).replace(".", ",");
   const deg = v => v.toFixed(1).replace(".", ",") + "°";
   const AP = () => MT.panels[MT.act];
+  // ----- lente: modelo de distorção radial (centro = centro da imagem). Mapeia ponto da imagem → plano ideal (sem distorção), em pixels -----
+  const LENS_DEF = { fov: 110, fovT: "D", dist: "", mod: "ftheta", orig: "estimado" };
+  let LENS = Object.assign({}, LENS_DEF, store.get("lens") || {});
+  const lensOn = () => LENS.orig !== "estimado";
+  const lensDist = () => { const v = parseFloat(String(LENS.dist).replace(",", ".")); return String(LENS.dist).trim() !== "" && isFinite(v) ? v : null; };
+  function lensMap(W, H) {
+    const cx = W / 2, cy = H / 2, rD = Math.hypot(cx, cy), D = lensDist();
+    if (D !== null) { const lam = D / 100; return (u, v) => { const x = u * W - cx, y = v * H - cy, rn = Math.hypot(x, y) / rD, s = 1 / Math.max(0.1, 1 + lam * rn * rn); return [x * s, y * s]; }; }
+    if (LENS.mod === "reti") return (u, v) => [u * W - cx, v * H - cy];
+    const rRef = LENS.fovT === "H" ? cx : rD, th = Math.min(170, Math.max(20, +LENS.fov || 110)) / 2 * Math.PI / 180, f = rRef / th;
+    return (u, v) => { const x = u * W - cx, y = v * H - cy, r = Math.hypot(x, y); if (r < 1e-9) return [x, y]; const ru = f * Math.tan(Math.min(r / f, 1.5)); return [x * ru / r, y * ru / r]; }; }
+  function lensTxt(short) { const D = lensDist(), base = D !== null ? "distorção " + String(D).replace(".", ",") + "%" : (LENS.mod === "reti" ? "retilínea" : "f-theta") + " · " + LENS.fov + "° " + (LENS.fovT === "H" ? "horiz." : "diag.");
+    const o = { estimado: "estimado", datasheet: "datasheet", conferido: "conferido com régua" }[LENS.orig];
+    return short ? base + " (" + o + ")" : base + " · origem: " + o; }
+  function lensEdge() {                                       // quanto um objeto pequeno no canto parece menor que no centro (direção radial)
+    const M = lensMap(400, 400), sc = (u, v, du, dv) => { const a = M(u, v), b = M(u + du, v + dv); return Math.hypot(b[0] - a[0], b[1] - a[1]) / (Math.hypot(du, dv) * 400); };
+    return [1 - sc(0.5, 0.5, 0.005, 0) / sc(0.97, 0.5, 0.005, 0), 1 - sc(0.5, 0.5, 0.005, 0.005) / sc(0.97, 0.97, 0.005, 0.005)]; }
   function canvasOf(im) { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; c.getContext("2d").putImageData(im, 0, 0); return c; }
-  function newPanel(im, origin) { return { src: im, cOrig: canvasOf(im), cIA: null, showIA: true, shapes: [], origin, tok: null, step: 0, n: 34, ms: 0, err: "", view: { z: 1, cx: 0.5, cy: 0.5 }, rect: null }; }
+  function newPanel(im, origin, lens) { return { lens: lens !== false, src: im, cOrig: canvasOf(im), cIA: null, showIA: true, shapes: [], origin, tok: null, step: 0, n: 34, ms: 0, err: "", view: { z: 1, cx: 0.5, cy: 0.5 }, rect: null }; }
   function mVal(P, S) {                                       // em pixels da câmera (proporção certa mesmo em imagem não quadrada)
     const W = P.src.width, H = P.src.height;
+    if (P.lens && lensOn() && S.t !== "note") {                // com correção de lente: mede no plano ideal (sem a deformação em barril)
+      const M = lensMap(W, H), pt = q => M(q[0], q[1]), area = Q => { let a = 0; for (let i = 0, j = Q.length - 1; i < Q.length; j = i++) a += Q[j][0] * Q[i][1] - Q[i][0] * Q[j][1]; return Math.abs(a) / 2; };
+      if (S.t === "poly") return area(S.pts.map(pt));
+      if (S.t === "angle") { if (!S.c) return 0; const A = pt(S.a), B = pt(S.b), C = pt(S.c), ux = B[0] - A[0], uy = B[1] - A[1], vx = C[0] - A[0], vy = C[1] - A[1];
+        const n = Math.hypot(ux, uy) * Math.hypot(vx, vy); return n ? Math.acos(Math.max(-1, Math.min(1, (ux * vx + uy * vy) / n))) * 180 / Math.PI : 0; }
+      if (S.t === "line" || S.t === "cref") { const A = pt(S.a), B = pt(S.b); return Math.hypot(B[0] - A[0], B[1] - A[1]); }
+      const Q = [];
+      if (S.t === "circle") { const r = Math.hypot((S.b[0] - S.a[0]) * W, (S.b[1] - S.a[1]) * H); for (let i = 0; i < 72; i++) { const t = i / 72 * 2 * Math.PI; Q.push(pt([S.a[0] + r * Math.cos(t) / W, S.a[1] + r * Math.sin(t) / H])); } return area(Q); }
+      const [x0, y0] = S.a, [x1, y1] = S.b, seg = (p, q) => { for (let i = 0; i < 16; i++) Q.push(pt([p[0] + (q[0] - p[0]) * i / 16, p[1] + (q[1] - p[1]) * i / 16])); };
+      seg([x0, y0], [x1, y0]); seg([x1, y0], [x1, y1]); seg([x1, y1], [x0, y1]); seg([x0, y1], [x0, y0]); return area(Q); }
     if (S.t === "poly") { let a = 0; const Q = S.pts; for (let i = 0, j = Q.length - 1; i < Q.length; j = i++) a += (Q[j][0] * W) * (Q[i][1] * H) - (Q[i][0] * W) * (Q[j][1] * H); return Math.abs(a) / 2; }
     if (S.t === "angle") { if (!S.c) return 0; const ux = (S.b[0] - S.a[0]) * W, uy = (S.b[1] - S.a[1]) * H, vx = (S.c[0] - S.a[0]) * W, vy = (S.c[1] - S.a[1]) * H;
       const n = Math.hypot(ux, uy) * Math.hypot(vx, vy); return n ? Math.acos(Math.max(-1, Math.min(1, (ux * vx + uy * vy) / n))) * 180 / Math.PI : 0; }
     if (S.t === "note") return 1;
     const dx = (S.b[0] - S.a[0]) * W, dy = (S.b[1] - S.a[1]) * H;
-    return S.t === "line" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
+    return S.t === "line" || S.t === "cref" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
   // pares: em cada ferramenta a 1ª é referência e a 2ª é medida contra ela, e assim por diante. As letras seguem a ordem geral (A, B, C…)
-  function mInfo(P, list) { const cnt = {}, last = {}; let letters = 0, ang = 0;
+  const fR = v => (v >= 10 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
+  const RCOL = "#2ee6c8";
+  function mInfo(P, list) { const cnt = {}, last = {}; let letters = 0, ang = 0, nr = 0;
+    const R1S = list.find(S => S.t === "cref"), R1 = R1S ? mVal(P, R1S) : 0;
+    const rOf = (S, v) => R1 && S.t !== "cref" ? (S.t === "line" ? v / R1 : v / (R1 * R1)) : null, rStr = (S, r) => r === null ? "" : fR(r) + (S.t === "line" ? " R" : " R²");
     return list.map(S => {
+      if (S.t === "cref") { nr++; const v = mVal(P, S), q = nr > 1 && R1 ? v / R1 : null;
+        return { S, kind: "cref", idx: nr, col: RCOL, num: q, name: nr === 1 ? "R1 · referência comum" : "R" + nr + " · verificação de perspectiva", txt: nr === 1 ? "R1 · referência comum" : "R" + nr + " = " + fR(q || 0) + " R1",
+          val: nr === 1 ? "unidade R" : fR(q || 0) + " × R1" }; }
       if (S.t === "angle") { ang++; const v = mVal(P, S); return { S, kind: "angle", col: "#ffffff", idx: ang, num: v, name: "Ângulo " + ang, txt: "Ângulo " + ang + ": " + deg(v), val: deg(v) }; }
       if (S.t === "note") return { S, kind: "note", col: "#ffffff", name: "Anotação", txt: S.text || "", val: S.text ? "“" + S.text + "”" : "(sem texto)" };
-      const t = S.t, c = cnt[t] = (cnt[t] || 0) + 1, v = mVal(P, S), isLine = t === "line";
+      const t = S.t, c = cnt[t] = (cnt[t] || 0) + 1, v = mVal(P, S), isLine = t === "line", rv = rOf(S, v), rs = rStr(S, rv);
       if ((c - 1) % 2 === 0) { const li = letters++, L = String.fromCharCode(65 + li % 26); last[t] = { v, L, li };
-        return { S, kind: "ref", ref: true, pair: L, col: PCOL[li % PCOL.length][0], name: NAMES[t] + " " + L + " · referência", txt: "REFERÊNCIA " + L + " (" + NAMES[t].toLowerCase() + ")", val: "referência" }; }
+        return { S, kind: "ref", ref: true, pair: L, col: PCOL[li % PCOL.length][0], name: NAMES[t] + " " + L + " · referência", txt: "REFERÊNCIA " + L + " (" + NAMES[t].toLowerCase() + ")" + (rs ? " · " + rs : ""), val: "referência", rv, rs }; }
       const R = last[t], p = R.v ? 100 * v / R.v : 0, val = pct(p) + "%" + (p <= 100 ? " · livre " + pct(100 - p) + "%" : "");
-      return { S, kind: "meas", ref: false, pair: R.L, num: p, col: PCOL[R.li % PCOL.length][1], name: NAMES[t] + " " + R.L + " · medida", txt: R.L + ": " + (isLine ? "" : "área ") + val,
-        val: (isLine ? "" : "área ") + pct(p) + "% da ref. " + R.L + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
+      return { S, kind: "meas", ref: false, pair: R.L, num: p, col: PCOL[R.li % PCOL.length][1], name: NAMES[t] + " " + R.L + " · medida", txt: R.L + ": " + (isLine ? "" : "área ") + val + (rs ? " · " + rs : ""),
+        val: (isLine ? "" : "área ") + pct(p) + "% da ref. " + R.L + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : ""), rv, rs }; }); }
   // alças de cada forma (k = qual ponto; "m" = mover a forma inteira)
   function handles(S) {
-    if (S.t === "line") return [["a", S.a], ["b", S.b], ["m", [(S.a[0] + S.b[0]) / 2, (S.a[1] + S.b[1]) / 2]]];
+    if (S.t === "line" || S.t === "cref") return [["a", S.a], ["b", S.b], ["m", [(S.a[0] + S.b[0]) / 2, (S.a[1] + S.b[1]) / 2]]];
     if (S.t === "circle") return [["m", S.a], ["b", S.b]];
     if (S.t === "rect") return [["a", S.a], ["b", S.b], ["ab", [S.a[0], S.b[1]]], ["ba", [S.b[0], S.a[1]]], ["m", [(S.a[0] + S.b[0]) / 2, (S.a[1] + S.b[1]) / 2]]];
     if (S.t === "poly") { let x = 0, y = 0; S.pts.forEach(q => { x += q[0]; y += q[1]; }); return [["m", [x / S.pts.length, y / S.pts.length]]]; }
@@ -2022,17 +2089,20 @@
     S[E.k] = p; }
   const clone = S => JSON.parse(JSON.stringify(S));
   // ---------- desenho ----------
-  function drawShapesM(c, map, scale, P, list, sel, bounds) {   // bounds: [x0, y0, x1, y1] — etiquetas sempre dentro da imagem
-    const info = mInfo(P, list), k = MT.lw, lw = 2.5 * scale * k, fs = Math.round(17 * scale), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)], placed = [];
+  function drawShapesM(c, map, scale, P, list, sel, bounds, boxes) {   // bounds: [x0, y0, x1, y1] — etiquetas sempre dentro da imagem; boxes: recebe as caixas das etiquetas (arrastar)
+    const info = mInfo(P, list), k = MT.lw, lw = 2.5 * scale * k, fs = Math.round(17 * scale * MT.fs), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)], placed = [];
     const plus = (x, y) => { const r = 9 * scale * (0.6 + 0.4 * k); c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
     const [X0, Y0, X1, Y1] = bounds || [0, 0, c.canvas.width, c.canvas.height], m = 4 * scale;
-    const label = (txt, lx, ly, col, lxl) => { if (!txt) return; c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, bh = fs * 1.6;
+    const o0 = map([0, 0]);
+    const label = (txt, lx, ly, col, lxl, S) => { if (!txt) return; c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, bh = fs * 1.6;
+      if (S && S.lo) { const o = map(S.lo); let x = Math.min(Math.max(X0 + m, lx + o[0] - o0[0]), X1 - tw - m), y = Math.min(Math.max(Y0 + m, ly + o[1] - o0[1]), Y1 - bh - m);   // posição escolhida pelo médico
+        placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); return; }
       let x = lx; if (x + tw > X1 - m && lxl !== undefined && lxl - tw >= X0 + m) x = lxl - tw;   // não cabe à direita: vai para a esquerda da forma
       x = Math.min(Math.max(X0 + m, x), X1 - tw - m); let y = Math.min(Math.max(Y0 + m, ly), Y1 - bh - m);
       for (let i = 0; i < 20 && placed.some(q => x < q[0] + q[2] && q[0] < x + tw && y < q[1] + q[3] + 3 * scale && q[1] < y + bh + 3 * scale); i++)   // não sobrepor etiquetas
         y = y + bh + 4 * scale > Y1 - bh ? y - (bh + 4 * scale) * (i + 1) : y + bh + 4 * scale;
-      placed.push([x, y, tw, bh]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); };
-    c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round"; c.lineCap = "round";
+      placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S]); c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); };
+    c.save(); c.font = mFont(fs); c.lineJoin = "round"; c.lineCap = "round";
     info.forEach(({ S, txt, col, kind }) => {
       c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
       let lx, ly, lxl;
@@ -2051,10 +2121,13 @@
         lx = ax - 4 * scale; ly = ay - fs * 0.8; lxl = ax + 4 * scale; }
       else { const [ax, ay] = map(S.a), [bx, by] = map(S.b);
         if (S.t === "line") { c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); plus(ax, ay); plus(bx, by); lx = Math.max(ax, bx) + 8 * scale; ly = by - fs * 1.9; lxl = Math.min(ax, bx) - 8 * scale; }
+        else if (S.t === "cref") { c.setLineDash([3 * scale * Math.max(1, k), 5 * scale * Math.max(1, k)]); c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); c.setLineDash([]);   // traço curto + barras nas pontas
+          const an = Math.atan2(by - ay, bx - ax) + Math.PI / 2, h = 10 * scale * (0.6 + 0.4 * k); for (const [x, y] of [[ax, ay], [bx, by]]) { c.beginPath(); c.moveTo(x - h * Math.cos(an), y - h * Math.sin(an)); c.lineTo(x + h * Math.cos(an), y + h * Math.sin(an)); c.stroke(); }
+          c.setLineDash(dash); lx = Math.max(ax, bx) + 8 * scale; ly = Math.max(ay, by) + 4 * scale; lxl = Math.min(ax, bx) - 8 * scale; }
         else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72 + 8 * scale; ly = ay - r * 0.72 - fs * 1.9; lxl = ax - r * 0.72 - 8 * scale; }
         else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y);
           lx = Math.max(ax, bx) + 8 * scale; ly = Math.min(ay, by) - fs * 1.9; lxl = Math.min(ax, bx) - 8 * scale; } }
-      label(txt, lx, ly, kind === "note" ? "#ffffff" : col, lxl); });
+      label(txt, lx, ly, kind === "note" ? "#ffffff" : col, lxl, S); });
     if (sel && list.includes(sel)) { c.setLineDash([]); c.shadowBlur = 0; c.lineWidth = 2 * scale;   // alças da forma selecionada
       for (const [, q] of handles(sel)) { const [x, y] = map(q); c.beginPath(); c.arc(x, y, 7 * scale, 0, 2 * Math.PI); c.fillStyle = "rgba(255,255,255,.25)"; c.fill(); c.strokeStyle = "#fff"; c.stroke(); } }
     c.restore(); }
@@ -2075,7 +2148,7 @@
       mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high";
       mCtx.drawImage(b, (V.cx - 0.5 / V.z) * bw, (V.cy - 0.5 / V.z) * bh, bw / V.z, bh / V.z, R.ox, R.oy, R.dw, R.dh);
       let list = P.shapes; if (MT.drag && MT.drag.P === P && !list.includes(MT.drag.S)) list = list.concat([MT.drag.S]); if (MT.pend && MT.pend.P === P && !list.includes(MT.pend.S)) list = list.concat([MT.pend.S]);
-      drawShapesM(mCtx, q => toScr(P, q), dpr, P, list, MT.sel && MT.sel.P === P ? MT.sel.S : null, [R.ox, R.oy, R.ox + R.dw, R.oy + R.dh]);
+      P.lbl = []; drawShapesM(mCtx, q => toScr(P, q), dpr, P, list, MT.sel && MT.sel.P === P ? MT.sel.S : null, [R.ox, R.oy, R.ox + R.dw, R.oy + R.dh], P.lbl);
       const tg = P.showIA && P.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : P.cIA ? "imagem ORIGINAL da câmera (sem IA)" : P.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA…";
       mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
       mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(R.ox + R.dw - tw - 6 * dpr, R.oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = P.showIA && P.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, R.ox + R.dw - tw + 2 * dpr, R.oy + 23 * dpr);
@@ -2101,7 +2174,7 @@
       if (!info.length) { const p = document.createElement("p"); p.className = "desc"; p.style.margin = "4px 0"; p.textContent = "Escolha a ferramenta e arraste na imagem. A primeira forma de cada ferramenta será a referência."; el.append(p); }
       info.forEach(({ S, ref, kind, name, val, col }) => { const r = document.createElement("div"); r.className = "mrow" + (MT.sel && MT.sel.S === S ? " sel" : "");
         const dot = document.createElement("span"); dot.textContent = "● "; dot.style.color = col; const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
-        const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; const x = document.createElement("button"); x.className = "x"; x.textContent = "✕"; x.title = "Apagar esta medida";
+        const b = document.createElement("b"); const ii = info.find(q => q.S === S); b.textContent = (ref ? "100% · referência" : val) + (ii.rs ? " · " + ii.rs : ""); const x = document.createElement("button"); x.className = "x"; x.textContent = "✕"; x.title = "Apagar esta medida";
         x.onclick = ev => { ev.stopPropagation(); mDelete(P, S); };
         r.append(dot, nm, b, x); r.title = kind === "meas" ? "Tocar: selecionar · tocar de novo: trocar com a referência do par" : kind === "note" ? "Tocar: selecionar · tocar de novo: editar o texto" : "Tocar: selecionar";
         r.onclick = () => { MT.act = pi;
@@ -2116,13 +2189,25 @@
       const rows = []; B.forEach(i => { const k = key(i), a = k && A.get(k); if (!a) return;
         rows.push(i.kind === "angle" ? "Ângulo " + i.idx + ": " + deg(a.num) + " → " + deg(i.num)
           : "Par " + i.pair + " (" + NAMES[i.S.t].toLowerCase() + "): " + pct(a.num) + "% → " + pct(i.num) + "% (" + (i.num - a.num >= 0 ? "+" : "−") + pct(Math.abs(i.num - a.num)) + " p.p.)"); });
+      // referência comum: mesma forma (ferramenta + letra + papel) medida em R nos dois exames → variação direta
+      const IA = mInfo(MT.panels[0], MT.panels[0].shapes), rk = i => (i.kind === "ref" || i.kind === "meas") ? i.S.t + "|" + i.pair + "|" + i.kind : null;
+      const hasR = [IA, B].map(L => L.some(i => i.kind === "cref" && i.idx === 1)); let persp = null;
+      if (hasR[0] && hasR[1]) { const RA = new Map(); IA.forEach(i => { const k = rk(i); if (k && i.rv !== null) RA.set(k, i); });
+        B.forEach(i => { const k = rk(i), a = k && RA.get(k); if (!a || i.rv === null || !a.rv) return; const d = 100 * (i.rv / a.rv - 1);
+          rows.push("Em R · " + NAMES[i.S.t] + " " + i.pair + (i.kind === "ref" ? " (ref.)" : "") + ": " + a.rs + " → " + i.rs + " (" + (Math.abs(d) < 0.05 ? "" : d > 0 ? "+" : "−") + pct(Math.abs(d)) + "%)"); });
+        const q = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, q1 = q(IA), q2 = q(B);
+        if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1); persp = { d, ok: d <= 10 };
+          rows.push((persp.ok ? "✓ Perspectiva compatível: R2/R1 variou " : "⚠ Perspectiva diferente: R2/R1 variou ") + pct(d) + "%" + (persp.ok ? "" : " — ângulo ou distância da câmera mudaram; comparação em R pouco confiável")); }
+        else rows.push("Marque também R2 (outra estrutura fixa) nas duas imagens para verificar a perspectiva."); }
+      else if (hasR[0] || hasR[1]) rows.push("Marque a referência comum R1 nas DUAS imagens (a mesma estrutura) para comparar em R.");
       const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (exame 1 → exame 2)"; el.append(h);
       const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
-      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; p.append(d); }); el.append(p); MT.cmpRows = rows; } else MT.cmpRows = []; }
+      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t[0] === "⚠" || t.startsWith("Marque")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p); MT.cmpRows = rows; } else MT.cmpRows = []; }
   function mStatus() {
     const P = AP(); if (!P) return; const n = P.n || 34, st = P.step || 0, two = MT.panels.length > 1;
     $("mOrigin").textContent = (two ? "Exame " + (MT.act + 1) + ": " : "") + P.origin; $("mRes").textContent = P.src.width + "×" + P.src.height;
     $("mBase").textContent = P.showIA && P.cIA ? "Contornos por IA ×4 · ruído " + fmtStr(esrStrength) : "Original da câmera";
+    $("mLens").textContent = !P.lens ? "arquivo externo — sem correção" : lensOn() ? "correção ativa · " + lensTxt(true) : "sem correção (calibração estimada)";
     $("mProg").querySelector("i").style.width = (P.cIA ? 100 : P.err ? 0 : 100 * st / n) + "%";
     $("mMsg").textContent = P.err ? "Contornos por IA: " + P.err : P.cIA ? "Contornos por IA aplicado em " + (P.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando Contornos por IA… etapa " + st + "/" + n + ".";
     $("mView").textContent = P.showIA ? "Ver original" : "Ver com IA"; $("mView").disabled = !P.cIA;
@@ -2144,10 +2229,10 @@
       const x = n.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(c, 0, 0, n.width, n.height); c = n; cw = n.width; ch = n.height; }
     const o = document.createElement("canvas"); o.width = w; o.height = h; const x = o.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(c, 0, 0, w, h);
     return x.getImageData(0, 0, w, h); }
-  function metricOpen(im, origin) {
+  function metricOpen(im, origin, lens) {
     if (cmpMode) setCmpMode(0); if (zoomF > 1) setZoom(false); if (rec) { setStatus("Pare a gravação antes de abrir a Métrica.", "bad"); return; }
     esrStrength = 1;                                           // Contornos por IA começa com a redução de ruído no máximo
-    MT.open = true; MT.panels = [newPanel(im, origin)]; MT.act = 0; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
+    MT.open = true; MT.panels = [newPanel(im, origin, lens)]; MT.act = 0; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
     $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
     $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
   function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
@@ -2164,9 +2249,9 @@
     if (MT.open) return;
     if (viewing) {
       const it = viewing;
-      if (it.type === "foto") { const im = await imageOfItem(it); if (!im) { setStatus("Não consegui ler esta foto.", "bad"); return; } metricOpen(im, "foto " + it.name); return; }
+      if (it.type === "foto") { const im = await imageOfItem(it); if (!im) { setStatus("Não consegui ler esta foto.", "bad"); return; } metricOpen(im, "foto " + it.name, !it.ext); return; }
       const vv = $("vVid"); vv.pause(); if (!vv.videoWidth) { setStatus("O vídeo ainda não carregou.", "bad"); return; }
-      metricOpen(toNative(vv, vv.videoWidth, vv.videoHeight, it.nat), "vídeo " + it.name + " @ " + mmssc(vv.currentTime)); return; }
+      metricOpen(toNative(vv, vv.videoWidth, vv.videoHeight, it.nat), "vídeo " + it.name + " @ " + mmssc(vv.currentTime), !it.ext); return; }
     if (!frozen) {                                             // ao vivo: congela e abre quando a imagem parar
       if (!freezeReq && !srCap && !srBusy) toggleFreeze(); setStatus("Congelando para a Métrica…", "ok");
       for (let i = 0; i < 600 && !frozen; i++) await new Promise(r => setTimeout(r, 50)); if (!frozen) return; await new Promise(r => setTimeout(r, 120)); }
@@ -2207,6 +2292,8 @@
     if (MT.pend) { if (MT.pend.P === P) { MT.drag = MT.pend; MT.pend = null; MT.drag.S.c = p; MT.loupe = { P, p }; mDraw(); return; } MT.pend = null; }
     const h = hitTest(x, y);                                   // só a forma SELECIONADA é editável (assim dá para começar outra forma no mesmo ponto)
     if (h && MT.sel && h.S === MT.sel.S) { MT.edit = { P: h.P, S: h.S, k: h.k, start: p, orig: clone(h.S) }; MT.loupe = { P: h.P, p }; mDraw(); return; }
+    const lb = (P.lbl || []).slice().reverse().find(q => q[4] && x >= q[0] && x <= q[0] + q[2] && y >= q[1] && y <= q[1] + q[3]);
+    if (lb) { MT.lab = { P, S: lb[4], x, y, lo: (lb[4].lo || [0, 0]).slice(), moved: false }; return; }   // arrastar a escrita
     MT.tap = h;                                                // toque curto numa marca "+" (sem arrastar) = selecionar
     const t = MT.tool, S = t === "poly" ? { t, pts: [p] } : t === "angle" ? { t, a: p, b: p, c: null } : t === "note" ? { t, a: p, b: p, text: "" } : { t, a: p, b: p };
     MT.drag = { P, S }; MT.loupe = { P, p }; mDraw(); });
@@ -2216,6 +2303,8 @@
       P.view.z = MT.pinch.z0 * Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) / (MT.pinch.d0 || 1); clampView(P.view);
       const now = fromScr(P, cxs, cys); P.view.cx += MT.pinch.img[0] - now[0]; P.view.cy += MT.pinch.img[1] - now[1]; clampView(P.view); mDraw(); return; }
     if (MT.pan) { const P = MT.pan.P, R = P.rect; P.view.cx = MT.pan.cx - (x - MT.pan.x) / (R.dw * P.view.z); P.view.cy = MT.pan.cy - (y - MT.pan.y) / (R.dh * P.view.z); clampView(P.view); mDraw(); return; }
+    if (MT.lab) { const L = MT.lab, R = L.P.rect, V = L.P.view; if (Math.hypot(x - L.x, y - L.y) > 3 * R.dpr) L.moved = true;
+      if (L.moved) { L.S.lo = [L.lo[0] + (x - L.x) / (R.dw * V.z), L.lo[1] + (y - L.y) / (R.dh * V.z)]; mDraw(); } return; }
     if (MT.edit) { const P = MT.edit.P, p = fromScr(P, x, y).map(cl01); applyEdit(MT.edit, p); MT.loupe = { P, p }; mDraw(); return; }
     if (MT.drag) { const { P, S } = MT.drag, p = fromScr(P, x, y).map(cl01); MT.loupe = { P, p };
       if (S.t === "poly") { const L = S.pts[S.pts.length - 1], R = P.rect; if (Math.hypot((p[0] - L[0]) * R.dw * P.view.z, (p[1] - L[1]) * R.dh * P.view.z) > 3 * R.dpr) S.pts.push(p); }
@@ -2225,6 +2314,7 @@
     MT.ptrs.delete(e.pointerId);
     if (MT.pinch) { if (MT.ptrs.size < 2) MT.pinch = null; return; }
     if (MT.pan) { MT.pan = null; return; }
+    if (MT.lab) { const L = MT.lab; MT.lab = null; if (!L.moved) { MT.sel = { P: L.P, S: L.S }; mList(); } mDraw(); return; }
     if (MT.edit) { MT.edit = null; MT.loupe = null; mDraw(); mList(); return; }
     if (!MT.drag) return; const { P, S } = MT.drag; MT.drag = null; MT.loupe = null;
     const len = Math.hypot((S.b ? S.b[0] - S.a[0] : 0) * P.src.width, (S.b ? S.b[1] - S.a[1] : 0) * P.src.height);
@@ -2235,11 +2325,12 @@
       if (!S.c) { if (len < 3) { mDraw(); return; } S.c = S.b.slice(); MT.pend = { P, S }; setStatus("Ângulo: agora indique o 2º lado — toque (ou arraste) onde ele termina.", "ok"); mDraw(); return; }
       P.shapes.push(S); MT.sel = { P, S }; setStatus("Métrica · ângulo " + deg(mVal(P, S)) + ".", "ok"); mDraw(); mList(); return; }
     if (S.t === "note") { if (len < 3) S.b = S.a.slice(); P.shapes.push(S); MT.sel = { P, S }; mDraw(); mList(); noteEdit(P, S); return; }
-    const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(P, S) > 16 : mVal(P, S) > (S.t === "line" ? 4 : 16);
+    if (S.t === "cref" && P.shapes.filter(q => q.t === "cref").length >= 2) { setStatus("Métrica · já há R1 e R2 nesta imagem. Apague uma para marcar de novo.", "bad"); mDraw(); return; }
+    const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(P, S) > 16 : mVal(P, S) > (S.t === "line" || S.t === "cref" ? 4 : 16);
     if (ok) { P.shapes.push(S); const inf = mInfo(P, P.shapes).find(i => i.S === S);
-      setStatus("Métrica · " + inf.name + (inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
+      setStatus("Métrica · " + inf.name + (inf.kind === "cref" ? (inf.idx === 1 ? " marcada — as medidas desta imagem passam a valer também em R. Marque a MESMA estrutura na outra imagem." : " = " + inf.val + ".") : inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
     mDraw(); mList(); };
-  mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", e => { MT.ptrs.delete(e.pointerId); MT.drag = MT.edit = MT.pinch = MT.pan = null; MT.loupe = null; mDraw(); });
+  mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", e => { MT.ptrs.delete(e.pointerId); MT.drag = MT.edit = MT.pinch = MT.pan = MT.lab = null; MT.loupe = null; mDraw(); });
   new ResizeObserver(() => mDraw()).observe(mCv);
   // ---------- barra ----------
   document.querySelectorAll("#mBar [data-tool]").forEach(b => b.onclick = () => { MT.tool = b.dataset.tool; MT.pend = null; document.querySelectorAll("#mBar [data-tool]").forEach(x => x.classList.toggle("sel", x === b)); mDraw(); });
@@ -2253,6 +2344,41 @@
   $("mClose").onclick = metricClose; $("btnMetric").onclick = metricFromCurrent; $("vMetric").onclick = metricFromCurrent;
   MT.lw = +(store.get("mLw") || 1); $("mLw").value = String(MT.lw); if (!$("mLw").value) { MT.lw = 1; $("mLw").value = "1"; }
   $("mLw").onchange = e => { MT.lw = +e.target.value; store.set("mLw", MT.lw); mDraw(); };
+  $("mFont").innerHTML = MFONTS.map(([n], i) => '<option value="' + i + '">' + n + '</option>').join(""); $("mFont").value = MT.font; $("mFs").value = String(MT.fs);
+  $("mFs").onchange = e => { MT.fs = +e.target.value; store.set("mFs", MT.fs); mDraw(); };
+  $("mFont").onchange = e => { MT.font = +e.target.value; store.set("mFont", MT.font); mDraw(); };
+  $("mLblReset").onclick = () => { MT.panels.forEach(P => P.shapes.forEach(S => delete S.lo)); mDraw(); setStatus("Métrica · escritas reposicionadas automaticamente.", "ok"); };
+  // ----- card da lente (bancada) -----
+  function lensUi() { $("lnFov").value = LENS.fov; $("lnFovT").value = LENS.fovT; $("lnDist").value = LENS.dist; $("lnMod").value = LENS.mod; $("lnOrig").value = LENS.orig;
+    const e = lensEdge(); $("lnInfo").innerHTML = "Com estes dados, um objeto pequeno aparece cerca de <b>" + pct(Math.max(0, 100 * e[0])) + "% menor</b> perto da borda lateral e <b>" + pct(Math.max(0, 100 * e[1])) + "% menor</b> no canto, comparado ao centro (na direção do centro para fora). " +
+      (lensOn() ? '<span style="color:var(--ok)">Correção <b>ativa</b> na Métrica.</span>' : '<span style="color:var(--warn)">Origem “Estimado”: correção desligada na Métrica do médico.</span>'); lnLut = null; }
+  function lensSave() { LENS = { fov: Math.min(170, Math.max(20, +$("lnFov").value || 110)), fovT: $("lnFovT").value, dist: $("lnDist").value.trim(), mod: $("lnMod").value, orig: $("lnOrig").value };
+    store.set("lens", LENS); lensUi(); if (MT.open) { mDraw(); mList(); mStatus(); } }
+  ["lnFov", "lnFovT", "lnDist", "lnMod", "lnOrig"].forEach(id => $(id).onchange = lensSave); $("lnFov").oninput = lensSave;
+  $("lnDef").onclick = () => { LENS = Object.assign({}, LENS_DEF); store.set("lens", LENS); lensUi(); setStatus("Lente: voltou à estimativa (110° diagonal, f-theta).", "ok"); };
+  // pré-visualização: imagem corrigida (plano ideal) + grade reta por cima
+  let lnLut = null, lnTimer = 0, lnMode = 1;
+  function lensLut(W, H) {                                     // para cada pixel da saída (plano ideal) → pixel de origem na imagem da câmera
+    const M = lensMap(W, H), cx = W / 2, cy = H / 2, rD = Math.hypot(cx, cy), N = 2048, ru = new Float64Array(N + 1);
+    for (let i = 0; i <= N; i++) { const rd = rD * 1.02 * i / N, q = M(0.5 + rd / W, 0.5); ru[i] = q[0]; }     // r_ideal em função de r_imagem (monótono)
+    const sc = M(1, 0.5)[0] / cx, lut = new Int32Array(W * H).fill(-1);   // escala: a borda do meio da imagem fica na borda da saída
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const X = (x + 0.5 - cx) * sc, Y = (y + 0.5 - cy) * sc, r = Math.hypot(X, Y);
+      let lo = 0, hi = N; if (r > ru[N]) continue; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ru[m] < r) lo = m; else hi = m; }
+      const rd = rD * 1.02 * (lo + (ru[hi] > ru[lo] ? (r - ru[lo]) / (ru[hi] - ru[lo]) : 0)) / N, k = r > 1e-9 ? rd / r : 1 / sc;
+      const sx = Math.round(cx + X * k - 0.5), sy = Math.round(cy + Y * k - 0.5); if (sx >= 0 && sy >= 0 && sx < W && sy < H) lut[y * W + x] = sy * W + sx; }
+    return { W, H, lut }; }
+  function lensPreview() {
+    if ($("lnBox").hidden) { clearInterval(lnTimer); lnTimer = 0; return; } if (!cv.width) return;
+    const W = cv.width, H = cv.height, o = $("lnCv"); if (o.width !== W || o.height !== H) { o.width = W; o.height = H; }
+    const src = ctx.getImageData(0, 0, W, H), g = o.getContext("2d");
+    if (lnMode) { if (!lnLut || lnLut.W !== W || lnLut.H !== H) lnLut = lensLut(W, H); const out = g.createImageData(W, H), s = src.data, d = out.data, L = lnLut.lut;
+      for (let i = 0; i < L.length; i++) { const j = L[i]; if (j < 0) { d[i * 4 + 3] = 255; continue; } const a = j * 4, b = i * 4; d[b] = s[a]; d[b + 1] = s[a + 1]; d[b + 2] = s[a + 2]; d[b + 3] = 255; }
+      g.putImageData(out, 0, 0); } else g.putImageData(src, 0, 0);
+    g.strokeStyle = "rgba(0,255,200,.55)"; g.lineWidth = Math.max(1, W / 400); g.beginPath();
+    for (let i = 1; i < 8; i++) { const px = Math.round(W * i / 8) + 0.5, py = Math.round(H * i / 8) + 0.5; g.moveTo(px, 0); g.lineTo(px, H); g.moveTo(0, py); g.lineTo(W, py); } g.stroke(); }
+  $("lnView").onclick = () => { const b = $("lnBox"); b.hidden = !b.hidden; $("lnView").textContent = b.hidden ? "Ver correção" : "Fechar visualização"; if (!b.hidden && !lnTimer) { lensPreview(); lnTimer = setInterval(lensPreview, 150); } };
+  document.querySelectorAll("#lnSeg [data-ln]").forEach(b => b.onclick = () => { lnMode = +b.dataset.ln; document.querySelectorAll("#lnSeg [data-ln]").forEach(x => x.classList.toggle("sel", x === b)); lensPreview(); });
+  lensUi();
   $("mStr").oninput = e => { esrStrength = +e.target.value; $("mStrTxt").textContent = fmtStr(esrStrength); store.set("esrStr", esrStrength); };
   $("mStr").onchange = () => { if (MT.open && UP.esr) MT.panels.forEach(P => mRunIA(P)); };
   // ---------- comparar com outro exame ----------
@@ -2274,45 +2400,47 @@
     if (!fotos.length) box.innerHTML = '<p class="desc">Nenhuma foto na galeria. Use “Abrir arquivo de imagem…”.</p>';
     fotos.forEach(it => { const b = document.createElement("button"); b.className = "pk"; b.title = it.name;
       const im = document.createElement("img"); im.src = it.thumb || it.url; const s = document.createElement("span"); s.textContent = it.name; b.append(im, s);
-      b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name); };
+      b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name, !it.ext); };
       box.append(b); });
     $("mPick").hidden = false; }
-  function addPanel(im, origin) { const P = newPanel(im, origin); MT.panels = [MT.panels[0], P]; MT.act = 1; MT.sel = null; MT.pend = null;
+  function addPanel(im, origin, lens) { const P = newPanel(im, origin, lens); MT.panels = [MT.panels[0], P]; MT.act = 1; MT.sel = null; MT.pend = null;
     mDraw(); mList(); mStatus(); mRunIA(P); setStatus("Comparação: meça os mesmos pares nos dois exames para ver a diferença.", "ok"); }
   $("mCmp").onclick = () => { if (MT.panels.length > 1) { const P = MT.panels.pop(); if (P.tok) P.tok.cancel = true; MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); return; } pickOpen(); };
   $("mPickClose").onclick = () => { $("mPick").hidden = true; };
   $("mPickFile").onclick = () => $("mFile").click();
   $("mFile").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; $("mPick").hidden = true;
     const el = new Image(); el.src = URL.createObjectURL(f); await el.decode().catch(() => {}); if (!el.naturalWidth) { setStatus("Não consegui abrir esta imagem.", "bad"); return; }
-    addPanel(toNative(el, el.naturalWidth, el.naturalHeight, null), "arquivo " + f.name); };
+    addPanel(toNative(el, el.naturalWidth, el.naturalHeight, null), "arquivo " + f.name, false); };
   // ---------- salvar: imagem(ns) + medidas + texto (rodapé) gravados na própria imagem → galeria ----------
   $("mSave").onclick = () => {
     if (!MT.panels.length) return; askPerm(); noteHide(true);
     const two = MT.panels.length > 1, Wp = two ? 900 : 1080, gap = two ? 12 : 0;
     const imgs = MT.panels.map(P => { const b = mBase(P); return { P, b, H: Math.round(b.height * Wp / b.width) }; }), Hd = Math.max(...imgs.map(o => o.H));
-    const fs = Math.round(Wp / 48), lh = Math.round(fs * 1.45), lines = [];
+    const fs = Math.round(Wp / 48 * MT.fs), lh = Math.round(fs * 1.45), lines = [];
     lines.push(["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "#d08c7e"]);
     MT.panels.forEach((P, pi) => {
       lines.push([(two ? "Exame " + (pi + 1) + " — " : "") + "Origem: " + P.origin + " · câmera " + P.src.width + "×" + P.src.height, "#eceef0"]);
       lines.push(["Base: " + (P.showIA && P.cIA ? "Contornos por IA ×4 (redução de ruído " + fmtStr(esrStrength) + ") — Processada por IA — pode conter detalhes inexistentes; confira no original" : "imagem original da câmera (sem IA)"), P.showIA && P.cIA ? "#ffb3e6" : "#eceef0"]);
       const info = mInfo(P, P.shapes); if (!info.length) lines.push(["(sem medidas)", "#959ba3"]);
-      info.forEach(i => lines.push([(two ? "  " : "") + (i.kind === "ref" ? i.name + " (100%)" : i.kind === "note" ? "Anotação: " + (i.S.text || "(seta)") : i.name + ": " + i.val), i.kind === "note" ? "#eceef0" : i.col])); });
+      lines.push(["Lente: " + (!P.lens ? "arquivo externo — sem correção" : lensOn() ? "medidas com correção de lente (" + lensTxt(true) + ")" : "sem correção de lente (calibração ainda estimada)"), "#959ba3"]);
+      info.forEach(i => lines.push([(two ? "  " : "") + (i.kind === "ref" ? i.name + " (100%)" : i.kind === "note" ? "Anotação: " + (i.S.text || "(seta)") : i.kind === "cref" ? i.name + (i.idx > 1 ? ": " + i.val : " (unidade R)") : i.name + ": " + i.val) + (i.rs ? " · " + i.rs : ""), i.kind === "note" ? "#eceef0" : i.col])); });
     if (two) { lines.push(["Comparação (exame 1 → exame 2):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t, "#eceef0"])); }
     const Wt = Wp * MT.panels.length + gap, c = document.createElement("canvas"); c.width = Wt;
-    const x = c.getContext("2d"); x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
+    const x = c.getContext("2d"); x.font = mFont(fs);
     const wrap = []; lines.forEach(([t, col]) => { let s = t; while (x.measureText(s).width > Wt - fs * 1.4 && s.length > 20) { let k = s.length; while (k > 10 && x.measureText(s.slice(0, k)).width > Wt - fs * 1.4) k--; const sp = s.lastIndexOf(" ", k); const cut = sp > 20 ? sp : k; wrap.push([s.slice(0, cut), col]); s = "   " + s.slice(cut).trim(); } wrap.push([s, col]); });
     c.height = Hd + wrap.length * lh + Math.round(fs * 1.2);
     x.fillStyle = "#0f1012"; x.fillRect(0, 0, Wt, c.height); x.imageSmoothingQuality = "high";
     imgs.forEach(({ P, b, H }, i) => { const ox = i * (Wp + gap); x.drawImage(b, ox, 0, Wp, H); x.save(); x.beginPath(); x.rect(ox, 0, Wp, H); x.clip();
       drawShapesM(x, q => [ox + q[0] * Wp, q[1] * H], Wp / 900, P, P.shapes, null, [ox, 0, ox + Wp, H]); x.restore();
-      if (two) { x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; const t = "Exame " + (i + 1), tw = x.measureText(t).width + fs; x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(ox + 8, 8, tw, fs * 1.6); x.fillStyle = "#cfe8ff"; x.fillText(t, ox + 8 + fs / 2, 8 + fs * 1.15); } });
-    x.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif";
+      if (two) { x.font = mFont(fs); const t = "Exame " + (i + 1), tw = x.measureText(t).width + fs; x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(ox + 8, 8, tw, fs * 1.6); x.fillStyle = "#cfe8ff"; x.fillText(t, ox + 8 + fs / 2, 8 + fs * 1.15); } });
+    x.font = mFont(fs);
     wrap.forEach(([t, col], i) => { x.fillStyle = col; x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(two ? "metrica_comparacao" : "metrica", "png");
     const it = { type: "foto", url: c.toDataURL("image/jpeg", 0.85), thumb: null, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
     it.thumb = it.url; it.kind = "metrica"; it.target = MT.target || null;
     try { it.mdata = JSON.parse(JSON.stringify({ data: nowTxt(), origens: MT.panels.map(P => P.origin), base_ia: MT.panels.map(P => !!(P.showIA && P.cIA)), reducao_ruido_ia: esrStrength,
-      medidas: MT.panels.map(P => mInfo(P, P.shapes).map(i => ({ nome: i.name, tipo: i.kind, valor: i.val, texto: i.S && i.S.text }))), comparacao: MT.cmpRows || [], formas: MT.panels.map(P => P.shapes) })); } catch (e) { it.mdata = {}; }
+      medidas: MT.panels.map(P => mInfo(P, P.shapes).map(i => ({ nome: i.name, tipo: i.kind, valor: i.val, em_R: i.rs || null, texto: i.S && i.S.text }))),
+      lente: { correcao_aplicada: MT.panels.map(P => !!(P.lens && lensOn())), dados: Object.assign({}, LENS) }, comparacao: MT.cmpRows || [], formas: MT.panels.map(P => P.shapes) })); } catch (e) { it.mdata = {}; }
     addItem(it);
     c.toBlob(blob => { if (!blob) { setStatus("Falha ao gerar a imagem da métrica.", "bad"); return; } it.url = URL.createObjectURL(blob); captured(it, blob);
       setStatus("Imagem da métrica na galeria (" + name + ")." + (autoSaveOn() || dirHandle ? "" : " Toque em Salvar para baixar."), "ok"); }, "image/png"); };
@@ -3154,7 +3282,7 @@
       setStatus((L === "M" ? "Métrica" : L === "V" ? "Vídeo" : "Foto") + " gravada no exame (" + n + ").", "ok"); refreshSaveUi(); return true;
     } catch (e) { console.error(e); setStatus("Falha ao gravar no exame: " + e.message, "bad"); return false; } }
   function capAjustes() { return { balanco_branco: (typeof gains !== "undefined" && gains ? gains.map(v => +v.toFixed(3)) : null), anti_vermelho: arLevel, evitar_estouro: (EVL[evlLevel] || {}).name,
-    realce: SHP[shpLevel].name, ruido: NR[nrLevel].name, ampliacao: UPM[curUp()].name, melhoria_resolucao: !!(frozen && frozenSR) }; }
+    lente: Object.assign({ correcao_na_metrica: lensOn() }, LENS), realce: SHP[shpLevel].name, ruido: NR[nrLevel].name, ampliacao: UPM[curUp()].name, melhoria_resolucao: !!(frozen && frozenSR) }; }
   async function examRemove(it) { const E = it.exam; if (!E) return false; try {
     const x = await readJSON([...E.base, "exame.json"]); const keep = m => !(m.arquivo || m.imagem || "").includes("/" + E.n);
     for (const m of (x.midias || []).concat(x.metricas || []).filter(m => !keep(m))) for (const f of [m.arquivo, m.original, m.quadro_unico, m.imagem, m.dados].filter(Boolean)) { try { await toTrash([...E.base, ...f.split("/")]); } catch (e) {} }
