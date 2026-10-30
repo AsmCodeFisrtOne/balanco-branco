@@ -317,7 +317,7 @@
         </div>
         <div id="mSide">
           <div class="card"><h2>Medidas</h2><div id="mList"></div>
-            <p class="desc" style="margin:8px 0 0">A 1ª reta é a referência das retas (100%); a 1ª área (círculo, retângulo ou contorno) é a referência das áreas. As seguintes mostram a % da referência. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+            <p class="desc" style="margin:8px 0 0">Cada ferramenta tem a sua referência (amarela): a 1ª reta, o 1º círculo, o 1º retângulo e o 1º contorno. As seguintes do mesmo tipo mostram a % dela (retas: comprimento; demais: área). Toque numa medida da lista para torná-la a referência. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
           <div class="card"><h2>Imagem da medição</h2>
             <div class="row"><span class="lbl">Origem</span><span id="mOrigin" style="text-align:right;max-width:170px;overflow-wrap:anywhere">–</span></div>
             <div class="row"><span class="lbl">Câmera</span><span id="mRes">–</span></div>
@@ -1848,7 +1848,7 @@
   // A 1ª forma de cada família é a referência (retas: comprimento; áreas: área). Medidas relativas, guardadas em coordenadas 0..1 da imagem.
   const MT = { open: false, src: null, cOrig: null, cIA: null, showIA: true, shapes: [], drag: null, tool: "line", origin: "", tok: null, t0: 0, ms: 0, err: "", rect: null, loupe: null };
   const mCv = $("mCv"), mCtx = mCv.getContext("2d");
-  const fam = t => t === "line" ? "line" : "area";
+  const fam = t => t;                                          // cada ferramenta tem a sua referência (a 1ª daquele tipo)
   const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno" };
   function mVal(S) {                                           // em pixels da câmera (proporção certa mesmo em imagem não quadrada)
     const W = MT.src ? MT.src.width : 1, H = MT.src ? MT.src.height : 1;
@@ -1856,16 +1856,16 @@
     const dx = (S.b[0] - S.a[0]) * W, dy = (S.b[1] - S.a[1]) * H;
     return S.t === "line" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
   const pct = v => (Math.round(v * 10) / 10).toFixed(v < 10 ? 1 : 0).replace(".", ",");
-  function mInfo(list) { const ref = {}, cnt = { line: 0, area: 0 }; return list.map(S => { const f = fam(S.t), v = mVal(S); cnt[f]++;
-    const name = (f === "line" ? "Reta " : "Área ") + cnt[f] + (f === "area" ? " (" + NAMES[S.t].toLowerCase() + ")" : "");
-    if (!ref[f]) { ref[f] = v; return { S, ref: true, name, txt: f === "line" ? "REFERÊNCIA (reta)" : "REFERÊNCIA (área)", val: "referência" }; }
+  function mInfo(list) { const ref = {}, cnt = {}; return list.map(S => { const f = fam(S.t), v = mVal(S); cnt[f] = (cnt[f] || 0) + 1;
+    const name = NAMES[S.t] + " " + cnt[f], isLine = S.t === "line";
+    if (!ref[f]) { ref[f] = v; return { S, ref: true, name, txt: "REFERÊNCIA (" + NAMES[S.t].toLowerCase() + ")", val: "referência" }; }
     const p = ref[f] ? 100 * v / ref[f] : 0, val = pct(p) + "%" + (p <= 100 ? " · livre " + pct(100 - p) + "%" : "");
-    return { S, ref: false, name, txt: (f === "line" ? "" : "área ") + val, val: pct(p) + "% da referência" + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
+    return { S, ref: false, name, txt: (isLine ? "" : "área ") + val, val: (isLine ? "" : "área ") + pct(p) + "% da referência" + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
   // desenho: tracejado + marcador "+" (como no ultrassom)
   function drawShapesM(c, map, scale, list) {
     const info = mInfo(list), lw = 2.5 * scale, fs = Math.round(17 * scale), dash = [10 * scale, 7 * scale];
     const plus = (x, y) => { const r = 9 * scale; c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
-    c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round";
+    c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round"; const placed = [];
     info.forEach(({ S, ref, txt }) => {
       const col = ref ? "#ffd400" : "#ff5a5a"; c.strokeStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
       let lx, ly;
@@ -1876,8 +1876,11 @@
         else if (S.t === "circle") { const r = Math.hypot(bx - ax, by - ay); c.beginPath(); c.arc(ax, ay, r, 0, 2 * Math.PI); c.stroke(); plus(ax, ay); lx = ax + r * 0.72; ly = ay - r * 0.72; }
         else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y); lx = Math.max(ax, bx); ly = Math.min(ay, by); } }
       c.setLineDash([]); c.shadowBlur = 0; const tw = c.measureText(txt).width + fs * 0.8, W = c.canvas.width, H = c.canvas.height;
-      const x = Math.min(Math.max(4, lx + 8 * scale), W - tw - 4), y = Math.min(Math.max(4, ly - fs * 1.9), H - fs * 1.7);
-      c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, fs * 1.6); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); });
+      const x = Math.min(Math.max(4, lx + 8 * scale), W - tw - 4), bh = fs * 1.6; let y = Math.min(Math.max(4, ly - fs * 1.9), H - fs * 1.7);
+      for (let k = 0; k < 20 && placed.some(q => x < q[0] + q[2] && q[0] < x + tw && y < q[1] + q[3] + 3 * scale && q[1] < y + bh + 3 * scale); k++)   // não sobrepor etiquetas
+        y = y + bh + 4 * scale > H - bh ? y - (bh + 4 * scale) * (k + 1) : y + bh + 4 * scale;
+      placed.push([x, y, tw, bh]);
+      c.fillStyle = "rgba(0,0,0,.72)"; c.fillRect(x, y, tw, bh); c.fillStyle = col; c.fillText(txt, x + fs * 0.4, y + fs * 1.15); });
     c.restore(); }
   function mBase() { return MT.showIA && MT.cIA ? MT.cIA : MT.cOrig; }
   function mDraw() {
@@ -1903,7 +1906,10 @@
   function mList() {
     const info = mInfo(MT.shapes), el = $("mList");
     el.innerHTML = info.length ? "" : '<p class="desc" style="margin:0">Escolha a ferramenta e arraste na imagem. A primeira forma será a referência.</p>';
-    info.forEach(({ ref, name, val }) => { const r = document.createElement("div"); r.className = "mrow";
+    info.forEach(({ S, ref, name, val }) => { const r = document.createElement("div"); r.className = "mrow";
+      if (!ref) { r.style.cursor = "pointer"; r.title = "Tocar para tornar esta a referência"; r.onclick = () => {   // vira a 1ª do seu tipo
+        const i = MT.shapes.indexOf(S), j = MT.shapes.findIndex(x => x.t === S.t); MT.shapes.splice(i, 1); MT.shapes.splice(j, 0, S); mDraw(); mList();
+        setStatus("Métrica · " + NAMES[S.t] + " escolhido(a) como referência.", "ok"); }; }
       r.innerHTML = '<span class="' + (ref ? "dotY" : "dotR") + '">● </span>'; r.firstChild.after(name); const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; r.append(b); el.append(r); }); }
   function mStatus() {
     const n = MT.n || 34, st = MT.step || 0;
@@ -1964,7 +1970,7 @@
     else MT.drag.b = p; mDraw(); });
   const mEnd = () => { if (!MT.drag) return; const S = MT.drag; MT.drag = null; MT.loupe = null;
     const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(S) > 16 : mVal(S) > (S.t === "line" ? 4 : 16);
-    if (ok) { MT.shapes.push(S); const inf = mInfo(MT.shapes).pop(); setStatus("Métrica · " + inf.name + ": " + (inf.ref ? "referência (100%) — agora meça o que quer comparar." : inf.val), "ok"); }
+    if (ok) { MT.shapes.push(S); const inf = mInfo(MT.shapes).find(x => x.S === S); setStatus("Métrica · " + inf.name + ": " + (inf.ref ? "referência (100%) — agora meça o que quer comparar." : inf.val), "ok"); }
     mDraw(); mList(); };
   mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", () => { MT.drag = null; MT.loupe = null; mDraw(); });
   new ResizeObserver(() => mDraw()).observe(mCv);
