@@ -2183,20 +2183,29 @@
   document.querySelectorAll("#fzBar [data-fup]").forEach(b => b.onclick = () => { setUP(+b.dataset.fup); fzSync(); });
   document.querySelectorAll("#fzBar [data-fshp]").forEach(b => b.onclick = () => setSHP(+b.dataset.fshp));
   document.querySelectorAll("#fzBar [data-fnr]").forEach(b => b.onclick = () => setNR(+b.dataset.fnr));
-  // ruído na imagem parada: a redução ao vivo é temporal (soma quadros) e não age num quadro só. Congelado, a troca de nível usa
-  // um filtro bilateral (preserva bordas, guiado pela luminância) sobre o quadro original do congelamento — sem acumular.
-  const SNR = [null, { r: 5, s: 1.0 }, { r: 9, s: 1.4 }, { r: 15, s: 1.8 }];
+  // ruído na imagem parada: a redução ao vivo é temporal (soma quadros) e não age num quadro só. Congelado, cada nível aplica
+  // NON-LOCAL MEANS no quadro original do congelamento (sem acumular): só faz média entre remendos 3×3 realmente parecidos
+  // (busca 7×7, força proporcional ao ruído medido na própria imagem) e devolve uma parte do detalhe — preserva bordas e textura.
+  // NLM rápido: para cada deslocamento (dx,dy) da janela de busca, distância de remendo 3×3 via soma de caixa separável
   function spatialNR(src, lvl) {
-    const P = SNR[lvl], w = src.width, h = src.height, d = src.data, o = new ImageData(w, h), od = o.data, n = w * h, Y = new Float32Array(n);
-    for (let i = 0, p = 0; i < n; i++, p += 4) Y[i] = 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2];
-    const RW = new Float32Array(256); for (let i = 0; i < 256; i++) RW[i] = Math.exp(-(i * i) / (2 * P.r * P.r));
-    const SW = []; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) SW.push([dx, dy, Math.exp(-(dx * dx + dy * dy) / (2 * P.s * P.s))]);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, yc = Y[i]; let sr = 0, sg = 0, sb = 0, ws = 0;
-      for (const [dx, dy, sw] of SW) { const xx = x + dx < 0 ? 0 : x + dx >= w ? w - 1 : x + dx, yy = y + dy < 0 ? 0 : y + dy >= h ? h - 1 : y + dy, j = yy * w + xx;
-        const dl = Y[j] - yc, wt = sw * RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)], q = j * 4;
-        sr += wt * d[q]; sg += wt * d[q + 1]; sb += wt * d[q + 2]; ws += wt; }
-      const p = i * 4; od[p] = sr / ws; od[p + 1] = sg / ws; od[p + 2] = sb / ws; od[p + 3] = 255; }
-    return o; }
+  const K = [0, 0.55, 0.8, 1.1][lvl], keep = [0, 0.3, 0.18, 0.08][lvl], R = 3, w = src.width, h = src.height, d = src.data, n = w * h;
+  const Y = new Float32Array(n); for (let i = 0, p = 0; i < n; i++, p += 4) Y[i] = 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2];
+  const v = []; for (let y = 1; y < h - 1; y += 2) for (let x = 1; x < w - 1; x += 2) { const i = y * w + x; v.push(Math.abs(4 * Y[i] - Y[i - 1] - Y[i + 1] - Y[i - w] - Y[i + w])); }
+  v.sort((a, b) => a - b); const sn = Math.max(1, v[v.length >> 1] / 0.6745 / Math.sqrt(20)), hh = K * sn, inv = 1 / (hh * hh * 18), off0 = 18 * sn * sn;
+  const D = new Float32Array(n), T = new Float32Array(n), SR = new Float32Array(n), SG = new Float32Array(n), SB = new Float32Array(n), WS = new Float32Array(n);
+  for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+    for (let y = 0; y < h; y++) { const yy = y + dy < 0 ? 0 : y + dy >= h ? h - 1 : y + dy;
+      for (let x = 0; x < w; x++) { const xx = x + dx < 0 ? 0 : x + dx >= w ? w - 1 : x + dx, e = Y[y * w + x] - Y[yy * w + xx]; D[y * w + x] = e * e; } }
+    for (let y = 0; y < h; y++) { const o = y * w; for (let x = 0; x < w; x++) T[o + x] = D[o + (x > 0 ? x - 1 : 0)] + D[o + x] + D[o + (x < w - 1 ? x + 1 : x)]; }
+    for (let y = 0; y < h; y++) { const u = (y > 0 ? y - 1 : 0) * w, o = y * w, dn = (y < h - 1 ? y + 1 : y) * w;
+      const yy = y + dy < 0 ? 0 : y + dy >= h ? h - 1 : y + dy;
+      for (let x = 0; x < w; x++) { const dist = T[u + x] + T[o + x] + T[dn + x] - off0, wt = dist <= 0 ? 1 : Math.exp(-dist * inv);
+        if (wt < 1e-4) continue; const xx = x + dx < 0 ? 0 : x + dx >= w ? w - 1 : x + dx, q = (yy * w + xx) * 4, i = o + x;
+        SR[i] += wt * d[q]; SG[i] += wt * d[q + 1]; SB[i] += wt * d[q + 2]; WS[i] += wt; } } }
+  const out = new ImageData(w, h), od = out.data;
+  for (let i = 0, p = 0; i < n; i++, p += 4) { const r = SR[i] / WS[i], g = SG[i] / WS[i], b = SB[i] / WS[i];
+    od[p] = r + keep * (d[p] - r); od[p + 1] = g + keep * (d[p + 1] - g); od[p + 2] = b + keep * (d[p + 2] - b); od[p + 3] = 255; }
+  return out; }
   function frozenImg() {
     if (nrLevel === frozenNR) return frozen;                   // o mesmo nível do congelamento: imagem como foi congelada
     const base = frozenRaw ? new ImageData(frozenRaw, frozen.width, frozen.height) : frozen;   // quadro sem redução de ruído
