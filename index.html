@@ -3098,7 +3098,10 @@
   async function authStart() {
     PR.root = await rootFromStore();
     if (!PR.root) return authSetup1();
-    const users = PR.opfs || (await rootPerm(PR.root, false)) ? await readJSON(["cadastros", "usuarios.json"], null) : "?";
+    if (!PR.opfs && !PR.root.name.startsWith(ROOT_NAME) && !PR.root.name.startsWith("Backup_")) return authSetup1(false, "Escolha de novo o local dos dados: agora o sistema guarda tudo dentro da pasta " + ROOT_NAME + ".");   // local salvo por versão anterior
+    const ok = PR.opfs || await rootPerm(PR.root, false);
+    if (ok && !PR.opfs) { try { for await (const _ of PR.root.keys()) break; } catch (e) { await idbSet("prRoot", null); return authSetup1(false, "A pasta de dados anterior não foi encontrada (apagada ou movida). Escolha onde salvar."); } }
+    const users = ok ? await readJSON(["cadastros", "usuarios.json"], null) : "?";
     if (users !== "?" && (!users || !users.length)) return authSetup2();
     authLogin(); }
   function authLogin(msg) {
@@ -3129,10 +3132,12 @@
     $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); }; }
   function authSetup2(msg) {
     authShow('<h2>Primeiro acesso</h2><p class="au-sub">Dados do consultório e do primeiro médico (que poderá cadastrar outros usuários).</p>' +
+      (PR.opfs ? '' : '<p class="au-sub">Os dados serão salvos na pasta <b>' + esc(PR.root.name) + '</b>. <a href="#" id="s0">Trocar o local…</a></p>') +
       '<label>Nome do consultório / clínica</label><input id="s1">' +
       '<div class="au-g2"><div><label>Nome do médico</label><input id="s2"></div><div><label>CRM</label><input id="s3" placeholder="000000"></div><div><label>UF</label><input id="s4" maxlength="2" placeholder="SP"></div><div><label>RQE (opcional)</label><input id="s5"></div></div>' +
       '<div class="au-g2"><div><label>Usuário</label><input id="s6" placeholder="ex.: ana.silva"></div><div><label>Senha (mín. 6)</label><input id="s7" type="password"></div></div>' +
       (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') + '<div class="au-row"><button class="btn primary" id="sGo">Criar e entrar</button></div>');
+    if ($("s0")) $("s0").onclick = e => { e.preventDefault(); authSetup1(); };
     $("sGo").onclick = async () => { const v = i => $("s" + i).value.trim();
       if (!v(1) || !v(2) || !v(3) || !v(6) || v(7).length < 6) return authSetup2("Preencha consultório, médico, CRM, usuário e senha (mínimo 6 caracteres).");
       if (!(await rootPerm(PR.root, true))) return authSetup2("Sem permissão para gravar na pasta.");
