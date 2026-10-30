@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v5.0 — 2026-10-30: MÉTRICA — régua (reta, círculo, retângulo, contorno) em qualquer imagem parada (congelamento, foto, vídeo pausado, arquivo aberto), com a IA forte aplicada só ali e texto das medidas gravado na imagem; IA forte saiu do ao vivo
+<!-- Ajuste de Imagem — Videoendoscopia  v5.1 — 2026-10-30: nomes sem "IA" (Reconstrução digital ao vivo; Alta definição na Métrica), espessura de linha na Métrica, referência por ferramenta
+     v5.0 — 2026-10-30: MÉTRICA — régua (reta, círculo, retângulo, contorno) em qualquer imagem parada (congelamento, foto, vídeo pausado, arquivo aberto), com a IA forte aplicada só ali e texto das medidas gravado na imagem; IA forte saiu do ao vivo
      v4.9 — 2026-10-29: quadro Original (pixels da câmera) em Ver todos os métodos; IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
      v4.8 — 2026-10-29: bancada de ampliação — Lanczos-3 × FSR 1.0 (EASU+RCAS) × IA (FSRCNN ×2) na GPU (WebGL2), com comparação lado a lado
      v4.7 — 2026-10-29: redução de ruído com compensação de movimento (acompanha o endoscópio, sem arrasto)
@@ -272,7 +273,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.0</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.1</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -312,6 +313,7 @@
         <div id="mMain"><canvas id="mCv"></canvas>
           <div id="mBar"><span class="t">MÉTRICA</span>
             <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button>
+            <select id="mLw" title="Espessura da linha" style="height:32px"><option value="0.6">Linha fina</option><option value="1" selected>Linha média</option><option value="1.7">Linha grossa</option></select>
             <span class="sep"></span><button class="btn sm" id="mView">Ver original</button><button class="btn sm" id="mUndo">Desfazer</button><button class="btn sm" id="mClear">Limpar</button>
             <span class="sep"></span><button class="btn sm primary" id="mSave">Salvar imagem</button><button class="btn sm" id="mClose" title="Esc">Fechar</button></div>
         </div>
@@ -323,9 +325,9 @@
             <div class="row"><span class="lbl">Câmera</span><span id="mRes">–</span></div>
             <div class="row"><span class="lbl">Base</span><span id="mBase">–</span></div>
             <div id="mProg"><i></i></div><p class="desc" id="mMsg" style="margin:6px 0 0"></p>
-            <div class="sl" style="margin-top:8px"><span class="name">IA forte · força contra ruído</span><span class="val" id="mStrTxt">0,50</span>
+            <div class="sl" style="margin-top:8px"><span class="name">Alta definição · redução de ruído</span><span class="val" id="mStrTxt">0,50</span>
               <input type="range" id="mStr" min="0" max="1" step="0.05" value="0.5"></div>
-            <p class="desc" style="margin:4px 0 0">A IA forte (Real-ESRGAN) deixa as bordas mais nítidas para posicionar a régua, mas pode criar textura que não existe — use <b>Ver original</b> para conferir a borda.</p></div>
+            <p class="desc" style="margin:4px 0 0">A <b>alta definição</b> (reconstrução digital ×4) deixa as bordas mais nítidas para posicionar a régua, mas pode criar textura que não existe — use <b>Ver original</b> para conferir a borda.</p></div>
         </div>
       </div>
       <div id="tools">
@@ -399,12 +401,12 @@
         <div class="row"><span class="lbl">Tempo por quadro</span><span id="upMs" style="color:var(--dim)"></span></div>
         <div class="seg" id="upSeg" style="margin-bottom:6px;grid-template-columns:repeat(2,1fr)">
           <button class="btn sm sel" data-up="0">Lanczos-3</button><button class="btn sm" data-up="1">FSR (bordas)</button>
-          <button class="btn sm" data-up="2" style="grid-column:span 2">IA leve (FSRCNN)</button>
+          <button class="btn sm" data-up="2" style="grid-column:span 2">Reconstrução digital</button>
         </div>
         <p class="desc" id="upDesc" style="margin:0 0 6px"></p>
         <div class="btnrow"><button class="btn sm" id="btnCmpUp" title="B">Comparar ampliação</button><button class="btn sm" id="btnCmp3" title="N">Ver todos os métodos</button><button class="btn sm" id="btnZoom" title="Z">Lupa 3×</button></div>
         <p class="desc" id="cmpUpDesc" style="margin:6px 0 0"></p>
-        <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — <b>Original</b> (pixels da câmera, sem interpolar) · Lanczos-3 · FSR · IA leve.</p>
+        <p class="desc" style="margin:4px 0 0"><b>Ver todos os métodos</b>: a mesma faixa central lado a lado — <b>Original</b> (pixels da câmera, sem interpolar) · Lanczos-3 · FSR · Reconstrução digital.</p>
         <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="btnTrio">Salvar as imagens de cada método (PNG)</button></div>
         <p class="desc" style="margin:4px 0 0">Salva a imagem inteira de saída feita por cada método, em arquivos separados (mais a entrada da câmera), com o mesmo horário no nome. Congele antes para todas serem do mesmo quadro. (A IA forte agora fica só na <b>Métrica</b>.)</p>
       </div>
@@ -759,7 +761,7 @@
   // 0 Lanczos-3 (interpolação clássica) · 1 FSR 1.0 da AMD (EASU, segue a direção das bordas, + RCAS, nitidez adaptativa)
   // 2 IA · FSRCNN ×2 (rede neural pequena, pesos pré-treinados públicos — Saafke/FSRCNN_Tensorflow, licença Apache-2.0;
   //   atua na luminância, a cor vem do Lanczos). FSR e IA ampliam 2× e o restante até 1080 é feito pelo Lanczos-3.
-  const UPM = [{ name: "Lanczos-3", tag: "Lanczos-3" }, { name: "FSR (bordas)", tag: "FSR 1.0" }, { name: "IA leve (FSRCNN)", tag: "IA leve · FSRCNN" }];
+  const UPM = [{ name: "Lanczos-3", tag: "Lanczos-3" }, { name: "FSR (bordas)", tag: "FSR 1.0" }, { name: "Reconstrução digital", tag: "Reconstrução digital" }];
   // IA forte: Real-ESRGAN compacta (realesr-general-x4v3, Xintao Wang, licença BSD-3) — 34 convoluções 3×3 de 64 canais, amplia 4×,
   // treinada com degradações de câmeras reais (ruído, borrão, compressão). Pesos em ia_forte_x4v3.bin (fp16), carregados no 1º uso.
   // Força contra ruído: mistura dos pesos "general" (1) e "wdn" (0, mexe pouco no ruído), como no Real-ESRGAN oficial.
@@ -948,7 +950,7 @@
     const mSlot = { inp: newTex(), x4: newTex(), inKey: "", k4: "" }; let mCount = 0;
     // imagem (ImageData) → imagem 4× (ImageData), com a força contra ruído pedida; tok.cancel = true interrompe
     async function esrImage(im, strength, onStep, tok) {
-      if (!pShuf) throw new Error("a placa de vídeo deste computador não suporta a IA forte");
+      if (!pShuf) throw new Error("a placa de vídeo deste computador não suporta a alta definição");
       if (!(await esrLoad())) throw new Error(E.msg);
       while (E.job) { if (tok && tok.cancel) return null; await new Promise(r => setTimeout(r, 30)); }
       esrWeights(strength); const M = mSlot, w = im.width, h = im.height;
@@ -1582,7 +1584,7 @@
           const bx = al === "left" ? x : x - tw; const by = al === "center" ? f2 * 0.6 : f2 * 2.6 + (frozen || rec || arLevel || showOriginal ? f2 * 2.2 : 0); octx.fillStyle = "rgba(0,0,0,.7)"; octx.fillRect(al === "center" ? x - tw / 2 : bx, by, tw, f2 * 1.7);
           octx.fillStyle = "#fff"; octx.fillText(t, al === "left" ? x + f2 / 2 : al === "center" ? x : x - f2 / 2, by + f2 * 1.3); octx.textAlign = "left"; };
         if (cmpMode === 3) { const nP = UP.panels || 3; octx.fillStyle = "#ffd400"; for (let k = 1; k < nP; k++) octx.fillRect(k * OW / nP - 2, 0, 4, OH);
-          [["Original"], ["Lanczos-3"], ["FSR 1.0"], [UP.ia ? "IA leve" : "IA indisponível"]].slice(0, nP).forEach(([t], k) => lab(t, k * OW / nP + 8, "left")); }
+          [["Original"], ["Lanczos-3"], ["FSR 1.0"], [UP.ia ? "Reconstrução" : "Reconstrução indisponível"]].slice(0, nP).forEach(([t], k) => lab(t, k * OW / nP + 8, "left")); }
         else if (cmpMode) { octx.fillStyle = "#ffd400"; octx.fillRect(OW / 2 - 2, 0, 4, OH);
           if (cmpMode === 1) { const m = curUp(); if (m) { lab("Lanczos-3", 12, "left"); lab(UPM[m].tag, OW - 12, "right"); } else { lab("Navegador (bilinear)", 12, "left"); lab("Lanczos-3", OW - 12, "right"); } }
           else if (frozen && frozenSR) { lab("ANTES · 1 quadro (Lanczos-3)", 12, "left"); lab("DEPOIS · melhoria de resolução (" + frozenSR.used + " quadros)", OW - 12, "right"); }
@@ -1846,7 +1848,7 @@
   // ===================== MÉTRICA =====================
   // Imagem parada (congelamento, foto, quadro de vídeo ou arquivo aberto) → IA forte uma vez → régua (reta, círculo, retângulo, contorno).
   // A 1ª forma de cada família é a referência (retas: comprimento; áreas: área). Medidas relativas, guardadas em coordenadas 0..1 da imagem.
-  const MT = { open: false, src: null, cOrig: null, cIA: null, showIA: true, shapes: [], drag: null, tool: "line", origin: "", tok: null, t0: 0, ms: 0, err: "", rect: null, loupe: null };
+  const MT = { lw: 1, open: false, src: null, cOrig: null, cIA: null, showIA: true, shapes: [], drag: null, tool: "line", origin: "", tok: null, t0: 0, ms: 0, err: "", rect: null, loupe: null };
   const mCv = $("mCv"), mCtx = mCv.getContext("2d");
   const fam = t => t;                                          // cada ferramenta tem a sua referência (a 1ª daquele tipo)
   const NAMES = { line: "Reta", circle: "Círculo", rect: "Retângulo", poly: "Contorno" };
@@ -1863,8 +1865,8 @@
     return { S, ref: false, name, txt: (isLine ? "" : "área ") + val, val: (isLine ? "" : "área ") + pct(p) + "% da referência" + (p <= 100 ? " (livre " + pct(100 - p) + "%)" : "") }; }); }
   // desenho: tracejado + marcador "+" (como no ultrassom)
   function drawShapesM(c, map, scale, list) {
-    const info = mInfo(list), lw = 2.5 * scale, fs = Math.round(17 * scale), dash = [10 * scale, 7 * scale];
-    const plus = (x, y) => { const r = 9 * scale; c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
+    const k = MT.lw, info = mInfo(list), lw = 2.5 * scale * k, fs = Math.round(17 * scale), dash = [10 * scale * Math.max(1, k), 7 * scale * Math.max(1, k)];
+    const plus = (x, y) => { const r = 9 * scale * (0.6 + 0.4 * k); c.setLineDash([]); c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); c.setLineDash(dash); };
     c.save(); c.font = "600 " + fs + "px Bonnie, Segoe UI, sans-serif"; c.lineJoin = "round"; const placed = [];
     info.forEach(({ S, ref, txt }) => {
       const col = ref ? "#ffd400" : "#ff5a5a"; c.strokeStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
@@ -1892,7 +1894,7 @@
     const b = mBase(); mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high"; mCtx.drawImage(b, ox, oy, dw, dh);
     const map = q => [ox + q[0] * dw, oy + q[1] * dh], list = MT.drag ? MT.shapes.concat([MT.drag]) : MT.shapes;
     drawShapesM(mCtx, map, dpr, list);
-    const tg = MT.showIA && MT.cIA ? "IA · imagem ampliada por rede neural (Real-ESRGAN)" : MT.cIA ? "imagem ORIGINAL da câmera (sem IA)" : MT.err ? "IA forte indisponível — imagem original" : "aplicando IA forte… (já pode medir)";
+    const tg = MT.showIA && MT.cIA ? "HD · imagem reconstruída digitalmente" : MT.cIA ? "imagem ORIGINAL da câmera" : MT.err ? "alta definição indisponível — imagem original" : "aplicando alta definição… (já pode medir)";
     mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
     mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(ox + dw - tw - 6 * dpr, oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = MT.showIA && MT.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, ox + dw - tw + 2 * dpr, oy + 23 * dpr);
     if (MT.loupe) {                                            // lupa de precisão: 4× em volta do ponteiro, no canto oposto
@@ -1913,10 +1915,10 @@
       r.innerHTML = '<span class="' + (ref ? "dotY" : "dotR") + '">● </span>'; r.firstChild.after(name); const b = document.createElement("b"); b.textContent = ref ? "100% · referência" : val; r.append(b); el.append(r); }); }
   function mStatus() {
     const n = MT.n || 34, st = MT.step || 0;
-    $("mBase").textContent = MT.showIA && MT.cIA ? "IA forte ×4 · força " + fmtStr(esrStrength) : "Original da câmera";
+    $("mBase").textContent = MT.showIA && MT.cIA ? "Alta definição ×4 · ruído " + fmtStr(esrStrength) : "Original da câmera";
     $("mProg").querySelector("i").style.width = (MT.cIA ? 100 : MT.err ? 0 : 100 * st / n) + "%";
-    $("mMsg").textContent = MT.err ? "IA forte: " + MT.err : MT.cIA ? "IA forte aplicada em " + (MT.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando IA forte… camada " + st + "/" + n + " (você já pode medir).";
-    $("mView").textContent = MT.showIA ? "Ver original" : "Ver IA"; $("mView").disabled = !MT.cIA; }
+    $("mMsg").textContent = MT.err ? "Alta definição: " + MT.err : MT.cIA ? "Alta definição aplicada em " + (MT.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando alta definição… etapa " + st + "/" + n + " (você já pode medir).";
+    $("mView").textContent = MT.showIA ? "Ver original" : "Ver HD"; $("mView").disabled = !MT.cIA; }
   function canvasOf(im) { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; c.getContext("2d").putImageData(im, 0, 0); return c; }
   async function mRunIA() {
     if (MT.tok) MT.tok.cancel = true; const tok = MT.tok = { cancel: false }; MT.cIA = null; MT.err = ""; MT.step = 0; MT.showIA = true; mStatus(); mDraw();
@@ -1978,6 +1980,8 @@
   $("mView").onclick = () => { if (!MT.cIA) return; MT.showIA = !MT.showIA; mStatus(); mDraw(); };
   $("mUndo").onclick = () => { MT.shapes.pop(); mDraw(); mList(); }; $("mClear").onclick = () => { MT.shapes = []; mDraw(); mList(); };
   $("mClose").onclick = metricClose; $("btnMetric").onclick = metricFromCurrent; $("vMetric").onclick = metricFromCurrent;
+  MT.lw = +(store.get("mLw") || 1); $("mLw").value = String(MT.lw); if (!$("mLw").value) { MT.lw = 1; $("mLw").value = "1"; }
+  $("mLw").onchange = e => { MT.lw = +e.target.value; store.set("mLw", MT.lw); mDraw(); };
   $("mStr").oninput = e => { esrStrength = +e.target.value; $("mStrTxt").textContent = fmtStr(esrStrength); store.set("esrStr", esrStrength); };
   $("mStr").onchange = () => { if (MT.open && UP.esr) mRunIA(); };
   // salvar: imagem + medidas + texto (rodapé) gravados na própria imagem → galeria
@@ -1985,7 +1989,7 @@
     if (!MT.src) return; askPerm(); const b = mBase(), Wd = Math.max(1080, b.width >= 1080 ? 1080 : b.width), k = Wd / b.width, Hd = Math.round(b.height * k);
     const info = mInfo(MT.shapes), fs = Math.round(Wd / 48), lh = Math.round(fs * 1.45);
     const lines = ["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "Origem: " + MT.origin + " · câmera " + MT.src.width + "×" + MT.src.height,
-      "Base: " + (MT.showIA && MT.cIA ? "IA forte Real-ESRGAN ×4 (força " + fmtStr(esrStrength) + ") — imagem gerada por rede neural; conferir bordas no original" : "imagem original da câmera (sem IA)")]
+      "Base: " + (MT.showIA && MT.cIA ? "alta definição — reconstrução digital ×4 (redução de ruído " + fmtStr(esrStrength) + "); conferir bordas no original" : "imagem original da câmera")]
       .concat(info.length ? info.map(i => i.name + ": " + (i.ref ? "referência (100%)" : i.val)) : ["(sem medidas)"]);
     const c = document.createElement("canvas"); c.width = Wd; c.height = Hd + lines.length * lh + Math.round(fs * 1.2); const x = c.getContext("2d");
     x.imageSmoothingQuality = "high"; x.drawImage(b, 0, 0, Wd, Hd); drawShapesM(x, q => [q[0] * Wd, q[1] * Hd], Wd / 900, MT.shapes);
@@ -2028,11 +2032,11 @@
   const curUp = () => (upMethod === 2 && !UP.ia) || upMethod > 2 || (upMethod && !UP.gl2) ? 0 : upMethod;
   const UP_DESC = ["Interpolação clássica (6×6 vizinhos). Não inventa nada; é a referência para comparar.",
     "FSR 1.0 (AMD): interpola seguindo a direção de cada borda e reforça a nitidez sem halo. Não inventa detalhe; amplia 2× e o resto até 1080 é Lanczos.",
-    "Rede neural pequena (FSRCNN ×2, pesos públicos pré-treinados com fotos comuns, não com endoscopia). Reconstrói bordas na luminância; a cor vem do Lanczos. Amplia 2× e o resto até 1080 é Lanczos."];
+    "Reconstrução digital (FSRCNN ×2): modelo treinado reconstrói as bordas na luminância; a cor vem do Lanczos. Treinado com fotos comuns, não com endoscopia. Amplia 2× e o resto até 1080 é Lanczos."];
   function setUP(m, quiet) {
-    if (m && !UP.gl2) { if (!quiet) setStatus("FSR e IA precisam de WebGL2 com aceleração de hardware. No Edge: Configurações › Sistema › \"Usar aceleração de gráficos quando disponível\".", "bad"); m = 0; }
+    if (m && !UP.gl2) { if (!quiet) setStatus("FSR e a reconstrução digital precisam de WebGL2 com aceleração de hardware. No Edge: Configurações › Sistema › \"Usar aceleração de gráficos quando disponível\".", "bad"); m = 0; }
     else if (m > 2) m = 0;
-    else if (m === 2 && !UP.ia) { if (!quiet) setStatus("A IA precisa de texturas de ponto flutuante na placa de vídeo, que este navegador não oferece. FSR e Lanczos continuam disponíveis.", "bad"); m = 0; }
+    else if (m === 2 && !UP.ia) { if (!quiet) setStatus("A reconstrução digital precisa de texturas de ponto flutuante na placa de vídeo, que este navegador não oferece. FSR e Lanczos continuam disponíveis.", "bad"); m = 0; }
     upMethod = m; UP.ms = 0; store.set("up", m);
     document.querySelectorAll("#upSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.up === m));
     $("upDesc").textContent = UP_DESC[m]; $("upMs").textContent = "";
@@ -2046,7 +2050,7 @@
   function setCmp3() {
     if (cmpMode === 3) { setCmpMode(0); return; }
     if (!UP.gl2) { setStatus("Ver todos os métodos precisa de WebGL2 com aceleração de hardware. No Edge: Configurações › Sistema › \"Usar aceleração de gráficos quando disponível\".", "bad"); return; }
-    setCmpMode(3); if (!UP.ia) setStatus("A IA não está disponível neste navegador; o terceiro quadro mostra o Lanczos-3.", "bad");
+    setCmpMode(3); if (!UP.ia) setStatus("A reconstrução digital não está disponível neste navegador; o último quadro mostra o Lanczos-3.", "bad");
   }
   async function saveTrio() {
     if (!UP.gl2 || !UP.renderFull) { setStatus("Salvar as 3 imagens precisa de WebGL2 com aceleração de hardware.", "bad"); return; }
@@ -2056,7 +2060,7 @@
     tc.width = cv.width; tc.height = cv.height; tx.drawImage(cv, 0, 0);
     where = await saveBlob(await toBlob(tc), base + "_entrada_" + cv.width + "x" + cv.height + ".png"); n++;
     tc.width = OW; tc.height = OH;
-    for (const [k, nm] of [[0, "lanczos3"], [1, "fsr"], [2, "ia_leve_fsrcnn"]]) { const im = UP.renderFull(k, OW, OH); if (!im) continue;
+    for (const [k, nm] of [[0, "lanczos3"], [1, "fsr"], [2, "reconstrucao_fsrcnn"]]) { const im = UP.renderFull(k, OW, OH); if (!im) continue;
       tx.putImageData(im, 0, 0); await saveBlob(await toBlob(tc), base + "_" + nm + "_" + OW + "x" + OH + ".png"); n++; }
     setStatus(n + " arquivos salvos em " + where + " (" + base + "_…). " + (frozen ? "" : "Atenção: ao vivo, cada imagem pode ser de um instante diferente — congele para comparar o mesmo quadro."), frozen ? "ok" : "bad");
   }
