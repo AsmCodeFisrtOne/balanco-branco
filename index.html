@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videoendoscopia  v5.1 — 2026-10-30: nomes com "IA" e o benefício (Nitidez por IA ao vivo; Contornos por IA na Métrica, ruído no máximo), espessura de linha na Métrica, referência por ferramenta
+<!-- Ajuste de Imagem — Videoendoscopia  v5.2 — 2026-10-30: barra de ajustes na imagem congelada (ampliação, realce, ruído — ruído por filtro bilateral no quadro parado)
+     v5.1 — 2026-10-30: nomes com "IA" e o benefício (Nitidez por IA ao vivo; Contornos por IA na Métrica, ruído no máximo), espessura de linha na Métrica, referência por ferramenta
      v5.0 — 2026-10-30: MÉTRICA — régua (reta, círculo, retângulo, contorno) em qualquer imagem parada (congelamento, foto, vídeo pausado, arquivo aberto), com a IA forte aplicada só ali e texto das medidas gravado na imagem; IA forte saiu do ao vivo
      v4.9 — 2026-10-29: quadro Original (pixels da câmera) em Ver todos os métodos; IA forte (Real-ESRGAN compacta ×4, pesos em ia_forte_x4v3.bin) na imagem congelada, com força contra ruído e 4 painéis
      v4.8 — 2026-10-29: bancada de ampliação — Lanczos-3 × FSR 1.0 (EASU+RCAS) × IA (FSRCNN ×2) na GPU (WebGL2), com comparação lado a lado
@@ -123,6 +124,12 @@
   #vName { font-size: 14px; color: var(--dim); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   #tools { position: absolute; left: 14px; bottom: 14px; z-index: 5; display: flex; gap: 10px; flex-wrap: wrap; }
+  #fzBar { position: absolute; bottom: 78px; left: 14px; z-index: 5; display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 24px);
+    background: rgba(15,16,18,.86); border: 1px solid var(--line); padding: 6px 10px; border-radius: 10px; }
+  #fzBar[hidden] { display: none; }
+  #fzBar .t { font-size: 13px; color: #7fd0ff; letter-spacing: .05em; }
+  #fzBar .g { display: flex; gap: 4px; align-items: center; } #fzBar .g > span { font-size: 12px; color: var(--dim); margin-right: 2px; }
+  #fzBar .btn { padding: 4px 9px; font-size: 13px; } #fzBar .btn.sel { background: var(--brand); border-color: var(--brand-hi); color: #fff; }
   /* ---------- métrica ---------- */
   #metric { position: absolute; inset: 0; z-index: 7; background: #000; display: flex; }
   #metric[hidden] { display: none; }
@@ -273,7 +280,7 @@
 <header>
   <div class="brandmark">
     <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.1</small></h1>
+    <h1>Ajuste de Imagem <small>Videoendoscopia · v5.2</small></h1>
   </div>
   <nav class="tabs">
     <button class="active" data-tab="imagem">Imagem</button>
@@ -308,6 +315,12 @@
         <div id="vbar"><span id="vName"></span>
           <span id="vFrame"><button class="btn sm" id="vPrev" title="Quadro anterior">◀ quadro</button><button class="btn sm" id="vNext" title="Próximo quadro">quadro ▶</button><button class="btn sm" id="vSharp" title="Procura o quadro mais nítido perto deste (±0,5 s)">Mais nítido</button></span>
           <button class="btn sm" id="vMetric" title="Medir nesta imagem (L)">Métrica</button><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
+      </div>
+      <div id="fzBar" hidden>
+        <span class="t">IMAGEM CONGELADA</span>
+        <span class="g"><span>Ampliação</span><button class="btn" data-fup="0">Lanczos-3</button><button class="btn" data-fup="1">FSR</button><button class="btn" data-fup="2">Nitidez por IA</button></span>
+        <span class="g"><span>Realce de bordas</span><button class="btn" data-fshp="0">Desl.</button><button class="btn" data-fshp="1">Baixo</button><button class="btn" data-fshp="2">Médio</button><button class="btn" data-fshp="3">Alto</button></span>
+        <span class="g"><span>Ruído</span><button class="btn" data-fnr="0">Desl.</button><button class="btn" data-fnr="1">Baixo</button><button class="btn" data-fnr="2">Médio</button><button class="btn" data-fnr="3">Alto</button></span>
       </div>
       <div id="metric" hidden>
         <div id="mMain"><canvas id="mCv"></canvas>
@@ -1348,7 +1361,7 @@
 
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25, outW = 400, outH = 400;
-  let frozen = null, frozenRaw = null, frozenSR = null, freezeReq = false, showRoi = true;
+  let frozen = null, frozenRaw = null, frozenSR = null, freezeReq = false, showRoi = true, frozenNR = 0, fzCache = null;   // frozenNR: nível de ruído usado ao congelar
   let rec = null; const items = []; let viewing = null, dirHandle = null, curTrack = null, wbDone = false;
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || ""; }
@@ -1533,7 +1546,7 @@
         if (!UP.gl && !warnedGL) { warnedGL = true; setStatus("Atenção: o navegador está sem WebGL, então a ampliação Lanczos-3 não está ativa. No Edge: Configurações › Sistema › ligue \"Usar aceleração de gráficos quando disponível\" e reinicie.", "bad"); }
       }
       let img;
-      if (frozen) img = new ImageData(new Uint8ClampedArray(frozen.data), w, h);
+      if (frozen) { const F = frozenImg(); img = new ImageData(new Uint8ClampedArray(F.data), w, h); }
       else {
         const a = w / h; let sx = 0, sy = 0, sw = vw, sh = vh;
         if (vw / vh > a) { sw = vh * a; sx = (vw - sw) / 2; } else { sh = vw / a; sy = (vh - sh) / 2; }
@@ -1546,7 +1559,7 @@
       const raw = cmpMode === 2 ? new Uint8ClampedArray(srCmp ? frozenSR.origUp : (frozen && frozenRaw ? frozenRaw : d)) : null;
       const rawFrame = freezeReq && !frozen ? new Uint8ClampedArray(d) : null;
       if (!frozen && !showOriginal) temporalNR(d, w, h, nrLevel, nrLive); else if (frozen) nrLive.buf = null;
-      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; freezeReq = false; frozenSR = null; setFreezeUi(); }   // congela já com o ruído reduzido
+      if (freezeReq && !frozen) { frozen = new ImageData(new Uint8ClampedArray(d), w, h); frozenRaw = rawFrame; frozenNR = nrLevel; freezeReq = false; frozenSR = null; setFreezeUi(); }   // congela já com o ruído reduzido
       const s = Math.max(4, Math.floor(Math.min(w, h) * roiFrac)), x0 = (w - s) >> 1, y0 = (h - s) >> 1;
       let sr = 0, sg = 0, sb = 0, n = 0, satR = 0, satG = 0, satB = 0, cr = 0, cg = 0, cb = 0;
       const wr = wbLuts[0], wg = wbLuts[1], wb = wbLuts[2];
@@ -1569,6 +1582,7 @@
       if (raw) { if (!showOriginal) { applyPipeline(raw, luts, adj.sat, arLevel, EVL[evlLevel].k); if (srCmp) sharpen(raw, w, h, shpLevel); } before = new ImageData(raw, w, h); }
       ctx.putImageData(img, 0, 0);
       UP.draw(img, w, h, before);                            // amplia para a saída com o método escolhido (padrão Lanczos-3)
+      { const show = !!frozen && !viewing && !srCap; if ($("fzBar").hidden === show) { $("fzBar").hidden = !show; fzSync(); } }
       if (++upTick % 5 === 0) { const cu = curUp(), t = cu && UP.ms ? UPM[cu].tag + " · " + UP.ms.toFixed(1) + " ms/quadro" : "";
         if ($("upMs").textContent !== t) $("upMs").textContent = t; }
 
@@ -1725,7 +1739,7 @@
     try { if (cap.frames.length >= 4) r = await superResolve(cap.frames, cap.w, cap.h, () => {}); } catch (e) { console.error(e); }
     srBusy = false;
     if (r && r.ok) {
-      frozen = r.img; frozenRaw = null; frozenSR = { used: r.used, total: r.total, orig: new ImageData(new Uint8ClampedArray(r.refFrame), cap.w, cap.h) };
+      frozen = r.img; frozenRaw = null; frozenNR = 0; frozenSR = { used: r.used, total: r.total, orig: new ImageData(new Uint8ClampedArray(r.refFrame), cap.w, cap.h) };
       { const n0 = cap.w * cap.h, f0 = new Float32Array(n0 * 3), F = r.refFrame;       // 1 quadro ampliado, para a comparação
         for (let i = 0, p = 0; i < n0; i++, p += 4) { f0[i * 3] = F[p]; f0[i * 3 + 1] = F[p + 1]; f0[i * 3 + 2] = F[p + 2]; }
         const up = lanczos2x(f0, cap.w, cap.h), u8 = new Uint8ClampedArray(n0 * 16);
@@ -1733,7 +1747,7 @@
         frozenSR.origUp = u8; }
       setStatus("Congelado com melhoria de resolução (" + r.used + " de " + r.total + " quadros, " + r.img.width + "×" + r.img.height + ").", "ok");
     } else if (cap.frames.length) {
-      frozen = new ImageData(new Uint8ClampedArray(r && r.refFrame ? r.refFrame : cap.frames[0]), cap.w, cap.h); frozenRaw = null; frozenSR = null;   // mesmo sem melhoria: o quadro mais nítido
+      frozen = new ImageData(new Uint8ClampedArray(r && r.refFrame ? r.refFrame : cap.frames[0]), cap.w, cap.h); frozenRaw = null; frozenNR = 0; frozenSR = null;   // mesmo sem melhoria: o quadro mais nítido
       setStatus("Congelado sem melhoria de resolução: a imagem se moveu demais durante a captura" + (r ? " (" + r.used + " de " + r.total + " quadros aproveitáveis)" : "") + ". Segure a câmera mais parada e tente de novo.", "bad");
     }
     setFreezeUi();
@@ -1896,7 +1910,7 @@
     const b = mBase(); mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = "high"; mCtx.drawImage(b, ox, oy, dw, dh);
     const map = q => [ox + q[0] * dw, oy + q[1] * dh], list = MT.drag ? MT.shapes.concat([MT.drag]) : MT.shapes;
     drawShapesM(mCtx, map, dpr, list);
-    const tg = MT.showIA && MT.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : MT.cIA ? "imagem ORIGINAL da câmera (sem IA)" : MT.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA… (já pode medir)";
+    const tg = MT.showIA && MT.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : MT.cIA ? "imagem ORIGINAL da câmera (sem IA)" : MT.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA…";
     mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
     mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(ox + dw - tw - 6 * dpr, oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = MT.showIA && MT.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, ox + dw - tw + 2 * dpr, oy + 23 * dpr);
     if (MT.loupe) {                                            // lupa de precisão: 4× em volta do ponteiro, no canto oposto
@@ -1920,7 +1934,7 @@
     const n = MT.n || 34, st = MT.step || 0;
     $("mBase").textContent = MT.showIA && MT.cIA ? "Contornos por IA ×4 · ruído " + fmtStr(esrStrength) : "Original da câmera";
     $("mProg").querySelector("i").style.width = (MT.cIA ? 100 : MT.err ? 0 : 100 * st / n) + "%";
-    $("mMsg").textContent = MT.err ? "Contornos por IA: " + MT.err : MT.cIA ? "Contornos por IA aplicado em " + (MT.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando Contornos por IA… etapa " + st + "/" + n + " (você já pode medir).";
+    $("mMsg").textContent = MT.err ? "Contornos por IA: " + MT.err : MT.cIA ? "Contornos por IA aplicado em " + (MT.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando Contornos por IA… etapa " + st + "/" + n + ".";
     $("mView").textContent = MT.showIA ? "Ver original" : "Ver com IA"; $("mView").disabled = !MT.cIA; }
   function canvasOf(im) { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; c.getContext("2d").putImageData(im, 0, 0); return c; }
   async function mRunIA() {
@@ -2041,7 +2055,7 @@
     if (m && !UP.gl2) { if (!quiet) setStatus("FSR e a Nitidez por IA precisam de WebGL2 com aceleração de hardware. No Edge: Configurações › Sistema › \"Usar aceleração de gráficos quando disponível\".", "bad"); m = 0; }
     else if (m > 2) m = 0;
     else if (m === 2 && !UP.ia) { if (!quiet) setStatus("A Nitidez por IA precisa de texturas de ponto flutuante na placa de vídeo, que este navegador não oferece. FSR e Lanczos continuam disponíveis.", "bad"); m = 0; }
-    upMethod = m; UP.ms = 0; store.set("up", m);
+    upMethod = m; UP.ms = 0; store.set("up", m); if (typeof fzSync === "function") fzSync();
     document.querySelectorAll("#upSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.up === m));
     $("upDesc").textContent = UP_DESC[m]; $("upMs").textContent = "";
     $("cmpUpDesc").innerHTML = m ? "Teste: lado a lado, a mesma região — esquerda <b>Lanczos-3</b>, direita <b>" + UPM[m].name + "</b>. Use com a lupa para ver a diferença nas bordas."
@@ -2161,8 +2175,34 @@
     setCmpMode(2);
   }
   $("hdrCmp").onclick = toggleAntesDepois;
-  function setSHP(l) { shpLevel = l; document.querySelectorAll("#shpSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.shp === l)); }
-  function setNR(l) { nrLevel = l; nrLive.buf = null; document.querySelectorAll("#nrSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.nr === l)); }
+  function setSHP(l) { shpLevel = l; document.querySelectorAll("#shpSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.shp === l)); fzSync(); }
+  function setNR(l) { nrLevel = l; nrLive.buf = null; document.querySelectorAll("#nrSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.nr === l)); fzSync(); }
+  // ----- ajustes da imagem congelada -----
+  function fzSync() { const q = (a, v) => document.querySelectorAll("#fzBar [" + a + "]").forEach(b => b.classList.toggle("sel", +b.getAttribute(a) === v));
+    let m = 0; try { m = curUp(); } catch (e) {} q("data-fup", m); q("data-fshp", shpLevel); q("data-fnr", nrLevel); }
+  document.querySelectorAll("#fzBar [data-fup]").forEach(b => b.onclick = () => { setUP(+b.dataset.fup); fzSync(); });
+  document.querySelectorAll("#fzBar [data-fshp]").forEach(b => b.onclick = () => setSHP(+b.dataset.fshp));
+  document.querySelectorAll("#fzBar [data-fnr]").forEach(b => b.onclick = () => setNR(+b.dataset.fnr));
+  // ruído na imagem parada: a redução ao vivo é temporal (soma quadros) e não age num quadro só. Congelado, a troca de nível usa
+  // um filtro bilateral (preserva bordas, guiado pela luminância) sobre o quadro original do congelamento — sem acumular.
+  const SNR = [null, { r: 5, s: 1.0 }, { r: 9, s: 1.4 }, { r: 15, s: 1.8 }];
+  function spatialNR(src, lvl) {
+    const P = SNR[lvl], w = src.width, h = src.height, d = src.data, o = new ImageData(w, h), od = o.data, n = w * h, Y = new Float32Array(n);
+    for (let i = 0, p = 0; i < n; i++, p += 4) Y[i] = 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2];
+    const RW = new Float32Array(256); for (let i = 0; i < 256; i++) RW[i] = Math.exp(-(i * i) / (2 * P.r * P.r));
+    const SW = []; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) SW.push([dx, dy, Math.exp(-(dx * dx + dy * dy) / (2 * P.s * P.s))]);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, yc = Y[i]; let sr = 0, sg = 0, sb = 0, ws = 0;
+      for (const [dx, dy, sw] of SW) { const xx = x + dx < 0 ? 0 : x + dx >= w ? w - 1 : x + dx, yy = y + dy < 0 ? 0 : y + dy >= h ? h - 1 : y + dy, j = yy * w + xx;
+        const dl = Y[j] - yc, wt = sw * RW[dl < 0 ? (dl < -255 ? 255 : -dl | 0) : (dl > 255 ? 255 : dl | 0)], q = j * 4;
+        sr += wt * d[q]; sg += wt * d[q + 1]; sb += wt * d[q + 2]; ws += wt; }
+      const p = i * 4; od[p] = sr / ws; od[p + 1] = sg / ws; od[p + 2] = sb / ws; od[p + 3] = 255; }
+    return o; }
+  function frozenImg() {
+    if (nrLevel === frozenNR) return frozen;                   // o mesmo nível do congelamento: imagem como foi congelada
+    const base = frozenRaw ? new ImageData(frozenRaw, frozen.width, frozen.height) : frozen;   // quadro sem redução de ruído
+    if (!nrLevel) return base;
+    if (fzCache && fzCache.f === frozen && fzCache.l === nrLevel) return fzCache.img;
+    fzCache = { f: frozen, l: nrLevel, img: spatialNR(base, nrLevel) }; return fzCache.img; }
   document.querySelectorAll("#shpSeg .btn").forEach(b => b.onclick = () => setSHP(+b.dataset.shp));
   document.querySelectorAll("#nrSeg .btn").forEach(b => b.onclick = () => setNR(+b.dataset.nr));
   setSHP(0); setNR(0);
