@@ -430,7 +430,7 @@
       <div id="metric" hidden>
         <div id="mMain"><canvas id="mCv"></canvas>
           <div id="mBar"><span class="t">MÉTRICA</span>
-            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, verifica a perspectiva)">Ref. comum R</button>
+            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, verifica a perspectiva)">Ref. comum R</button><button class="btn sm" id="mHideR" title="Mostrar ou ocultar R1 e R2 na imagem (continuam valendo nas medidas)">Ocultar R</button>
             <select id="mLw" title="Espessura da linha" style="height:32px"><option value="0.6">Linha fina</option><option value="1" selected>Linha média</option><option value="1.7">Linha grossa</option></select>
             <span class="sep"></span><button class="btn sm" id="mZout" title="Diminuir zoom (ou roda do mouse / pinça)">−</button><button class="btn sm" id="mZin" title="Aumentar zoom">+</button><button class="btn sm" id="mZfit" title="Ver a imagem inteira">Ajustar</button>
             <button class="btn sm" id="mView">Ver original</button>
@@ -444,9 +444,9 @@
         </div>
         <div id="mSide">
           <div class="card"><h2>Medidas</h2><div id="mList"></div>
-            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência</b> e a 2ª é medida contra ela; a 3ª é nova referência, e assim por diante (retas: comprimento; demais: área). Cada par tem letra e cor próprias. <b>Ângulo</b>: arraste o 1º lado a partir do vértice e toque onde termina o 2º. <b>Anotação</b>: arraste do texto até o ponto indicado. <b>Ref. comum R</b> (para ver se algo cresceu ou diminuiu entre exames): marque a mesma estrutura anatômica fixa nas duas imagens (R1) e, de preferência, uma 2ª (R2) para conferir a perspectiva. Com R1, cada forma vira uma medida própria em R (Reta 1, Círculo 1…; áreas em R²), sem pares — trace-as na mesma ordem nas duas imagens. Para % de obstrução, use os pares (sem R). Para ajustar: toque numa marca <b>+</b> (ou na lista) para selecionar e arraste as marcas brancas; <b>Apagar</b> remove a selecionada. Zoom: roda do mouse, pinça ou +/−; arraste com o botão direito ou dois dedos. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
+            <p class="desc" style="margin:8px 0 0">Meça em pares, em cada ferramenta: a 1ª forma é a <b>referência</b> e a 2ª é medida contra ela; a 3ª é nova referência, e assim por diante (retas: comprimento; demais: área). Cada par tem letra e cor próprias. <b>Ângulo</b>: arraste o 1º lado a partir do vértice e toque onde termina o 2º. <b>Anotação</b>: arraste do texto até o ponto indicado. <b>Ref. comum R</b> (para ver se algo cresceu ou diminuiu entre exames): marque a mesma estrutura anatômica fixa nas duas imagens (R1) e, de preferência, uma 2ª (R2) para conferir a perspectiva. <b>R1 e R2 devem ficar no mesmo plano (mesma profundidade) e perto do que vai ser medido</b>: o que está mais perto ou mais longe da ponta do aparelho muda de tamanho de outro jeito e não é comparável em R. <b>Ocultar R</b> esconde R1/R2 na imagem sem tirá-los do cálculo. Com R1, cada forma vira uma medida própria em R (Reta 1, Círculo 1…; áreas em R²), sem pares — trace-as na mesma ordem nas duas imagens. Para % de obstrução, use os pares (sem R). Para ajustar: toque numa marca <b>+</b> (ou na lista) para selecionar e arraste as marcas brancas; <b>Apagar</b> remove a selecionada. Zoom: roda do mouse, pinça ou +/−; arraste com o botão direito ou dois dedos. Medidas relativas, sem milímetros: meça tudo no mesmo plano, com a imagem de frente.</p></div>
           <div class="card"><h2>Escritas</h2>
-            <div class="row"><span class="lbl">Tamanho</span><select id="mFs"><option value="0.8">Pequeno</option><option value="1" selected>Normal</option><option value="1.3">Grande</option><option value="1.7">Muito grande</option></select></div>
+            <div class="row"><span class="lbl">Tamanho</span><select id="mFs"><option value="0.5">Mínimo</option><option value="0.65">Muito pequeno</option><option value="0.8">Pequeno</option><option value="1" selected>Normal</option><option value="1.3">Grande</option><option value="1.7">Muito grande</option></select></div>
             <div class="row"><span class="lbl">Fonte</span><select id="mFont"></select></div>
             <div class="row"><span class="lbl">Fundo</span><select id="mLbg"><option value="2">Sem fundo (contorno)</option><option value="1">Semitransparente</option><option value="0">Caixa escura</option></select></div>
             <div class="btnrow" style="margin-top:6px"><button class="btn sm" id="mLblReset">Reposicionar automaticamente</button></div>
@@ -2120,6 +2120,8 @@
       placed.push([x, y, tw, bh]); if (boxes) boxes.push([x, y, tw, bh, S, lx, ly]); paint(txt, x, y, tw, bh, col); };
     c.save(); c.font = mFont(fs); c.lineJoin = "round"; c.lineCap = "round";
     info.forEach(({ S, txt, col, kind }) => {
+      if (kind === "cref" && MT.hideR) return;
+      if (MT.cmpMap && MT.cmpMap.has(S) && MT.panels[1] === P) txt += " · " + MT.cmpMap.get(S);   // variação do mesmo trecho, escrita junto na imagem mais nova                 // R1/R2 ocultos: continuam valendo no cálculo
       c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 3 * scale; c.setLineDash(dash);
       let lx, ly, lxl;
       if (S.t === "poly") { const Q = S.pts.map(map); lxl = Math.min(...Q.map(q => q[0])) - 8 * scale; c.beginPath(); Q.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); if (!(MT.drag && MT.drag.S === S)) c.closePath(); c.stroke();
@@ -2144,7 +2146,7 @@
         else { c.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay)); for (const [x, y] of [[ax, ay], [bx, ay], [ax, by], [bx, by]]) plus(x, y);
           lx = Math.max(ax, bx) + 8 * scale; ly = Math.min(ay, by) - fs * 1.9; lxl = Math.min(ax, bx) - 8 * scale; } }
       label(txt, lx, ly, kind === "note" ? "#ffffff" : col, lxl, S); });
-    if (sel && list.includes(sel)) { c.setLineDash([]); c.shadowBlur = 0; c.lineWidth = 2 * scale;   // alças da forma selecionada
+    if (sel && list.includes(sel) && !(sel.t === "cref" && MT.hideR)) { c.setLineDash([]); c.shadowBlur = 0; c.lineWidth = 2 * scale;   // alças da forma selecionada
       for (const [, q] of handles(sel)) { const [x, y] = map(q); c.beginPath(); c.arc(x, y, 7 * scale, 0, 2 * Math.PI); c.fillStyle = "rgba(255,255,255,.25)"; c.fill(); c.strokeStyle = "#fff"; c.stroke(); } }
     c.restore(); }
   function mBase(P) { return P.showIA && P.cIA ? P.cIA : P.cOrig; }
@@ -2199,6 +2201,7 @@
             else if (kind === "note") noteEdit(P, S); }
           MT.sel = { P, S }; mDraw(); mList(); mStatus(); };
         el.append(r); }); });
+    MT.cmpMap = new Map();
     if (two) {                                                 // comparação entre os exames: mesmo par (ferramenta + letra) ou mesmo nº de ângulo
       const key = i => i.kind === "meas" ? i.S.t + "|" + i.pair : i.kind === "angle" ? "angle|" + i.idx : null;
       const A = new Map(), B = mInfo(MT.panels[1], MT.panels[1].shapes); mInfo(MT.panels[0], MT.panels[0].shapes).forEach(i => { const k = key(i); if (k) A.set(k, i); });
@@ -2212,7 +2215,11 @@
         const PA = MT.panels[0], PB = MT.panels[1], RA1 = PA.shapes.find(q => q.t === "cref"), RB1 = PB.shapes.find(q => q.t === "cref"), k2 = S => S.t === "line" ? 1 : 2;
         B.forEach(i => { const a = i.kind === "rmeas" && RA.get(i.S.t + "|" + i.idx); if (!a || !a.rv) return; const d = 100 * (i.rv / a.rv - 1), u = i.S.t === "line" ? " R" : " R²";
           const e = 100 * Math.sqrt(relErr(PA, a.S) ** 2 + relErr(PB, i.S) ** 2 + (k2(i.S) * relErr(PA, RA1)) ** 2 + (k2(i.S) * relErr(PB, RB1)) ** 2);   // margem (1 desvio) da marcação
-          rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + " ± " + pct(e) + "%" + (i.S.t === "line" ? "" : " na área · " + sg(100 * (i.deq / a.deq - 1)) + " no diâmetro eq.") + ")"); });
+          // mesmo trecho nas duas datas: fator (novo ÷ antigo) e conclusão contra a margem de marcação (2 desvios)
+          const fat = i.rv / a.rv, sig = Math.abs(d) > 2 * e, vd = !sig ? "sem mudança além da margem de marcação" : d < 0 ? (i.S.t === "line" ? "diminuiu" : "a área diminuiu") : (i.S.t === "line" ? "aumentou" : "a área aumentou");
+          rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + " ± " + pct(e) + "%" + (i.S.t === "line" ? "" : " na área · " + sg(100 * (i.deq / a.deq - 1)) + " no diâmetro eq.") + ")");
+          rows.push("   ↳ mesmo trecho nas duas imagens: ficou ×" + fat.toFixed(2).replace(".", ",") + " do anterior → " + vd);
+          MT.cmpMap.set(i.S, sg(d) + " vs " + pLab(PA, 0) + (sig ? "" : " (≈ igual)")); });
         if (!rows.length) rows.push("Trace as medidas na mesma ordem nas duas imagens (Reta 1 com Reta 1, Círculo 1 com Círculo 1…).");
         const q = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, q1 = q(IA), q2 = q(B);
         if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1), R2 = P => P.shapes.filter(S => S.t === "cref")[1];
@@ -2226,7 +2233,7 @@
       else if (hasR[0] || hasR[1]) rows.push("Marque a referência comum R1 nas DUAS imagens (a mesma estrutura) para comparar em R.");
       const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + ")"; el.append(h);
       const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
-      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p); MT.cmpRows = rows; } else MT.cmpRows = []; }
+      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t.startsWith("   ↳")) { d.style.cssText = "padding-left:14px;color:var(--dim);font-size:13px"; if (/aumentou|diminuiu/.test(t)) d.style.color = "var(--brand-tint)"; } else if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p); MT.cmpRows = rows; mDraw(); } else MT.cmpRows = []; }
   function mStatus() {
     const P = AP(); if (!P) return; const n = P.n || 34, st = P.step || 0, two = MT.panels.length > 1;
     $("mOrigin").textContent = (two ? pLab(P, MT.act) + ": " : "") + P.origin; $("mRes").textContent = P.src.width + "×" + P.src.height;
@@ -2294,7 +2301,7 @@
   const evXY = e => { const b = mCv.getBoundingClientRect(), d = devicePixelRatio || 1; return [(e.clientX - b.left) * d, (e.clientY - b.top) * d]; };
   function hitTest(x, y) {                                     // alça mais próxima (a forma selecionada tem prioridade)
     const tol = 14 * (devicePixelRatio || 1); let best = null;
-    const test = (P, S) => { for (const [k, q] of handles(S)) { const [sx, sy] = toScr(P, q), d = Math.hypot(sx - x, sy - y); if (d < tol && (!best || d < best.d)) best = { P, S, k, d }; } };
+    const test = (P, S) => { if (S.t === "cref" && MT.hideR) return; for (const [k, q] of handles(S)) { const [sx, sy] = toScr(P, q), d = Math.hypot(sx - x, sy - y); if (d < tol && (!best || d < best.d)) best = { P, S, k, d }; } };
     if (MT.sel) test(MT.sel.P, MT.sel.S); if (best) return best;
     for (const P of MT.panels) for (let i = P.shapes.length - 1; i >= 0; i--) test(P, P.shapes[i]);
     return best; }
@@ -2355,7 +2362,7 @@
     if (S.t === "cref" && P.shapes.filter(q => q.t === "cref").length >= 2) { setStatus("Métrica · já há R1 e R2 nesta imagem. Apague uma para marcar de novo.", "bad"); mDraw(); return; }
     const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(P, S) > 16 : mVal(P, S) > (S.t === "line" || S.t === "cref" ? 4 : 16);
     if (ok) { P.shapes.push(S); const inf = mInfo(P, P.shapes).find(i => i.S === S);
-      setStatus("Métrica · " + inf.name + (inf.kind === "cref" ? (inf.idx === 1 ? " marcada — agora cada forma é uma medida própria em R (sem precisar de referência). Marque a MESMA estrutura na outra imagem. Dica: pontos nítidos (cantos, pontas) e segmentos longos; use zoom (+)." : " = " + inf.val + ".") : inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
+      setStatus("Métrica · " + inf.name + (inf.kind === "cref" ? (inf.idx === 1 ? " marcada — agora cada forma é uma medida própria em R (sem precisar de referência). Marque a MESMA estrutura na outra imagem. Dica: R1/R2 no MESMO PLANO e perto do que vai medir — estruturas mais à frente ou mais ao fundo não são comparáveis em R; pontos nítidos e segmentos longos; use zoom (+)." : " = " + inf.val + ".") : inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
     mDraw(); mList(); };
   mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", e => { MT.ptrs.delete(e.pointerId); MT.drag = MT.edit = MT.pinch = MT.pan = MT.lab = null; MT.loupe = null; mDraw(); });
   new ResizeObserver(() => mDraw()).observe(mCv);
@@ -2372,6 +2379,8 @@
   MT.lw = +(store.get("mLw") || 1); $("mLw").value = String(MT.lw); if (!$("mLw").value) { MT.lw = 1; $("mLw").value = "1"; }
   $("mLw").onchange = e => { MT.lw = +e.target.value; store.set("mLw", MT.lw); mDraw(); };
   $("mFont").innerHTML = MFONTS.map(([n], i) => '<option value="' + i + '">' + n + '</option>').join(""); $("mFont").value = MT.font; $("mFs").value = String(MT.fs);
+  MT.hideR = false; $("mHideR").onclick = () => { MT.hideR = !MT.hideR; $("mHideR").textContent = MT.hideR ? "Mostrar R" : "Ocultar R"; $("mHideR").classList.toggle("sel", MT.hideR);
+    if (MT.hideR && MT.sel && MT.sel.S.t === "cref") MT.sel = null; mDraw(); setStatus(MT.hideR ? "Métrica · R1 e R2 ocultos na imagem (continuam valendo nas medidas e aparecem na lista)." : "Métrica · R1 e R2 visíveis.", "ok"); };
   $("mLbg").value = String(MT.lbg); $("mLbg").onchange = e => { MT.lbg = +e.target.value; store.set("mLbg", MT.lbg); mDraw(); };
   $("mFs").onchange = e => { MT.fs = +e.target.value; store.set("mFs", MT.fs); mDraw(); };
   $("mFont").onchange = e => { MT.font = +e.target.value; store.set("mFont", MT.font); mDraw(); };
@@ -2420,16 +2429,14 @@
       for (const { base, x, m, ref, date } of list) { const f = await readBlob([...base, ...m.arquivo.split("/")]); if (!f) continue;
         const b = document.createElement("button"); b.className = "pk"; const im = document.createElement("img"); im.src = URL.createObjectURL(f);
         const sp = document.createElement("span"); sp.textContent = brDate(date) + " · " + x.tipo.split(" —")[0] + " · " + (m.tipo === "base" ? m.legenda : m.arquivo.split("/").pop()); b.append(im, sp);
-        b.onclick = async () => { $("mPick").hidden = true; const g = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); const bmp = await createImageBitmap(g);
-          const mk = await findMarks(pid, ref), shapes = mk ? JSON.parse(JSON.stringify(mk.formas)) : [];
-          addPanel(toNative(bmp, bmp.width, bmp.height, null), x.tipo.split(" —")[0] + " " + brDate(date) + " · " + (m.tipo === "base" ? m.legenda : m.arquivo.split("/").pop()), true, { date, ref, shapes }); };
+        b.onclick = async () => { $("mPick").hidden = true; const Q = await photoPanel(pid, { base, x, m, ref, date }); if (Q) addPanel(Q.im, Q.origin, true, Q.extra); };
         box.append(b); }
       $("mPick").hidden = false; return; }
     const fotos = items.filter(it => it.type === "foto");
     if (!fotos.length) box.innerHTML = '<p class="desc">Nenhuma foto na galeria. Use “Abrir arquivo de imagem…”.</p>';
     fotos.forEach(it => { const b = document.createElement("button"); b.className = "pk"; b.title = it.name;
       const im = document.createElement("img"); im.src = it.thumb || it.url; const s = document.createElement("span"); s.textContent = it.name; b.append(im, s);
-      b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name, !it.ext); };
+      b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name, !it.ext, it.ext ? null : { date: isoNow() }); };
       box.append(b); });
     $("mPick").hidden = false; }
   function addPanel(im, origin, lens, extra) { const P = Object.assign(newPanel(im, origin, lens), extra || {}), A = MT.panels[0];
@@ -2452,6 +2459,7 @@
       lines.push([(two ? pLab(P, pi) + " — " : "") + "Origem: " + P.origin + " · câmera " + P.src.width + "×" + P.src.height, "#eceef0"]);
       lines.push(["Base: " + (P.showIA && P.cIA ? "Contornos por IA ×4 (redução de ruído " + fmtStr(esrStrength) + ") — Processada por IA — pode conter detalhes inexistentes; confira no original" : "imagem original da câmera (sem IA)"), P.showIA && P.cIA ? "#ffb3e6" : "#eceef0"]);
       const info = mInfo(P, P.shapes); if (!info.length) lines.push(["(sem medidas)", "#959ba3"]);
+      if (MT.hideR && P.shapes.some(S => S.t === "cref")) lines.push(["R1/R2 marcados e usados nas medidas (ocultos no desenho)", "#959ba3"]);
       lines.push(["Lente: " + (!P.lens ? "arquivo externo — sem correção" : lensOn() ? "medidas com correção de lente (" + lensTxt(true) + ")" : "sem correção de lente (calibração ainda estimada)"), "#959ba3"]);
       info.forEach(i => lines.push([(two ? "  " : "") + (i.kind === "ref" ? i.name + " (100%)" : i.kind === "note" ? "Anotação: " + (i.S.text || "(seta)") : i.kind === "cref" ? i.name + (i.idx > 1 ? ": " + i.val : " (unidade R)") : i.name + ": " + i.val) + (i.rs ? " · " + i.rs : ""), i.kind === "note" ? "#eceef0" : i.col])); });
     if (two) { lines.push(["Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + "):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t, "#eceef0"])); }
@@ -2468,6 +2476,9 @@
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(two ? "metrica_comparacao" : "metrica", "png");
     const it = { type: "foto", url: c.toDataURL("image/jpeg", 0.85), thumb: null, name, where: "…", time: z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) };
     it.thumb = it.url; it.kind = "metrica"; it.target = MT.target || null;
+    if (PR.exam) it.target = null;                               // exame em andamento: a comparação vai para ele
+    else if (MT.patient) { const c = MT.panels.filter(P => P.ref && P.ref.startsWith("exames/")).sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+      if (c) { const dir = c.ref.split("/")[1]; it.target = { pid: MT.patient, dir, base: ["pacientes", MT.patient, "exames", dir] }; } }   // senão: no exame mais recente das imagens
     try { it.mdata = JSON.parse(JSON.stringify({ data: nowTxt(), origens: MT.panels.map(P => P.origin), base_ia: MT.panels.map(P => !!(P.showIA && P.cIA)), reducao_ruido_ia: esrStrength,
       medidas: MT.panels.map(P => mInfo(P, P.shapes).map(i => ({ nome: i.name, tipo: i.kind, valor: i.val, em_R: i.rs || null, texto: i.S && i.S.text }))),
       lente: { correcao_aplicada: MT.panels.map(P => !!(P.lens && lensOn())), dados: Object.assign({}, LENS) }, salvo_em: isoNow(),
@@ -3206,6 +3217,7 @@
         '<div class="pr-card">' + (ev.length ? ev.map(e => '<div class="pr-reg"><b>' + brDT(e.data) + ' · ' + esc(e.autor) + '</b><p>' + esc(e.texto).replace(/\n/g, "<br>") + '</p></div>').join("") : '<p class="pr-dim">Sem anotações.</p>') + '</div>'; }
     else if (PR.pacTab === "exames") {
       const ex = []; for (const { name } of (await listDir(["pacientes", id, "exames"])).reverse()) { const x = await readJSON(["pacientes", id, "exames", name, "exame.json"]); if (x) ex.push([name, x]); }
+      const nImg = x => (x.midias || []).some(m => m.tipo === "foto") || (x.metricas || []).some(me => (me.paineis || []).some(p => p.ref));
       let h = '<div class="pr-card"><div class="pr-tl">';
       if (!ex.length) h += '<p class="pr-dim">Nenhum exame.</p>';
       for (const [dir, x] of ex) {
@@ -3218,7 +3230,8 @@
           h += '</div><div class="pr-acts" style="margin-top:8px">' + (x.status === "em andamento" && !PR.exam ? '<button class="btn sm" data-act="retomar" data-id="' + dir + '">Retomar exame</button>' : '') +
             '<button class="btn sm" data-act="laudo" data-id="' + dir + '">' + (x.status === "laudado" ? "Laudo (nova versão)" : "Fazer laudo") + '</button>' +
             ((x.laudos || []).length ? '<button class="btn sm" data-act="verPdf" data-id="' + dir + '">Abrir laudo (PDF)</button><button class="btn sm" data-act="copiaPdf" data-id="' + dir + '">Salvar cópia (pendrive)</button><button class="btn sm" data-act="email" data-id="' + dir + '">E-mail</button>' : '') +
-            '<button class="btn sm" data-act="dicom" data-id="' + dir + '">Exportar DICOM</button></div>'; }
+            '<button class="btn sm" data-act="dicom" data-id="' + dir + '">Exportar DICOM</button>' +
+            (nImg(x) && ex.filter(([d2, x2]) => d2 !== dir && nImg(x2)).length ? '<button class="btn sm" data-act="cmpEx" data-id="' + dir + '">' + (() => { const o = ex.find(([d2, x2]) => d2 < dir && nImg(x2)); return o ? "Comparar com " + brDate(o[1].inicio) : "Comparar com…"; })() + '</button>' : '') + '</div>'; }
         h += '</div>'; }
       B.innerHTML = h + '</div></div>' + (med ? '<p class="pr-dim">Toque numa imagem para abrir na Métrica (a comparação mostra só imagens deste paciente).</p>' : ''); }
     else if (PR.pacTab === "documentos") {
@@ -3329,13 +3342,23 @@
     const base = ["pacientes", pid, "exames", dir], x = await readJSON([...base, "exame.json"]), m = (x.midias || []).find(q => q.arquivo === arquivo) || { arquivo };
     const f = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); if (!f) return;
     const bmp = await createImageBitmap(f); showTab("imagem"); metricOpen(toNative(bmp, bmp.width, bmp.height, null), x.tipo + " " + brDate(x.inicio) + " · " + m.arquivo.split("/").pop());
-    MT.target = { pid, dir, base }; MT.patient = pid; Object.assign(MT.panels[0], { date: m.data || x.inicio, ref: "exames/" + dir + "/" + m.arquivo }); mDraw(); mList(); mStatus(); }
+    MT.target = { pid, dir, base }; MT.patient = pid; const ref = "exames/" + dir + "/" + m.arquivo; Object.assign(MT.panels[0], { date: m.data || x.inicio, ref });
+    const mk = await findMarks(pid, ref); if (mk) { MT.panels[0].shapes = JSON.parse(JSON.stringify(mk.formas)); setStatus("Métrica · marcações já feitas nesta imagem foram carregadas (pode ajustar ou Limpar).", "ok"); }
+    mDraw(); mList(); mStatus(); }
   async function patientPhotos(pid) {
     const out = []; for (const { name } of (await listDir(["pacientes", pid, "exames"])).reverse()) { const base = ["pacientes", pid, "exames", name], x = await readJSON([...base, "exame.json"]); if (!x) continue;
       for (const m of (x.midias || []).filter(q => q.tipo === "foto")) out.push({ base, x, m, ref: "exames/" + name + "/" + m.arquivo, date: x.inicio });
       for (const me of x.metricas || []) for (const pn of me.paineis || []) if (pn.ref && pn.ref.startsWith("exames/" + name + "/metricas/"))   // imagem-base de métrica (ex.: quadro congelado)
         out.push({ base, x, m: { arquivo: pn.ref.slice(("exames/" + name + "/").length), tipo: "base", legenda: "quadro da métrica " + me.imagem.split("/").pop().replace(".png", "") }, ref: pn.ref, date: pn.data || x.inicio }); }
     return out; }
+  async function photoPanel(pid, it) {                         // foto/quadro do prontuário → { imagem, origem, data, ref, marcações anteriores }
+    const { base, x, m, ref, date } = it, g = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); if (!g) return null; const bmp = await createImageBitmap(g);
+    const mk = await findMarks(pid, ref); return { im: toNative(bmp, bmp.width, bmp.height, null), origin: x.tipo.split(" —")[0] + " " + brDate(date) + " · " + (m.tipo === "base" ? m.legenda : m.arquivo.split("/").pop()),
+      extra: { date, ref, shapes: mk ? JSON.parse(JSON.stringify(mk.formas)) : [] } }; }
+  async function openCompare(pid, a, b) {                       // abre a Métrica já com as duas imagens (a mais antiga fica à esquerda)
+    const A = await photoPanel(pid, a), B = await photoPanel(pid, b); if (!A || !B) { setStatus("Não consegui ler uma das imagens.", "bad"); return; }
+    showTab("imagem"); metricOpen(A.im, A.origin); Object.assign(MT.panels[0], A.extra); MT.patient = pid; MT.target = null;
+    addPanel(B.im, B.origin, true, B.extra); }
   async function findMarks(pid, ref) {                         // marcações mais recentes já feitas nesta imagem (qualquer exame do paciente)
     let best = null;
     for (const { name } of await listDir(["pacientes", pid, "exames"])) { const x = await readJSON(["pacientes", pid, "exames", name, "exame.json"]); if (!x) continue;
@@ -3524,6 +3547,20 @@
       case "iniciar": await startExam(null); break;
       case "retomar": await startExam(id); break;
       case "verArq": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) openBlob(f); break; }
+      case "cmpEx": {                                          // escolher uma imagem de cada exame e abrir a comparação
+        const pid = PR.pac, all = await patientPhotos(pid), dirOf = q => q.base[3], mine = all.filter(q => dirOf(q) === id), others = [...new Set(all.filter(q => dirOf(q) !== id).map(dirOf))];
+        if (!mine.length || !others.length) { setStatus("É preciso ter imagens nos dois exames.", "bad"); return; }
+        const prev = others.find(d => d < id) || others[0], sel = { a: mine[0], b: null };
+        const thumbs = async (list, key) => { let h = ""; for (const [k, q] of list.entries()) { const f = await readBlob([...q.base, ...q.m.arquivo.split("/")]); if (f) h += '<div class="pr-pk' + (k === 0 ? " on" : "") + '" data-k="' + key + '|' + k + '"><img src="' + objUrl(f) + '"><div class="cap">' + esc(q.m.tipo === "base" ? q.m.legenda : q.m.arquivo.split("/").pop()) + '</div></div>'; } return h; };
+        const exLab = d => { const q = all.find(z => dirOf(z) === d); return brDT(q.x.inicio) + " · " + q.x.tipo.split(" —")[0]; };
+        modal("Comparar exames na Métrica", '<h4>Imagem deste exame (' + exLab(id) + ')</h4><div class="pr-pick" id="cmA">' + await thumbs(mine, "a") + '</div>' +
+          '<h4>Comparar com</h4><select id="cmEx">' + others.map(d => '<option value="' + d + '"' + (d === prev ? " selected" : "") + '>' + esc(exLab(d)) + '</option>').join("") + '</select><div class="pr-pick" id="cmB" style="margin-top:8px"></div>' +
+          '<p class="pr-dim">A imagem mais antiga fica à esquerda. Marcações já feitas nessas imagens são carregadas.</p>', [["Abrir na Métrica", async () => { if (!sel.b) return; MD.hidden = true; await openCompare(pid, sel.a, sel.b); }, "primary"]]);
+        const fillB = async () => { const L = all.filter(q => dirOf(q) === MD.querySelector("#cmEx").value); sel.listB = L; sel.b = L[0] || null; MD.querySelector("#cmB").innerHTML = await thumbs(L, "b"); };
+        MD.querySelector("#cmEx").onchange = fillB; await fillB();
+        MD.querySelector(".pr-mbody").onclick = ev => { const t = ev.target.closest("[data-k]"); if (!t) return; const [g, k] = t.dataset.k.split("|");
+          t.parentElement.querySelectorAll(".pr-pk").forEach(z => z.classList.toggle("on", z === t)); if (g === "a") sel.a = mine[+k]; else sel.b = sel.listB[+k]; };
+        break; }
       case "metricaDe": { const [dir, arq] = id.split("|"); await openMetricFrom(PR.pac, dir, arq); break; }
       case "laudo": go("laudo", { ldir: id, lbase: ["pacientes", PR.pac, "exames", id] }); break;
       case "verPdf": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), f = await pdfOf(base, x); if (f) { openBlob(f); await audit("abriu laudo", PR.pac + " · " + x.id); } break; }
