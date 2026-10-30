@@ -2057,6 +2057,12 @@
     return S.t === "line" || S.t === "cref" ? Math.hypot(dx, dy) : S.t === "circle" ? Math.PI * (dx * dx + dy * dy) : Math.abs(dx * dy); }
   // pares: em cada ferramenta a 1ª é referência e a 2ª é medida contra ela, e assim por diante. As letras seguem a ordem geral (A, B, C…)
   const fR = v => (v >= 10 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
+  const pLab = (P, i) => { if (!P.date) return "Exame " + (i + 1); const O = MT.panels[1 - i], same = O && O.date && O.date.slice(0, 10) === P.date.slice(0, 10);
+    return (P.date.slice(0, 10) === isoNow().slice(0, 10) ? "Hoje" : brDate(P.date)) + (same ? " " + P.date.slice(11, 16) : ""); };
+  // incerteza de marcação: ~1,5 px por ponto (com lupa) numa imagem de 400 px (menos com zoom). Vale para R1/R2 e para as medidas em R
+  const mSig = P => 1.5 * P.src.width / 400;
+  const mRaw = (P, S) => { const v = mVal({ src: P.src, lens: false }, S); return S.t === "line" || S.t === "cref" ? v : 2 * Math.sqrt(v / Math.PI); };   // comprimento (ou diâmetro equivalente) em px
+  const relErr = (P, S) => { const L = mRaw(P, S); return L > 0 ? mSig(P) * Math.SQRT2 / L * (S.t === "line" || S.t === "cref" ? 1 : 2) : 1; };
   const RCOL = "#2ee6c8";
   function mInfo(P, list) { const cnt = {}, last = {}; let letters = 0, ang = 0, nr = 0;
     const R1S = list.find(S => S.t === "cref"), R1 = R1S ? mVal(P, R1S) : 0;
@@ -2157,7 +2163,7 @@
       const tg = P.showIA && P.cIA ? "Processada por IA — pode conter detalhes inexistentes; confira no original" : P.cIA ? "imagem ORIGINAL da câmera (sem IA)" : P.err ? "Contornos por IA indisponível — imagem original" : "aplicando Contornos por IA…";
       mCtx.font = "600 " + Math.round(14 * dpr) + "px Bonnie, Segoe UI, sans-serif"; const tw = mCtx.measureText(tg).width + 16 * dpr;
       mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(R.ox + R.dw - tw - 6 * dpr, R.oy + 6 * dpr, tw, 24 * dpr); mCtx.fillStyle = P.showIA && P.cIA ? "#ffb3e6" : "#ffd400"; mCtx.fillText(tg, R.ox + R.dw - tw + 2 * dpr, R.oy + 23 * dpr);
-      const head = (MT.panels.length > 1 ? "Exame " + (pi + 1) + " · " + P.origin : "") + (V.z > 1.01 ? (MT.panels.length > 1 ? " · " : "") + "zoom " + V.z.toFixed(1).replace(".", ",") + "×" : "");
+      const head = (MT.panels.length > 1 ? pLab(P, pi) + " · " + P.origin : "") + (V.z > 1.01 ? (MT.panels.length > 1 ? " · " : "") + "zoom " + V.z.toFixed(1).replace(".", ",") + "×" : "");
       if (head) { const hw = mCtx.measureText(head).width + 16 * dpr; mCtx.fillStyle = "rgba(0,0,0,.65)"; mCtx.fillRect(R.ox + 6 * dpr, R.oy + R.dh - 30 * dpr, hw, 24 * dpr); mCtx.fillStyle = "#cfe8ff"; mCtx.fillText(head, R.ox + 14 * dpr, R.oy + R.dh - 13 * dpr); }
       mCtx.restore();
       if (MT.panels.length > 1 && pi === MT.act) { mCtx.strokeStyle = "#d08c7e"; mCtx.lineWidth = 2 * dpr; mCtx.strokeRect(R.ox - 2 * dpr, R.oy - 2 * dpr, R.dw + 4 * dpr, R.dh + 4 * dpr); }
@@ -2174,7 +2180,7 @@
   function mList() {
     const el = $("mList"); el.innerHTML = ""; const two = MT.panels.length > 1;
     MT.panels.forEach((P, pi) => {
-      if (two) { const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Exame " + (pi + 1) + " · " + P.origin; el.append(h); }
+      if (two) { const h = document.createElement("div"); h.className = "mhead"; h.textContent = pLab(P, pi) + " · " + P.origin; el.append(h); }
       const info = mInfo(P, P.shapes);
       if (!info.length) { const p = document.createElement("p"); p.className = "desc"; p.style.margin = "4px 0"; p.textContent = "Escolha a ferramenta e arraste na imagem. A primeira forma de cada ferramenta será a referência."; el.append(p); }
       info.forEach(({ S, ref, kind, name, val, col }) => { const r = document.createElement("div"); r.className = "mrow" + (MT.sel && MT.sel.S === S ? " sel" : "");
@@ -2198,20 +2204,27 @@
       const IA = mInfo(MT.panels[0], MT.panels[0].shapes), sg = d => (Math.abs(d) < 0.05 ? "" : d > 0 ? "+" : "−") + pct(Math.abs(d)) + "%";
       const hasR = [IA, B].map(L => L.some(i => i.kind === "cref" && i.idx === 1)); let persp = null;
       if (hasR[0] && hasR[1]) { const RA = new Map(); IA.forEach(i => { if (i.kind === "rmeas") RA.set(i.S.t + "|" + i.idx, i); });
+        const PA = MT.panels[0], PB = MT.panels[1], RA1 = PA.shapes.find(q => q.t === "cref"), RB1 = PB.shapes.find(q => q.t === "cref"), k2 = S => S.t === "line" ? 1 : 2;
         B.forEach(i => { const a = i.kind === "rmeas" && RA.get(i.S.t + "|" + i.idx); if (!a || !a.rv) return; const d = 100 * (i.rv / a.rv - 1), u = i.S.t === "line" ? " R" : " R²";
-          rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + (i.S.t === "line" ? "" : " na área · " + sg(100 * (i.deq / a.deq - 1)) + " no diâmetro eq.") + ")"); });
+          const e = 100 * Math.sqrt(relErr(PA, a.S) ** 2 + relErr(PB, i.S) ** 2 + (k2(i.S) * relErr(PA, RA1)) ** 2 + (k2(i.S) * relErr(PB, RB1)) ** 2);   // margem (1 desvio) da marcação
+          rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + " ± " + pct(e) + "%" + (i.S.t === "line" ? "" : " na área · " + sg(100 * (i.deq / a.deq - 1)) + " no diâmetro eq.") + ")"); });
         if (!rows.length) rows.push("Trace as medidas na mesma ordem nas duas imagens (Reta 1 com Reta 1, Círculo 1 com Círculo 1…).");
         const q = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, q1 = q(IA), q2 = q(B);
-        if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1); persp = { d, ok: d <= 10 };
-          rows.push((persp.ok ? "✓ Perspectiva compatível: R2/R1 variou " : "⚠ Perspectiva diferente: R2/R1 variou ") + pct(d) + "%" + (persp.ok ? "" : " — ângulo ou distância da câmera mudaram; comparação em R pouco confiável")); }
+        if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1), R2 = P => P.shapes.filter(S => S.t === "cref")[1];
+          const T = Math.max(5, 200 * Math.sqrt([PA, PB].reduce((s2, P) => s2 + relErr(P, P.shapes.find(S => S.t === "cref")) ** 2 + relErr(P, R2(P)) ** 2, 0)));   // margem de marcação (2 desvios)
+          const lvl = d <= T ? 0 : d <= T * 1.5 ? 1 : 2; persp = { d, T, lvl };
+          rows.push(lvl === 0 ? "✓ Perspectiva compatível: R2/R1 variou " + pct(d) + "% (margem de marcação ±" + pct(T) + "%)"
+            : lvl === 1 ? "⚠ Atenção: R2/R1 variou " + pct(d) + "%, pouco acima da margem de marcação (±" + pct(T) + "%) — confira os pontos de R1 e R2 (use zoom)"
+            : "⚠ Perspectiva diferente: R2/R1 variou " + pct(d) + "% (margem ±" + pct(T) + "%) — ângulo ou distância da câmera mudaram; comparação em R pouco confiável");
+          if (T > 12) rows.push("Marque R1 e R2 mais longos (estruturas mais distantes entre si) e em pontos nítidos: a margem de marcação está alta (±" + pct(T) + "%)."); }
         else rows.push("Marque também R2 (outra estrutura fixa) nas duas imagens para verificar a perspectiva."); }
       else if (hasR[0] || hasR[1]) rows.push("Marque a referência comum R1 nas DUAS imagens (a mesma estrutura) para comparar em R.");
-      const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (exame 1 → exame 2)"; el.append(h);
+      const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + ")"; el.append(h);
       const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
       rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p); MT.cmpRows = rows; } else MT.cmpRows = []; }
   function mStatus() {
     const P = AP(); if (!P) return; const n = P.n || 34, st = P.step || 0, two = MT.panels.length > 1;
-    $("mOrigin").textContent = (two ? "Exame " + (MT.act + 1) + ": " : "") + P.origin; $("mRes").textContent = P.src.width + "×" + P.src.height;
+    $("mOrigin").textContent = (two ? pLab(P, MT.act) + ": " : "") + P.origin; $("mRes").textContent = P.src.width + "×" + P.src.height;
     $("mBase").textContent = P.showIA && P.cIA ? "Contornos por IA ×4 · ruído " + fmtStr(esrStrength) : "Original da câmera";
     $("mLens").textContent = !P.lens ? "arquivo externo — sem correção" : lensOn() ? "correção ativa · " + lensTxt(true) : "sem correção (calibração estimada)";
     $("mProg").querySelector("i").style.width = (P.cIA ? 100 : P.err ? 0 : 100 * st / n) + "%";
@@ -2238,7 +2251,7 @@
   function metricOpen(im, origin, lens) {
     if (cmpMode) setCmpMode(0); if (zoomF > 1) setZoom(false); if (rec) { setStatus("Pare a gravação antes de abrir a Métrica.", "bad"); return; }
     esrStrength = 1;                                           // Contornos por IA começa com a redução de ruído no máximo
-    MT.open = true; MT.panels = [newPanel(im, origin, lens)]; MT.act = 0; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
+    MT.open = true; MT.panels = [Object.assign(newPanel(im, origin, lens), { date: isoNow(), ref: null })]; MT.act = 0; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
     $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
     $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
   function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
@@ -2255,7 +2268,7 @@
     if (MT.open) return;
     if (viewing) {
       const it = viewing;
-      if (it.type === "foto") { const im = await imageOfItem(it); if (!im) { setStatus("Não consegui ler esta foto.", "bad"); return; } metricOpen(im, "foto " + it.name, !it.ext); return; }
+      if (it.type === "foto") { const im = await imageOfItem(it); if (!im) { setStatus("Não consegui ler esta foto.", "bad"); return; } metricOpen(im, "foto " + it.name, !it.ext); if (it.exam && it.exam.base[0] === "pacientes" && it.exam.L === "F") MT.panels[0].ref = "exames/" + it.exam.base[3] + "/midia/" + it.exam.n + ".png"; return; }
       const vv = $("vVid"); vv.pause(); if (!vv.videoWidth) { setStatus("O vídeo ainda não carregou.", "bad"); return; }
       metricOpen(toNative(vv, vv.videoWidth, vv.videoHeight, it.nat), "vídeo " + it.name + " @ " + mmssc(vv.currentTime), !it.ext); return; }
     if (!frozen) {                                             // ao vivo: congela e abre quando a imagem parar
@@ -2334,7 +2347,7 @@
     if (S.t === "cref" && P.shapes.filter(q => q.t === "cref").length >= 2) { setStatus("Métrica · já há R1 e R2 nesta imagem. Apague uma para marcar de novo.", "bad"); mDraw(); return; }
     const ok = S.t === "poly" ? S.pts.length >= 3 && mVal(P, S) > 16 : mVal(P, S) > (S.t === "line" || S.t === "cref" ? 4 : 16);
     if (ok) { P.shapes.push(S); const inf = mInfo(P, P.shapes).find(i => i.S === S);
-      setStatus("Métrica · " + inf.name + (inf.kind === "cref" ? (inf.idx === 1 ? " marcada — agora cada forma é uma medida própria em R (sem precisar de referência). Marque a MESMA estrutura na outra imagem." : " = " + inf.val + ".") : inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
+      setStatus("Métrica · " + inf.name + (inf.kind === "cref" ? (inf.idx === 1 ? " marcada — agora cada forma é uma medida própria em R (sem precisar de referência). Marque a MESMA estrutura na outra imagem. Dica: pontos nítidos (cantos, pontas) e segmentos longos; use zoom (+)." : " = " + inf.val + ".") : inf.ref ? " (100%) — agora desenhe a medida do par " + inf.pair + "." : ": " + inf.val), "ok"); }
     mDraw(); mList(); };
   mCv.addEventListener("pointerup", mEnd); mCv.addEventListener("pointercancel", e => { MT.ptrs.delete(e.pointerId); MT.drag = MT.edit = MT.pinch = MT.pan = MT.lab = null; MT.loupe = null; mDraw(); });
   new ResizeObserver(() => mDraw()).observe(mCv);
@@ -2395,11 +2408,12 @@
     if (pid) {                                                  // prontuário: só imagens deste paciente
       const list = await patientPhotos(pid);
       if (!list.length) box.innerHTML = '<p class="desc">Este paciente ainda não tem fotos gravadas.</p>';
-      for (const { base, x, m } of list) { const f = await readBlob([...base, ...m.arquivo.split("/")]); if (!f) continue;
+      for (const { base, x, m, ref, date } of list) { const f = await readBlob([...base, ...m.arquivo.split("/")]); if (!f) continue;
         const b = document.createElement("button"); b.className = "pk"; const im = document.createElement("img"); im.src = URL.createObjectURL(f);
-        const sp = document.createElement("span"); sp.textContent = brDate(x.inicio) + " · " + x.tipo.split(" —")[0] + " · " + m.arquivo.split("/").pop(); b.append(im, sp);
+        const sp = document.createElement("span"); sp.textContent = brDate(date) + " · " + x.tipo.split(" —")[0] + " · " + (m.tipo === "base" ? m.legenda : m.arquivo.split("/").pop()); b.append(im, sp);
         b.onclick = async () => { $("mPick").hidden = true; const g = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); const bmp = await createImageBitmap(g);
-          addPanel(toNative(bmp, bmp.width, bmp.height, null), x.tipo.split(" —")[0] + " " + brDate(x.inicio) + " · " + m.arquivo.split("/").pop()); };
+          const mk = await findMarks(pid, ref), shapes = mk ? JSON.parse(JSON.stringify(mk.formas)) : [];
+          addPanel(toNative(bmp, bmp.width, bmp.height, null), x.tipo.split(" —")[0] + " " + brDate(date) + " · " + (m.tipo === "base" ? m.legenda : m.arquivo.split("/").pop()), true, { date, ref, shapes }); };
         box.append(b); }
       $("mPick").hidden = false; return; }
     const fotos = items.filter(it => it.type === "foto");
@@ -2409,8 +2423,9 @@
       b.onclick = async () => { $("mPick").hidden = true; const img = await imageOfItem(it); if (!img) { setStatus("Não consegui ler esta foto.", "bad"); return; } addPanel(img, "foto " + it.name, !it.ext); };
       box.append(b); });
     $("mPick").hidden = false; }
-  function addPanel(im, origin, lens) { const P = newPanel(im, origin, lens); MT.panels = [MT.panels[0], P]; MT.act = 1; MT.sel = null; MT.pend = null;
-    mDraw(); mList(); mStatus(); mRunIA(P); setStatus("Comparação: meça os mesmos pares nos dois exames para ver a diferença.", "ok"); }
+  function addPanel(im, origin, lens, extra) { const P = Object.assign(newPanel(im, origin, lens), extra || {}), A = MT.panels[0];
+    if (P.date && A.date && P.date < A.date) { MT.panels = [P, A]; MT.act = 0; } else { MT.panels = [A, P]; MT.act = 1; }   // exame mais antigo sempre à esquerda MT.sel = null; MT.pend = null;
+    mDraw(); mList(); mStatus(); mRunIA(P); setStatus(P.shapes.length ? "Comparação: marcações da métrica anterior desta imagem carregadas (pode ajustar). Marque o mesmo na outra imagem." : "Comparação: meça o mesmo nas duas imagens (mesma ordem) para ver a diferença.", "ok"); }
   $("mCmp").onclick = () => { if (MT.panels.length > 1) { const P = MT.panels.pop(); if (P.tok) P.tok.cancel = true; MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); return; } pickOpen(); };
   $("mPickClose").onclick = () => { $("mPick").hidden = true; };
   $("mPickFile").onclick = () => $("mFile").click();
@@ -2425,12 +2440,12 @@
     const fs = Math.round(Wp / 48 * MT.fs), lh = Math.round(fs * 1.45), lines = [];
     lines.push(["MÉTRICA · medidas relativas (sem escala em mm) · " + nowTxt(), "#d08c7e"]);
     MT.panels.forEach((P, pi) => {
-      lines.push([(two ? "Exame " + (pi + 1) + " — " : "") + "Origem: " + P.origin + " · câmera " + P.src.width + "×" + P.src.height, "#eceef0"]);
+      lines.push([(two ? pLab(P, pi) + " — " : "") + "Origem: " + P.origin + " · câmera " + P.src.width + "×" + P.src.height, "#eceef0"]);
       lines.push(["Base: " + (P.showIA && P.cIA ? "Contornos por IA ×4 (redução de ruído " + fmtStr(esrStrength) + ") — Processada por IA — pode conter detalhes inexistentes; confira no original" : "imagem original da câmera (sem IA)"), P.showIA && P.cIA ? "#ffb3e6" : "#eceef0"]);
       const info = mInfo(P, P.shapes); if (!info.length) lines.push(["(sem medidas)", "#959ba3"]);
       lines.push(["Lente: " + (!P.lens ? "arquivo externo — sem correção" : lensOn() ? "medidas com correção de lente (" + lensTxt(true) + ")" : "sem correção de lente (calibração ainda estimada)"), "#959ba3"]);
       info.forEach(i => lines.push([(two ? "  " : "") + (i.kind === "ref" ? i.name + " (100%)" : i.kind === "note" ? "Anotação: " + (i.S.text || "(seta)") : i.kind === "cref" ? i.name + (i.idx > 1 ? ": " + i.val : " (unidade R)") : i.name + ": " + i.val) + (i.rs ? " · " + i.rs : ""), i.kind === "note" ? "#eceef0" : i.col])); });
-    if (two) { lines.push(["Comparação (exame 1 → exame 2):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t, "#eceef0"])); }
+    if (two) { lines.push(["Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + "):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t, "#eceef0"])); }
     const Wt = Wp * MT.panels.length + gap, c = document.createElement("canvas"); c.width = Wt;
     const x = c.getContext("2d"); x.font = mFont(fs);
     const wrap = []; lines.forEach(([t, col]) => { let s = t; while (x.measureText(s).width > Wt - fs * 1.4 && s.length > 20) { let k = s.length; while (k > 10 && x.measureText(s.slice(0, k)).width > Wt - fs * 1.4) k--; const sp = s.lastIndexOf(" ", k); const cut = sp > 20 ? sp : k; wrap.push([s.slice(0, cut), col]); s = "   " + s.slice(cut).trim(); } wrap.push([s, col]); });
@@ -2438,7 +2453,7 @@
     x.fillStyle = "#0f1012"; x.fillRect(0, 0, Wt, c.height); x.imageSmoothingQuality = "high";
     imgs.forEach(({ P, b, H }, i) => { const ox = i * (Wp + gap); x.drawImage(b, ox, 0, Wp, H); x.save(); x.beginPath(); x.rect(ox, 0, Wp, H); x.clip();
       drawShapesM(x, q => [ox + q[0] * Wp, q[1] * H], Wp / 900, P, P.shapes, null, [ox, 0, ox + Wp, H]); x.restore();
-      if (two) { x.font = mFont(fs); const t = "Exame " + (i + 1), tw = x.measureText(t).width + fs; x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(ox + 8, 8, tw, fs * 1.6); x.fillStyle = "#cfe8ff"; x.fillText(t, ox + 8 + fs / 2, 8 + fs * 1.15); } });
+      if (two) { x.font = mFont(fs); const t = pLab(P, i), tw = x.measureText(t).width + fs; x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(ox + 8, 8, tw, fs * 1.6); x.fillStyle = "#cfe8ff"; x.fillText(t, ox + 8 + fs / 2, 8 + fs * 1.15); } });
     x.font = mFont(fs);
     wrap.forEach(([t, col], i) => { x.fillStyle = col; x.fillText(t, Math.round(fs * 0.7), Hd + Math.round(fs * 0.4) + (i + 1) * lh - Math.round(lh * 0.25)); });
     const d = new Date(), z = n => String(n).padStart(2, "0"), name = fileName(two ? "metrica_comparacao" : "metrica", "png");
@@ -2446,7 +2461,9 @@
     it.thumb = it.url; it.kind = "metrica"; it.target = MT.target || null;
     try { it.mdata = JSON.parse(JSON.stringify({ data: nowTxt(), origens: MT.panels.map(P => P.origin), base_ia: MT.panels.map(P => !!(P.showIA && P.cIA)), reducao_ruido_ia: esrStrength,
       medidas: MT.panels.map(P => mInfo(P, P.shapes).map(i => ({ nome: i.name, tipo: i.kind, valor: i.val, em_R: i.rs || null, texto: i.S && i.S.text }))),
-      lente: { correcao_aplicada: MT.panels.map(P => !!(P.lens && lensOn())), dados: Object.assign({}, LENS) }, comparacao: MT.cmpRows || [], formas: MT.panels.map(P => P.shapes) })); } catch (e) { it.mdata = {}; }
+      lente: { correcao_aplicada: MT.panels.map(P => !!(P.lens && lensOn())), dados: Object.assign({}, LENS) }, salvo_em: isoNow(),
+      paineis: MT.panels.map(P => ({ ref: P.ref || null, data: P.date || null, origem: P.origin, lente: !!P.lens, formas: P.shapes })), comparacao: MT.cmpRows || [], formas: MT.panels.map(P => P.shapes) })); } catch (e) { it.mdata = {}; }
+    it.msrc = MT.panels.map(P => P.ref ? null : P.src);           // imagens-base ainda não gravadas (ex.: quadro congelado) — vão junto para o exame
     addItem(it);
     c.toBlob(blob => { if (!blob) { setStatus("Falha ao gerar a imagem da métrica.", "bad"); return; } it.url = URL.createObjectURL(blob); captured(it, blob);
       setStatus("Imagem da métrica na galeria (" + name + ")." + (autoSaveOn() || dirHandle ? "" : " Toque em Salvar para baixar."), "ok"); }, "image/png"); };
@@ -3274,8 +3291,12 @@
     const cnt = E ? E.k : (() => { const k = { F: 0, V: 0, M: 0 }; (x.midias || []).concat(x.metricas || []).forEach(m => { const mm = /\/([FVM])(\d{3})/.exec(m.arquivo || m.imagem || ""); if (mm) k[mm[1]] = Math.max(k[mm[1]], +mm[2]); }); return k; })();
     const L = it.kind === "metrica" ? "M" : it.type === "video" ? "V" : "F", n = L + String(++cnt[L]).padStart(3, "0"), d = new Date(), hora = z2(d.getHours()) + ":" + z2(d.getMinutes()) + ":" + z2(d.getSeconds());
     try {
-      if (L === "M") { await writeFile([...T.base, "metricas", n + ".png"], blob); await writeJSON([...T.base, "metricas", n + ".json"], it.mdata || {});
-        (x.metricas = x.metricas || []).push({ imagem: "metricas/" + n + ".png", dados: "metricas/" + n + ".json", hora, origem: it.mdata && it.mdata.origens ? it.mdata.origens.join(" | ") : "" });
+      if (L === "M") { await writeFile([...T.base, "metricas", n + ".png"], blob); const md = it.mdata || {}, pns = md.paineis || [];
+        for (let i = 0; i < pns.length; i++) { const src = (it.msrc || [])[i]; if (!src || pns[i].ref) continue;   // grava o quadro-base para poder comparar depois
+          const b = await new Promise(r => canvasOf(src).toBlob(r, "image/png")), f = n + "_p" + (i + 1) + ".png"; await writeFile([...T.base, "metricas", f], b);
+          if (T.base[0] === "pacientes") pns[i].ref = "exames/" + T.dir + "/metricas/" + f; }
+        await writeJSON([...T.base, "metricas", n + ".json"], md);
+        (x.metricas = x.metricas || []).push({ imagem: "metricas/" + n + ".png", dados: "metricas/" + n + ".json", hora, origem: md.origens ? md.origens.join(" | ") : "", paineis: pns.map(p => ({ ref: p.ref, data: p.data })) });
         (x.midias = x.midias || []).push({ arquivo: "metricas/" + n + ".png", tipo: "metrica", hora, legenda: "Métrica", no_laudo: true }); }
       else if (L === "V") { const ext = (blob.type || "").includes("mp4") ? "mp4" : "webm"; await writeFile([...T.base, "midia", n + "." + ext], blob);
         x.midias.push({ arquivo: "midia/" + n + "." + ext, tipo: "video", hora, duracao: it.dur || null }); }
@@ -3299,10 +3320,19 @@
     const base = ["pacientes", pid, "exames", dir], x = await readJSON([...base, "exame.json"]), m = (x.midias || []).find(q => q.arquivo === arquivo) || { arquivo };
     const f = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); if (!f) return;
     const bmp = await createImageBitmap(f); showTab("imagem"); metricOpen(toNative(bmp, bmp.width, bmp.height, null), x.tipo + " " + brDate(x.inicio) + " · " + m.arquivo.split("/").pop());
-    MT.target = { pid, dir, base }; MT.patient = pid; }
+    MT.target = { pid, dir, base }; MT.patient = pid; Object.assign(MT.panels[0], { date: m.data || x.inicio, ref: "exames/" + dir + "/" + m.arquivo }); mDraw(); mList(); mStatus(); }
   async function patientPhotos(pid) {
     const out = []; for (const { name } of (await listDir(["pacientes", pid, "exames"])).reverse()) { const base = ["pacientes", pid, "exames", name], x = await readJSON([...base, "exame.json"]); if (!x) continue;
-      for (const m of (x.midias || []).filter(q => q.tipo === "foto")) out.push({ base, x, m }); } return out; }
+      for (const m of (x.midias || []).filter(q => q.tipo === "foto")) out.push({ base, x, m, ref: "exames/" + name + "/" + m.arquivo, date: x.inicio });
+      for (const me of x.metricas || []) for (const pn of me.paineis || []) if (pn.ref && pn.ref.startsWith("exames/" + name + "/metricas/"))   // imagem-base de métrica (ex.: quadro congelado)
+        out.push({ base, x, m: { arquivo: pn.ref.slice(("exames/" + name + "/").length), tipo: "base", legenda: "quadro da métrica " + me.imagem.split("/").pop().replace(".png", "") }, ref: pn.ref, date: pn.data || x.inicio }); }
+    return out; }
+  async function findMarks(pid, ref) {                         // marcações mais recentes já feitas nesta imagem (qualquer exame do paciente)
+    let best = null;
+    for (const { name } of await listDir(["pacientes", pid, "exames"])) { const x = await readJSON(["pacientes", pid, "exames", name, "exame.json"]); if (!x) continue;
+      for (const me of x.metricas || []) { if (!(me.paineis || []).some(p => p.ref === ref)) continue; const j = await readJSON(["pacientes", pid, "exames", name, ...me.dados.split("/")]); if (!j || !j.paineis) continue;
+        const pn = j.paineis.find(p => p.ref === ref); if (pn && pn.formas && pn.formas.length && (!best || (j.salvo_em || "") > best.when)) best = { formas: pn.formas, when: j.salvo_em || "" }; } }
+    return best; }
   // ================= LAUDO =================
   async function scrLaudo(keep) {
     const K = keep && PR.L, base = K ? PR.L.base : PR.lbase || ["pacientes", PR.pac, "exames", PR.ldir], x = K ? PR.L.x : await readJSON([...base, "exame.json"]), p = K ? PR.L.p : x.paciente ? await readJSON(["pacientes", x.paciente, "paciente.json"]) : null;
