@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Ajuste de Imagem — Videonasofibrolaringoscopia  v6.1 — 2026-10-30: Métrica — correção de lente (FOV/distorção, card de bancada com visualização), referência comum R entre exames com verificação de perspectiva (R2), escritas com tamanho/fonte/posição
+<!-- Ajuste de Imagem — Videonasofibrolaringoscopia  v6.2 — 2026-10-31: layout novo (menu lateral Exame · Métrica · Prontuário · Configurações · Avançado com senha), tema claro Ferrari (escuro opcional), início do exame com "Iniciar exame", etapas com calibrar branco, Prontuário com Hoje / Exames e laudos / Relatórios
+     v6.1 — 2026-10-30: Métrica — correção de lente (FOV/distorção, card de bancada com visualização), referência comum R entre exames com verificação de perspectiva (R2), escritas com tamanho/fonte/posição
      v6.0 — 2026-10-30: prontuário local (pacientes, exames, laudos PDF, DICOM, termo, usuários/perfis, backup, relatórios, auditoria)
      v5.3 — 2026-10-30: Métrica completa — pares com letra/cor própria, editar/apagar, ângulo, anotação, zoom/arrastar, comparar dois exames
      v5.2 — 2026-10-30: barra de ajustes na imagem congelada (ampliação, realce, ruído — ruído por filtro bilateral no quadro parado)
@@ -376,44 +377,135 @@
     padding: 10px 16px; border-radius: 10px; max-width: min(640px, 92vw); pointer-events: none; font-size: 15px; }
   #prToast.on { opacity: 1; transform: translate(-50%, 0); } #prToast.ok { border-color: var(--ok); } #prToast.bad { border-color: var(--bad); color: #ffd0d0; }
   @media (max-width: 700px) { .au-g2 { grid-template-columns: 1fr; } #prHdr span { display: none; } }
+
+  /* ===================== v6.2 · layout novo (menu lateral, tema claro Ferrari) ===================== */
+  :root { --bg:#f4f2f1; --surface:#ffffff; --surface-2:#f9f7f6; --surface-3:#eeeae8; --line:#e5dfdc; --txt:#1f1b1a; --dim:#7d7774;
+    --ok:#1d7548; --warn:#8f5600; --bad:#b0281f; --brand-tint:#833f34; --soft:#f5e7e3;
+    --btn-bg:#ffffff; --btn-bd:#d0c7c3; --btn-bdh:#b9aea9; --btn-fg:#1f1b1a; --btn-sh:0 1px 2px rgba(40,22,18,.08); --btn-sha:inset 0 1px 3px rgba(0,0,0,.15); --btn-shs:0 1px 1px rgba(40,22,18,.06); --btn-press:1px;
+    --pri-bg:var(--brand); --pri-sh:0 2px 8px rgba(131,63,52,.3); --pri-sha:inset 0 2px 5px rgba(0,0,0,.3); color-scheme: light; }
+  .dk, :root[data-theme="dark"] { --bg:#0f1012; --surface:#17191c; --surface-2:#1f2226; --surface-3:#272b30; --line:#2f343a; --txt:#eceef0; --dim:#959ba3;
+    --ok:#3cbf7a; --warn:#e8a33c; --bad:#ff6b6b; --brand-tint:#d08c7e; --soft:#38201b;
+    --btn-bg:linear-gradient(180deg,#2b3036,#22262b); --btn-bd:#383e46; --btn-bdh:#4a515a; --btn-fg:#eceef0;
+    --btn-sh:0 3px 0 #0b0c0e, 0 4px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07); --btn-sha:0 0 0 #0b0c0e, 0 1px 2px rgba(0,0,0,.3), inset 0 2px 5px rgba(0,0,0,.55);
+    --btn-shs:0 2px 0 #0b0c0e, inset 0 1px 0 rgba(255,255,255,.06); --btn-press:3px;
+    --pri-bg:linear-gradient(180deg,var(--brand-hi),var(--brand)); --pri-sh:0 3px 0 #3d1c17, 0 4px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.18); --pri-sha:0 0 0 #3d1c17, inset 0 2px 6px rgba(0,0,0,.5); color-scheme: dark; }
+  .dk { color: var(--txt); }
+  .btn { border:1px solid var(--btn-bd); background:var(--btn-bg); color:var(--btn-fg); box-shadow:var(--btn-sh); }
+  .btn:hover { border-color:var(--btn-bdh); }
+  .btn:active, .btn.pressed { transform:translateY(var(--btn-press)); box-shadow:var(--btn-sha); }
+  .btn.primary { color:#fff; border-color:var(--brand); background:var(--pri-bg); box-shadow:var(--pri-sh); }
+  .btn.primary:active, .btn.primary.pressed { box-shadow:var(--pri-sha); }
+  .btn.ghost { background:transparent; box-shadow:none; border-color:var(--line); }
+  .btn.sm { box-shadow:var(--btn-shs); }
+  .btn.ghost.sm { box-shadow:none; }
+  .btn.on { border-color:var(--brand-tint); color:var(--brand-tint); }
+  body { display:grid; grid-template-columns:232px minmax(0,1fr); height:100%; }
+  #side { display:flex; flex-direction:column; gap:4px; background:var(--surface); border-right:1px solid var(--line); padding:14px 12px; min-height:0; overflow-y:auto; }
+  #side .brand { padding:4px 6px 14px; }
+  #side .fm { display:inline-block; background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 9px; }
+  #side .fm img { height:36px; display:block; }
+  #side h1 { margin:8px 0 0; font-size:13px; font-weight:400; color:var(--dim); line-height:1.35; }
+  #side h1 small { display:block; font-size:12px; }
+  #side .nav-l { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin:14px 10px 4px; }
+  #side .nb { display:flex; align-items:center; gap:11px; width:100%; border:0; background:transparent; color:var(--txt); font:inherit; font-size:16px; font-weight:500;
+    padding:9px 10px; border-radius:8px; cursor:pointer; text-align:left; }
+  #side .nb svg { width:19px; height:19px; flex:none; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  #side .nb:hover { background:var(--surface-2); }
+  #side .nb.on { background:var(--soft); color:var(--brand-tint); font-weight:600; }
+  #side .nb[hidden] { display:none; }
+  #side .nb .cnt { margin-left:auto; font-size:12px; background:#fbefd8; color:#8f5600; border-radius:99px; padding:0 7px; }
+  #side .foot { margin-top:auto; display:flex; flex-direction:column; gap:8px; padding-top:12px; }
+  #side .bk { border:1px solid var(--line); border-radius:9px; padding:9px 10px; font-size:13px; color:var(--dim); }
+  #side .bk b { color:var(--txt); font-weight:600; }
+  #side .lnk { background:none; border:0; color:var(--brand-tint); font:inherit; font-size:13px; cursor:pointer; padding:0; text-align:left; }
+  #mainc { display:flex; flex-direction:column; min-width:0; min-height:0; }
+  #top { display:flex; align-items:center; gap:10px; height:58px; padding:0 18px; background:var(--surface); border-bottom:1px solid var(--line); flex:none; }
+  #gSearch { width:min(420px, 34vw); height:38px; padding:0 12px 0 36px; border-radius:9px; background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237d7774' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m20 20-4.2-4.2'/%3E%3C/svg%3E") no-repeat 11px center / 17px; }
+  #top .spacer { flex:1; }
+  #hdrStart { height:40px; padding:0 18px; font-size:16px; }
+  #hdrStart[hidden] { display:none; }
+  #top .hdr-ctl[hidden] { display:none; }
+  #thBtn { width:38px; height:38px; padding:0; }
+  #prHdr { margin-left:4px; }
+  #exSteps { display:flex; margin:12px 18px 0; border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow-x:auto; flex:none; }
+  #exSteps[hidden] { display:none; }
+  #exSteps .st { flex:1; display:flex; gap:10px; align-items:center; padding:10px 14px; color:var(--dim); font-weight:500; border-right:1px solid var(--line); white-space:nowrap; min-width:140px; font-size:15px; }
+  #exSteps .st:last-child { border-right:0; }
+  #exSteps .st i { font-style:normal; width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line); display:grid; place-items:center; font-size:12px; flex:none; }
+  #exSteps .st.on { color:var(--txt); } #exSteps .st.on i { border-color:var(--brand); background:var(--brand); color:#fff; }
+  #exSteps .st.done { color:var(--txt); } #exSteps .st.done i { border-color:var(--ok); color:var(--ok); }
+  main { min-height:0; }
+  #exHero { position:absolute; inset:0; z-index:6; display:grid; grid-template-columns:minmax(0,520px) 1fr; align-items:center; padding:24px; pointer-events:none; }
+  #exHero[hidden] { display:none; }
+  #exHero .hc { pointer-events:auto; background:#fff; color:#1f1b1a; border-radius:14px; padding:24px; box-shadow:0 18px 48px rgba(0,0,0,.45); display:flex; flex-direction:column; gap:14px; max-height:100%; overflow:auto; }
+  #exHero h2 { margin:0; font-size:22px; }
+  #exHero .q { height:44px; width:100%; border:1px solid #d0c7c3; border-radius:9px; padding:0 12px; font:inherit; background:#fff; color:#1f1b1a; }
+  #exHero .lst { border:1px solid #e5dfdc; border-radius:10px; overflow:hidden; }
+  #exHero .it { display:flex; gap:12px; align-items:center; padding:9px 12px; border-bottom:1px solid #e5dfdc; cursor:pointer; }
+  #exHero .it:last-child { border-bottom:0; } #exHero .it:hover { background:#f9f7f6; } #exHero .it.sel { background:#f5e7e3; }
+  #exHero .av { width:34px; height:34px; border-radius:50%; background:#f5e7e3; color:#833f34; display:grid; place-items:center; font-weight:700; font-size:13px; flex:none; }
+  #exHero .sec { color:#7d7774; font-size:13px; }
+  #exHero .big { height:76px; border-radius:14px; font-size:24px; justify-content:center; }
+  #exHero .big svg { width:28px; height:28px; }
+  #exHero .row2 { display:flex; gap:8px; flex-wrap:wrap; }
+  #exHero .hint { color:#7d7774; font-size:13px; }
+  #exHero .x { align-self:flex-end; margin-top:-8px; }
+  #wbStep { position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:6; display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;
+    background:rgba(15,16,18,.92); border:1px solid #ffd400; border-radius:12px; padding:10px 14px; max-width:calc(100% - 24px); color:#eceef0; }
+  #wbStep[hidden] { display:none; }
+  #wbStep b { color:#ffd400; }
+  #adv { overflow-y:auto; }
+  #advIn { padding:18px; width:100%; }
+  #advLock { max-width:420px; margin:60px auto; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:28px; box-shadow:0 6px 20px rgba(40,22,18,.08); }
+  #advLock .lk { width:56px; height:56px; border-radius:14px; background:var(--soft); color:var(--brand-tint); display:grid; place-items:center; margin:0 auto 12px; font-size:26px; }
+  #advLock input { width:100%; height:46px; font-size:22px; text-align:center; letter-spacing:.4em; margin:16px 0 10px; }
+  #advGrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:16px; align-items:start; }
+  #advGrid .card { margin:0; background:var(--surface); }
+  #advHead { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  #advHead h2 { margin:0; font-size:24px; } #advHead .sub { color:var(--dim); }
+  #prSub { display:flex; gap:2px; border-bottom:1px solid var(--line); padding:0 18px; margin-top:8px; align-items:center; flex-wrap:wrap; }
+  #prSub button { padding:10px 14px; border:0; background:none; color:var(--dim); font:inherit; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  #prSub button.on { color:var(--txt); border-color:var(--brand); }
+  #prSub #prBackWarn { margin-left:auto; }
+  .pr-kpi4 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:14px; }
+  .pr-kpi4 div { background:var(--surface); padding:14px 18px; color:var(--dim); font-size:14px; } .pr-kpi4 b { display:block; color:var(--txt); font-size:24px; font-weight:600; }
+  .pr-bigbtn { width:100%; height:64px; font-size:20px; justify-content:center; margin-top:12px; }
+  .pr-chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .pr-chips button { border:1px solid var(--line); background:var(--surface); border-radius:99px; padding:5px 12px; font:inherit; font-size:14px; cursor:pointer; color:var(--txt); }
+  .pr-chips button.on { background:#1f1b1a; color:#fff; border-color:#1f1b1a; }
+  .pr-start { height:44px; padding:0 20px; font-size:16px; }
+  .pill { background:var(--surface-3); }
+  .pill.ok { background:#e3f2e9; } .pill.warn { background:#fbefd8; } .pill.bad { background:#fbe6e3; }
+  .dk .pill.ok, :root[data-theme="dark"] .pill.ok { background:#142e22; } .dk .pill.warn, :root[data-theme="dark"] .pill.warn { background:#352813; } .dk .pill.bad, :root[data-theme="dark"] .pill.bad { background:#3a1c1a; }
+  #prNav { display:none; }
+  .lesson p, .lesson li { color:var(--txt); }
+  @media (max-width: 900px) { body { grid-template-columns:1fr; } #side { flex-direction:row; flex-wrap:wrap; overflow-x:auto; padding:6px; } #side .brand, #side .nav-l, #side .foot { display:none; } #side .nb { width:auto; } #gSearch { width:40vw; } }
+  :fullscreen #side, :fullscreen #top { display:none !important; }
+  .card h2 { color: var(--txt); } .keys kbd { color: var(--dim); border-color: var(--line); }
+  .lt { --surface:#ffffff; --surface-2:#f9f7f6; --surface-3:#eeeae8; --line:#e5dfdc; --txt:#1f1b1a; --dim:#7d7774; --brand-tint:#833f34;
+    --btn-bg:#ffffff; --btn-bd:#d0c7c3; --btn-bdh:#b9aea9; --btn-fg:#1f1b1a; --btn-sh:0 1px 2px rgba(40,22,18,.08); --btn-sha:inset 0 1px 3px rgba(0,0,0,.15); --btn-shs:0 1px 1px rgba(40,22,18,.06); --btn-press:1px;
+    --pri-bg:var(--brand); --pri-sh:0 2px 8px rgba(131,63,52,.3); --pri-sha:inset 0 2px 5px rgba(0,0,0,.3); color:var(--txt); color-scheme: light; }
+  #status.ok { color: var(--ok); } #status.bad { color: var(--bad); }
+  #imagem.mopen > aside { display: none; }
+  #imagem > aside .desc, #imagem > aside .help, #imagem > aside .sl .hint { display: none; }
+  #imagem > aside .card h2 { margin-bottom: 8px; }
+  .btn[hidden] { display: none; }
+  #mSide .desc, #mPick .pkbox > p.desc { display: none; }
 </style>
 </head>
 <body>
-<header>
-  <div class="brandmark">
-    <div class="chip"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
-    <h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.1</small></h1>
-  </div>
-  <nav class="tabs">
-    <button class="active" data-tab="imagem">Imagem</button>
-    <button data-tab="pront">Prontuário</button>
-    <button data-tab="tutorial">Tutorial</button>
-  </nav>
-  <div id="prHdr"><span id="prUser"></span><button class="btn sm" id="prLogout">Entrar</button></div>
-  <div class="spacer"></div>
-  <div class="hdr-ctl">
-    <select id="cam" title="Câmera"></select>
-    <select id="res" title="Resolução de ENTRADA (o que é pedido à câmera). A saída é sempre ampliada para 1080 de altura (Lanczos-3).">
-      <option value="400x400" selected>Entrada 400×400</option>
-      <option value="640x480">Entrada 640×480</option>
-      <option value="1280x720">Entrada 1280×720</option>
-      <option value="1920x1080">Entrada 1920×1080</option>
-    </select>
-    <button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
+<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.2</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div><button class="lnk" id="sideTut">Ajuda · tutorial</button></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
     <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
     <button class="btn ghost" id="btnFull" title="Tela cheia (F)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-    </button>
-  </div>
-</header>
-<div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div>
+    </button></div><button class="btn ghost" id="thBtn" title="Tema claro / escuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button><div id="prHdr"><span id="prUser"></span><button class="btn sm" id="prLogout">Entrar</button></div></div><div id="exSteps" hidden></div>
 
 <main>
   <!-- ================= IMAGEM ================= -->
   <section class="view active" id="imagem">
-    <div id="stage">
+    <div id="stage" class="dk">
       <div id="live" title="Voltar ao vivo"><canvas id="cv" style="display:none"></canvas><canvas id="out"></canvas><canvas id="ov"></canvas></div>
       <div id="viewer" hidden>
         <img id="vImg" alt=""><video id="vVid" controls></video>
@@ -481,17 +573,24 @@
       </div>
       <div id="gallery"><div class="gtitle">Capturas</div><button class="btn sm primary" id="btnSaveAll" style="width:100%;margin-bottom:8px;display:none">Salvar todas</button></div>
       <div id="flash"></div>
+      <div id="exHero" hidden><div class="hc lt"><button class="btn sm ghost x" id="heroX" title="Só ver a câmera">✕ só a câmera</button><h2>Novo exame</h2>
+        <input class="q" id="heroQ" placeholder="Para quem? Nome, CPF ou código…" autocomplete="off"><div class="lst" id="heroL"></div>
+        <button class="btn primary big" id="heroGo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button>
+        <div class="row2"><button class="btn" id="heroNew">+ Paciente novo</button><button class="btn ghost" id="heroUrg">Exame sem cadastro (urgência)</button></div>
+        <div class="hint" id="heroHint"></div></div></div>
+      <div id="wbStep" hidden><span><b>Balanço de branco</b> — aponte para a gaze branca e toque no botão.</span>
+        <button class="btn primary sm" id="wbGo">Balanço de branco</button><button class="btn sm" id="wbUse" hidden></button><button class="btn sm ghost" id="wbSkip">Pular</button></div>
     </div>
 
     <aside>
       <div class="card">
-        <h2>Calibração do branco <button class="btn sm help" data-goto="t1" title="Como fazer">?</button></h2>
+        <h2>Balanço de branco <button class="btn sm help" data-goto="t1" title="Como fazer">?</button></h2>
         <p class="desc">Aponte para um alvo branco preenchendo o quadrado amarelo e calibre. Refaça ao trocar ótica, cabo de luz ou fonte.</p>
         <div class="row"><span class="lbl">Leitura no quadrado</span><span class="rgb"><span class="r" id="inR">–</span><span class="g" id="inG">–</span><span class="b" id="inB">–</span></span></div>
-        <div class="row"><span class="lbl">Após calibração</span><span class="rgb"><span class="r" id="outR">–</span><span class="g" id="outG">–</span><span class="b" id="outB">–</span></span></div>
+        <div class="row"><span class="lbl">Após o balanço</span><span class="rgb"><span class="r" id="outR">–</span><span class="g" id="outG">–</span><span class="b" id="outB">–</span></span></div>
         <div class="row"><span class="lbl">Correção aplicada</span><span class="rgb"><span class="r" id="gR">1.00</span><span class="g" id="gG">1.00</span><span class="b" id="gB">1.00</span></span></div>
         <div class="btnrow">
-          <button class="btn primary" id="btnWB" title="W">Calibrar branco</button>
+          <button class="btn primary" id="btnWB" title="W">Balanço de branco</button>
           <button class="btn" id="btnReset" title="R">Desfazer</button>
         </div>
         <div class="btnrow" style="margin-top:8px">
@@ -591,12 +690,12 @@
         <div class="row"><span class="lbl">Correção automática de cor</span><span class="pill" id="awb">–</span></div>
         <div class="row"><span class="lbl">Exposição automática</span><span class="pill" id="aex">–</span></div>
         <div id="awbWarn" style="display:none"></div>
-        <label class="sw"><span>Travar a cor da câmera ao calibrar</span><input type="checkbox" id="lockAwb" checked></label>
-        <label class="sw"><span>Travar a exposição ao calibrar</span><input type="checkbox" id="lockAe"></label>
-        <p class="desc" style="margin:0 0 6px">As travas valem a partir do toque em <b>Calibrar branco</b>. Depois de calibrado, ligar ou desligar aplica na hora.</p>
-        <div class="sl"><span class="name">Tamanho do quadrado de calibração</span><span class="val" id="roiTxt">25%</span>
+        <label class="sw"><span>Travar a cor da câmera no balanço de branco</span><input type="checkbox" id="lockAwb" checked></label>
+        <label class="sw"><span>Travar a exposição no balanço de branco</span><input type="checkbox" id="lockAe"></label>
+        <p class="desc" style="margin:0 0 6px">As travas valem a partir do toque em <b>Balanço de branco</b>. Depois, ligar ou desligar aplica na hora.</p>
+        <div class="sl"><span class="name">Tamanho do quadrado do balanço de branco</span><span class="val" id="roiTxt">25%</span>
           <input type="range" id="roi" min="10" max="50" value="25"></div>
-        <label class="sw"><span>Mostrar quadrado de calibração</span><input type="checkbox" id="showRoi" checked></label>
+        <label class="sw"><span>Mostrar quadrado do balanço de branco</span><input type="checkbox" id="showRoi" checked></label>
         <div class="row" style="margin-top:6px"><span class="lbl">Entrada (câmera)</span><span id="resIn">–</span></div>
         <div class="row"><span class="lbl">Máximo da câmera</span><span id="resMax">–</span></div>
         <div class="row"><span class="lbl">Saída (tela)</span><span id="resOut">–</span></div>
@@ -617,9 +716,9 @@
       </details>
 
       <div class="card">
-        <h2>Parâmetros normais</h2>
+        <h2>Padrão</h2>
         <p class="desc">Volta tudo ao padrão: desfaz a calibração, desliga o anti-vermelho, zera os ajustes de imagem e devolve a câmera aos valores de fábrica (brilho, contraste, nitidez…) e ao automático. Fotos e vídeos não são apagados.</p>
-        <div class="btnrow"><button class="btn" id="btnResetAll">Retornar aos parâmetros normais</button></div>
+        <div class="btnrow"><button class="btn" id="btnResetAll">Voltar ao padrão</button></div>
       </div>
 
       <!-- ===== TESTE ISOLADO: formato do vídeo entregue pela câmera ===== -->
@@ -631,7 +730,7 @@
       </details>
 
       <div class="keys">
-        <kbd>W</kbd> calibrar · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
+        <kbd>W</kbd> balanço de branco · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
         <kbd>A</kbd> anti-vermelho · <kbd>C</kbd> antes×depois · <kbd>B</kbd> comparar ampliação · <kbd>M</kbd> método de ampliação · <kbd>N</kbd> todos os métodos · <kbd>Z</kbd> lupa · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>L</kbd> métrica · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
       </div>
     </aside>
@@ -639,17 +738,33 @@
 
   <!-- ================= TUTORIAL ================= -->
   <section class="view" id="pront">
-    <div id="prWrap"><div id="prNav"><button data-scr="pacientes">Pacientes</button><button data-scr="config">Configurações</button><div id="prBackWarn" hidden></div></div>
+    <div id="prWrap"><div id="prNav"><button data-scr="pacientes">Pacientes</button><button data-scr="config">Configurações</button></div>
+    <div id="prSub"><button data-scr="hoje">Hoje</button><button data-scr="pacientes">Pacientes</button><button data-scr="laudos">Exames e laudos</button><button data-scr="relatorios">Relatórios</button><div id="prBackWarn" hidden></div></div>
     <div id="prMain"></div></div>
   </section>
-  <section class="view" id="tutorial">
+  <section class="view" id="adv"><div id="advIn">
+    <div id="advLock"><div class="lk">🔒</div><h2 style="margin:0 0 6px">Configurações avançadas</h2>
+      <div style="color:var(--dim)">Área do fabricante: câmera, sinal de vídeo, chip, lente e testes de bancada. Alterações aqui afetam a imagem de todos os exames.</div>
+      <input type="password" id="advPw" inputmode="numeric" maxlength="12" placeholder="senha" autocomplete="off"><button class="btn primary" id="advGo" style="width:100%;height:42px">Desbloquear</button>
+      <p id="advMsg" style="color:var(--dim);font-size:13px;margin:10px 0 0">Acesso registrado na auditoria.</p></div>
+    <div id="advBody" hidden><div id="advHead"><div><h2>Avançado · fabricante</h2><div class="sub" id="advSub"></div></div><span class="spacer" style="flex:1"></span><button class="btn" id="advLockBtn">Bloquear agora</button></div>
+      <div id="advGrid"><div class="card" id="advCam"><h2>Câmera e sinal de vídeo</h2><div class="btnrow" style="flex-direction:column;align-items:stretch;gap:8px"><select id="cam" title="Câmera"></select>
+    <select id="res" title="Resolução de ENTRADA (o que é pedido à câmera). A saída é sempre ampliada para 1080 de altura (Lanczos-3).">
+      <option value="400x400" selected>Entrada 400×400</option>
+      <option value="640x480">Entrada 640×480</option>
+      <option value="1280x720">Entrada 1280×720</option>
+      <option value="1920x1080">Entrada 1920×1080</option>
+    </select></div>
+        <p class="desc" style="margin:8px 0 0">Entrada pedida à câmera. A saída é sempre ampliada para 1080 de altura.</p></div></div></div>
+  </div></section>
+  <section class="view dk" id="tutorial">
     <div class="tut">
       <div class="tut-head">
         <h2>Tutorial</h2>
         <p>Cada demonstração usa o mesmo processamento de imagem do aplicativo, sobre uma cena simulada de tecido com sangue, reflexos e uma gaze branca.</p>
       </div>
       <div class="tut-nav">
-        <button class="btn sm" data-goto="t1">1 · Calibrar o branco</button>
+        <button class="btn sm" data-goto="t1">1 · Balanço de branco</button>
         <button class="btn sm" data-goto="t2">2 · Evitar estouro de luz</button>
         <button class="btn sm" data-goto="t3">3 · Anti-vermelho</button>
         <button class="btn sm" data-goto="t4">4 · Ajustes de imagem</button>
@@ -660,13 +775,13 @@
 
       <article class="lesson" id="t1">
         <div>
-          <h3><span class="num">1</span>Calibrar o branco</h3>
+          <h3><span class="num">1</span>Balanço de branco</h3>
           <p>Cada combinação de ótica, cabo de luz e fonte deixa a imagem com um tom diferente (amarelado, azulado). A calibração mede uma referência branca e corrige as três cores para que o branco fique branco — e, com ele, o tecido fique com a cor real.</p>
           <ol>
             <li>Ligue a fonte de luz e aponte para a <b>gaze ou alvo branco</b>, na distância de trabalho.</li>
             <li>Preencha o <b>quadrado amarelo</b> só com o branco, sem sombra nem borda.</li>
-            <li>Toque em <b>Calibrar branco</b> (tecla W).</li>
-            <li>Confira: em <i>Após calibração</i>, os três números devem ficar praticamente iguais.</li>
+            <li>Toque em <b>Balanço de branco</b> (tecla W).</li>
+            <li>Confira: em <i>Após o balanço</i> (tela Avançado), os três números devem ficar praticamente iguais.</li>
           </ol>
           <div class="note">Refaça sempre que trocar a ótica, o cabo de luz ou a fonte. Se aparecer "referência escura", aproxime o alvo ou aumente a luz; se aparecer "referência saturada", afaste ou diminua a luz.</div>
         </div>
@@ -761,6 +876,7 @@
     </div>
   </section>
 </main>
+</div>
 
 <div id="prAuth" hidden></div><div id="prModal" hidden></div><div id="prToast"></div>
 <script>
@@ -869,7 +985,7 @@
   // ================= botões: efeito de pressionar + vibração =================
   function pressFx(el) { if (!el) return; el.classList.add("pressed"); setTimeout(() => el.classList.remove("pressed"), 130); }
   document.addEventListener("pointerdown", e => {
-    const b = e.target.closest(".btn, .tabs button, .thumb");
+    const b = e.target.closest(".btn, .nb, .thumb");
     if (b && navigator.vibrate) { try { navigator.vibrate(8); } catch (x) {} }
   });
   document.addEventListener("click", e => { const b = e.target.closest("button"); if (b) b.blur(); });
@@ -878,12 +994,10 @@
   let tab = "imagem";
   function showTab(t, anchor) {
     tab = t;
-    document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === t));
     if (t === "imagem") fit();
     if (anchor) setTimeout(() => { const el = $(anchor); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
   }
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
   document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => showTab("tutorial", b.dataset.goto));
 
   // ================= estado =================
@@ -1584,10 +1698,10 @@
     else pill($("aex"), "travada", "ok");
     let msg = "", col = "var(--bad)";
     if (st.whiteBalanceMode === "continuous") {
-      if (!wbDone) msg = "A câmera está corrigindo a cor sozinha: a imagem muda conforme o ambiente. Calibre o branco para travar.";
-      else { msg = "Calibração feita ✓, mas esta câmera não aceitou travar a cor pelo navegador. Se a cor variar com o ambiente, desligue o automático no driver da câmera."; col = "var(--warn)"; }
+      if (!wbDone) msg = "A câmera está corrigindo a cor sozinha. Faça o balanço de branco para travar.";
+      else { msg = "Balanço de branco feito ✓, mas esta câmera não aceitou travar a cor pelo navegador. Se a cor variar com o ambiente, desligue o automático no driver da câmera."; col = "var(--warn)"; }
     } else if (!c.whiteBalanceMode && wbDone) {
-      msg = "Calibração feita ✓. Se a cor variar com o ambiente, desligue a correção automática no driver da câmera."; col = "var(--dim)";
+      msg = "Balanço de branco feito ✓. Se a cor variar com o ambiente, desligue a correção automática no driver da câmera."; col = "var(--dim)";
     }
     const w = $("awbWarn"); w.textContent = msg; w.style.color = col; w.style.display = msg ? "" : "none";
   }
@@ -1651,8 +1765,8 @@
     const g = store.get("wb:" + camKey);
     if (Array.isArray(g) && g.length === 3 && !g.every(x => x === 1)) {
       calRef = store.get("ref:" + camKey);
-      wbDone = true; setGains(g); setStatus("Calibração anterior carregada. Recalibre se trocou ótica, cabo ou fonte.", "ok"); lockHw();
-    } else { wbDone = false; setGains([1, 1, 1]); setStatus("Aponte para o branco e toque em Calibrar branco.", ""); }
+      wbDone = true; setGains(g); setStatus("Balanço de branco anterior carregado.", "ok"); lockHw();
+    } else { wbDone = false; setGains([1, 1, 1]); setStatus("Aponte para a gaze branca e toque em Balanço de branco.", ""); }
     showCamState();
   }
 
@@ -1790,8 +1904,8 @@
   // (antes media e só depois travava: a câmera mudava a cor ao travar e a correção "voltava")
   async function doWB() {
     if (calibrating) return;
-    if (frozen || freezeReq || srCap || srBusy) { setStatus("Descongele a imagem antes de calibrar.", "bad"); return; }
-    calibrating = true; $("btnWB").disabled = true; $("btnWB").textContent = "Calibrando…";
+    if (frozen || freezeReq || srCap || srBusy) { setStatus("Descongele a imagem antes do balanço de branco.", "bad"); return; }
+    calibrating = true; $("btnWB").disabled = true; $("btnWB").textContent = "Fazendo o balanço…";
     const prev = gains.slice(), prevDone = wbDone; let ok = false;
     try {
       setGains([1, 1, 1]);
@@ -1802,18 +1916,18 @@
       }
       setStatus("Medindo a referência…", "");
       const m = await measureFrames(12);
-      if (!m) { setStatus("Não calibrado: sem imagem da câmera.", "bad"); return; }
+      if (!m) { setStatus("Balanço de branco não feito: sem imagem da câmera.", "bad"); return; }
       const mean = m.sum.map(v => v / m.k), sat = m.sat.map(v => v / m.k);
       lastIn = mean;
-      if (sat.some(x => x > 0.02)) { setStatus("Não calibrado: referência saturada (branco estourado). Afaste o alvo ou reduza a luz.", "bad"); return; }
-      if (Math.max(...mean) < 40) { setStatus("Não calibrado: referência escura demais. Aproxime o alvo ou aumente a luz.", "bad"); return; }
+      if (sat.some(x => x > 0.02)) { setStatus("Balanço de branco não feito: branco estourado. Afaste a gaze ou reduza a luz.", "bad"); return; }
+      if (Math.max(...mean) < 40) { setStatus("Balanço de branco não feito: imagem escura. Aproxime a gaze ou aumente a luz.", "bad"); return; }
       calRef = mean; store.set("ref:" + camKey, mean);
       setGains(gainsFrom(mean, evlLevel)); store.set("wb:" + camKey, gains);
       wbDone = true; ok = true; setCmp(false);              // ao calibrar, volta a mostrar a imagem corrigida
-      setStatus("Branco calibrado e travado.", "ok"); showCamState();
+      setStatus("Balanço de branco feito.", "ok"); showCamState(); store.set("wbAt", Date.now()); if (typeof wbDoneStep === "function") wbDoneStep();
     } finally {
       if (!ok) { setGains(prev); wbDone = prevDone; }        // recusado: mantém a calibração anterior
-      calibrating = false; $("btnWB").disabled = false; $("btnWB").textContent = "Calibrar branco";
+      calibrating = false; $("btnWB").disabled = false; $("btnWB").textContent = "Balanço de branco";
     }
   }
   // devolve brilho/contraste/saturação/nitidez/exposição/temperatura da câmera aos valores de fábrica guardados
@@ -1834,9 +1948,9 @@
     calRef = null; store.set("ref:" + camKey, null);
     restoreHw();
     doReset();
-    setStatus("Parâmetros normais restaurados. Calibre o branco antes de usar.", "ok");
+    setStatus("Padrão restaurado. Faça o balanço de branco antes de usar.", "ok");
   }
-  function doReset() { setCmp(false); wbDone = false; setGains([1, 1, 1]); store.set("wb:" + camKey, gains); unlockHw(); setStatus("Calibração desfeita. Câmera em automático.", ""); }
+  function doReset() { setCmp(false); wbDone = false; setGains([1, 1, 1]); store.set("wb:" + camKey, gains); unlockHw(); setStatus("Balanço de branco desfeito.", ""); }
   function setCmp(on) {
     showOriginal = on; const b = $("btnCmp");
     b.classList.toggle("on", on); b.classList.toggle("primary", on);
@@ -2294,9 +2408,9 @@
     esrStrength = 1;                                           // Contornos por IA começa com a redução de ruído no máximo
     MT.open = true; MT.panels = [Object.assign(newPanel(im, origin, lens), { date: isoNow(), ref: null })]; MT.act = 0; MT.hist = []; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
     $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
-    $("metric").hidden = false; mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
+    $("metric").hidden = false; try { navSync(); } catch (e) {} mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
   function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
-    MT.open = false; MT.loupe = null; MT.pend = null; MT.target = null; MT.patient = null; $("metric").hidden = true; }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
+    MT.open = false; MT.loupe = null; MT.pend = null; MT.target = null; MT.patient = null; $("metric").hidden = true; try { navSync(); } catch (e) {} }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
   const nowTxt = () => { const d = new Date(), z = n => String(n).padStart(2, "0"); return z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
   const mmssc = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, "0") + ":" + s.toFixed(2).padStart(5, "0").replace(".", ","); };
   async function imageOfItem(it) {                             // foto da galeria → imagem na resolução da câmera
@@ -2340,6 +2454,7 @@
   mCv.addEventListener("wheel", e => { e.preventDefault(); const [x, y] = evXY(e), i = panelAt(x, y); if (i < 0) return; zoomAt(MT.panels[i], x, y, e.deltaY < 0 ? 1.15 : 1 / 1.15); mDraw(); }, { passive: false });
   mCv.addEventListener("pointerdown", e => {
     if (!MT.panels.length || !MT.panels[0].rect) return; e.preventDefault(); try { mCv.setPointerCapture(e.pointerId); } catch (x) {}
+    { const d = devicePixelRatio || 1, r = mCv.getBoundingClientRect(); if (Math.round(r.width * d) !== mCv.width || Math.round(r.height * d) !== mCv.height) mDraw(); else mLayout(); }   // layout atual (menu/painel podem ter mudado)
     const [x, y] = evXY(e); MT.ptrs.set(e.pointerId, [x, y]);
     if (MT.note) noteHide(true);
     if (MT.ptrs.size === 2) {                                  // dois dedos: pinça (zoom) e arrastar
@@ -2613,7 +2728,7 @@
     });
   }
   function takePhoto() {
-    if (testView()) return;
+    if (testView()) return; if (typeof wbDoneStep === "function") wbDoneStep(true);
     if (!cv.width) return; flash(); askPerm();
     const src = $("saveNative").checked ? cv : outCv;
     const isSR = !!(frozen && frozenSR);
@@ -2680,7 +2795,7 @@
         }
       });
       setStatus("Câmera atualizada.", "ok");
-    } else setStatus("A trava é aplicada quando você tocar em Calibrar branco.", "");
+    } else setStatus("A trava é aplicada no próximo balanço de branco.", "");
   }
   $("lockAwb").onchange = onLockToggle; $("lockAe").onchange = onLockToggle;
   $("btnCmpUp").onclick = () => setCmpMode(cmpMode === 1 ? 0 : 1);
@@ -2941,10 +3056,10 @@
       const out = render(c2, SCENE_CAST, lerp3([1, 1, 1], CAL_MIN, k));
       c2.strokeStyle = "#ffd400"; c2.lineWidth = 2; c2.strokeRect(GAUZE[0] + .5, GAUZE[1] + .5, GAUZE[2], GAUZE[3]);
       bars(c2, TW - 76, 96, meanRect(out, GAUZE));
-      btnShape(c2, 18, TH - 80, 130, "Calibrar branco", T > 2.9 && T < 3.3, true);
+      btnShape(c2, 18, TH - 80, 130, "Balanço de branco", T > 2.9 && T < 3.3, true);
       cap.innerHTML = T < 1.2 ? "Imagem com tom <span class='tag-name'>amarelado</span> da ótica/fonte" :
         T < 2.9 ? "Gaze branca dentro do <span class='tag-name'>quadrado amarelo</span>: R, G e B diferentes" :
-        T < 4.8 ? "Toque em <span class='tag-name'>Calibrar branco</span>…" :
+        T < 4.8 ? "Toque em <span class='tag-name'>Balanço de branco</span>…" :
         "Branco neutro: R = G = B — o tecido aparece com a <span class='tag-name'>cor real</span>";
     },
     norm(c2, t, cap) {
@@ -3034,7 +3149,7 @@
       render(c2, SCENE_CAST, CAL_MIN, null, 0, [half, 0, half, TH]);
       c2.fillStyle = "#000"; c2.fillRect(half - 1, 0, 2, TH);
       label(c2, "Câmera em AUTOMÁTICO", 8, 8, "#ff9a9a"); label(c2, "Cor travada", TW - 8, 8, "#b9ecd0", "right");
-      cap.innerHTML = "Esquerda: a cor <span class='tag-name'>muda sozinha</span> conforme o campo · Direita: estável após calibrar";
+      cap.innerHTML = "Esquerda: a cor <span class='tag-name'>muda sozinha</span> conforme o campo · Direita: estável após o balanço de branco";
     }
   };
 
@@ -3056,7 +3171,7 @@
   // Pastas de paciente só com o código (sem nome/CPF). Dados dentro dos .json. Nada é apagado na hora: vai para lixeira/.
   // =====================================================================================================
   const PR = { root: null, opfs: false, user: null, cons: {}, users: [], meds: [], insts: [], equips: [], index: null, pac: null, pacTab: "exames",
-    exam: null, scr: "pacientes", urls: [], camOnly: false };
+    exam: null, scr: "hoje", urls: [], camOnly: false, step: 0, heroOff: false };
   const FMT = 1, TIPOS = ["Nasofibrolaringoscopia", "Nasofibroscopia", "Laringoscopia flexível", "FEES — videoendoscopia da deglutição", "Sonoendoscopia (DISE)"];
   const z2 = n => String(n).padStart(2, "0");
   const isoNow = () => { const d = new Date(), tz = -d.getTimezoneOffset(), sg = tz >= 0 ? "+" : "-";
@@ -3141,7 +3256,7 @@
     if (users !== "?" && (!users || !users.length)) return authSetup2();
     authLogin(); }
   function authLogin(msg) {
-    authShow('<h2>Prontuário e laudos</h2><p class="au-sub">Pasta do consultório: <b>' + esc(PR.opfs ? "(pasta interna de teste)" : PR.root.name) + '</b></p>' +
+    authShow('<h2>Entrar</h2><p class="au-sub">Pasta: <b>' + esc(PR.opfs ? "(pasta interna de teste)" : PR.root.name) + '</b></p>' +
       '<label>Usuário</label><input id="auU" autocomplete="username"><label>Senha</label><input id="auP" type="password" autocomplete="current-password">' +
       (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
       '<div class="au-row"><button class="btn primary" id="auGo">Entrar</button><button class="btn" id="auCam" title="Usa a câmera sem acessar pacientes (bancada, testes)">Só câmera</button></div>' +
@@ -3155,9 +3270,7 @@
     $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); };
     $("auOther").onclick = e => { e.preventDefault(); authSetup1(true); }; }
   function authSetup1(back, msg) {
-    authShow('<h2>Onde salvar os dados do consultório</h2><p class="au-sub">Escolha o local e o sistema cria lá dentro a pasta <b>' + ROOT_NAME + '</b>: pacientes, exames, imagens e laudos ficam todos nela, nada solto.</p>' +
-      '<p class="au-sub">O navegador <b>não aceita a raiz do disco</b> (C:\\) nem pastas do sistema (Windows, Arquivos de Programas). Use uma pasta comum: por exemplo, abra o C:, clique em <b>“Nova pasta”</b>, crie <b>Consultorio</b> e escolha-a — os dados ficam em <b>C:\\Consultorio\\' + ROOT_NAME + '</b>. Evite Documentos e Área de Trabalho se o OneDrive estiver ativo (os dados iriam para a nuvem).</p>' +
-      '<p class="au-sub">Já tem os dados de outro computador ou de um backup? Escolha a pasta ' + ROOT_NAME + ' (ou a que a contém) para continuar de onde parou.</p>' + (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
+    authShow('<h2>Onde salvar os dados</h2><p class="au-sub">Ex.: crie <b>C:\\Consultorio</b> e escolha. O sistema cria a pasta <b>' + ROOT_NAME + '</b> dentro.</p>' + (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
       (window.showDirectoryPicker ? '<div class="au-row"><button class="btn primary" id="auPick">Escolher onde salvar…</button>' + (back ? '<button class="btn" id="auBack">Voltar</button>' : '') + '</div>'
         : '<p class="au-err">Este navegador não permite gravar numa pasta do computador. Use o Microsoft Edge ou o Google Chrome.</p>') +
       '<div class="au-row"><button class="btn" id="auCam">Só câmera (sem prontuário)</button></div>');
@@ -3167,8 +3280,8 @@
     if ($("auBack")) $("auBack").onclick = authLogin;
     $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); }; }
   function authSetup2(msg) {
-    authShow('<h2>Primeiro acesso</h2><p class="au-sub">Dados do consultório e do primeiro médico (que poderá cadastrar outros usuários).</p>' +
-      (PR.opfs ? '' : '<p class="au-sub">Os dados serão salvos na pasta <b>' + esc(PR.root.name) + '</b>. <a href="#" id="s0">Trocar o local…</a></p>') +
+    authShow('<h2>Primeiro acesso</h2><p class="au-sub">Consultório e primeiro médico.</p>' +
+      (PR.opfs ? '' : '<p class="au-sub">Pasta: <b>' + esc(PR.root.name) + '</b> · <a href="#" id="s0">trocar</a></p>') +
       '<label>Nome do consultório / clínica</label><input id="s1">' +
       '<div class="au-g2"><div><label>Nome do médico</label><input id="s2"></div><div><label>CRM</label><input id="s3" placeholder="000000"></div><div><label>UF</label><input id="s4" maxlength="2" placeholder="SP"></div><div><label>RQE (opcional)</label><input id="s5"></div></div>' +
       '<div class="au-g2"><div><label>Usuário</label><input id="s6" placeholder="ex.: ana.silva"></div><div><label>Senha (mín. 6)</label><input id="s7" type="password"></div></div>' +
@@ -3196,9 +3309,9 @@
     const med = isMed(), sec = PR.user && PR.user.perfil === "secretaria";
     $("prUser").textContent = PR.user ? PR.user.nome + " · " + (med ? "Médico" : "Secretária") : PR.camOnly ? "Só câmera" : "";
     $("prLogout").textContent = PR.user ? "Sair" : "Entrar";
-    document.querySelector('.tabs [data-tab="imagem"]').style.display = sec ? "none" : "";
-    if (sec || (PR.user && tab === "tutorial")) showTab("pront"); else if (PR.camOnly) showTab("imagem"); else showTab("pront");
-    PR.scr = "pacientes"; PR.pac = null; prRender(); exBadge(); backupReminder(); }
+    PR.scr = "hoje"; PR.pac = null; PR.step = 0; PR.heroOff = false;
+    if (med || PR.camOnly) showTab("imagem"); else showTab("pront");
+    prRender(); exBadge(); backupReminder(); navSync(); }
   $("prLogout").onclick = async () => { if (PR.exam) { setStatus("Encerre o exame em andamento antes de sair.", "bad"); return; }
     if (PR.user) { await audit("saiu"); PR.user = null; } PR.pac = null; PR.camOnly = false; prRender(); authStart(); };
   async function backupReminder() { if (!isMed()) return; const b = await readJSON(["_sistema", "backup.json"], {}); const days = b.ultimo ? (Date.now() - new Date(b.ultimo)) / 864e5 : 999;
@@ -3210,12 +3323,16 @@
   const objUrl = b => { const u = URL.createObjectURL(b); PR.urls.push(u); return u; };
   async function prRender() {
     freeUrls();
-    document.querySelectorAll("#prNav button").forEach(b => b.classList.toggle("on", b.dataset.scr === PR.scr || (PR.scr === "paciente" && b.dataset.scr === "pacientes")));
-    $("prNav").querySelector('[data-scr="config"]').style.display = isMed() ? "" : "none";
+    if (PR.scr === "exame") PR.step = 1; else if (PR.step === 1) PR.step = 0;
+    if (PR.step === 5 && PR.scr !== "laudo") PR.step = 0;
+    document.querySelectorAll("#prSub button").forEach(b => b.classList.toggle("on", b.dataset.scr === PR.scr || (PR.scr === "paciente" && b.dataset.scr === "pacientes") || (PR.scr === "laudo" && b.dataset.scr === "laudos")));
+    $("prSub").style.display = PR.scr === "config" || PR.scr === "exame" ? "none" : "";
+    $("prSub").querySelector('[data-scr="laudos"]').style.display = $("prSub").querySelector('[data-scr="relatorios"]').style.display = isMed() ? "" : "none";
+    navSync();
     if (!PR.user) { PM.innerHTML = '<div class="pr-card pr-empty"><h3>Prontuário</h3><p>Entre com usuário e senha para acessar pacientes, exames e laudos.</p><button class="btn primary" data-act="login">Entrar</button></div>'; return; }
-    try { await ({ pacientes: scrPacientes, paciente: scrPaciente, exame: scrNovoExame, laudo: scrLaudo, config: scrConfig }[PR.scr] || scrPacientes)(); }
+    try { await ({ hoje: scrHoje, pacientes: scrPacientes, paciente: scrPaciente, exame: scrNovoExame, laudo: scrLaudo, laudos: scrLaudos, relatorios: scrRelatorios, config: scrConfig }[PR.scr] || scrHoje)(); }
     catch (e) { console.error(e); PM.innerHTML = '<div class="pr-card"><p class="au-err">Erro ao abrir: ' + esc(e.message) + '</p></div>'; } }
-  document.querySelectorAll("#prNav button").forEach(b => b.onclick = () => go(b.dataset.scr, { pac: b.dataset.scr === "pacientes" ? null : PR.pac }));
+  document.querySelectorAll("#prSub button").forEach(b => b.onclick = () => go(b.dataset.scr, { pac: b.dataset.scr === "pacientes" ? null : PR.pac }));
   // ---------- modal genérico ----------
   const MD = $("prModal");
   function modal(title, html, buttons) { MD.innerHTML = '<div class="pr-mbox"><div class="pr-mhead"><b>' + esc(title) + '</b><button class="btn sm" data-x>Fechar</button></div><div class="pr-mbody">' + html + '</div><div class="pr-mfoot"></div></div>';
@@ -3238,7 +3355,7 @@
         return '<tr data-act="abrirPac" data-id="' + p.id + '"><td>' + p.id + '</td><td><b>' + esc(p.nome) + '</b></td><td>' + brDate(p.nascimento) + (p.nascimento ? ' (' + age(p.nascimento) + ')' : '') + '</td><td>' + esc(p.convenio) +
           '</td><td>' + (l ? brDate(l.data) + ' · ' + esc(l.tipo) : '—') + '</td><td>' + p.exames.length + '</td><td>' + (l && isMed() ? st(l.status) : '') + '</td></tr>'; }).join("")
         : '<tr><td colspan="7" class="pr-dim">Nenhum paciente' + (q ? ' encontrado' : ' cadastrado') + '.</td></tr>') + '</table></div>' +
-      (isMed() ? '' : '<p class="pr-dim">Perfil secretária: cadastro e documentos. Imagens, laudos e dados clínicos ficam restritos aos médicos.</p>');
+      (isMed() ? '' : '');
     const qi = $("prQ"); qi.oninput = () => { PR.q = qi.value; clearTimeout(PR.qt); PR.qt = setTimeout(() => { const pos = qi.selectionStart; scrPacientes().then(() => { const n = $("prQ"); n.focus(); n.setSelectionRange(pos, pos); }); }, 200); }; }
   function pacForm(p) {
     p = p || {}; const c = p.convenio || {}, r = p.responsavel || {};
@@ -3273,7 +3390,7 @@
     let html = '<div class="pr-card pr-pat"><div class="pr-big">' + esc(ini) + '</div><div><h3>' + esc(p.nome) + '</h3><div class="pr-dim"><b>' + p.id + '</b> · ' + age(p.nascimento) + ' (' + brDate(p.nascimento) + ')' + (p.sexo ? ' · ' + esc(p.sexo) : '') +
       ((p.convenio || {}).nome ? ' · ' + esc(p.convenio.nome) + (p.convenio.carteirinha ? ' (' + esc(p.convenio.carteirinha) + ')' : '') : '') + (p.telefone ? ' · ' + esc(p.telefone) : '') + '</div>' +
       (med && an.alergias ? '<div style="margin-top:6px"><span class="pill bad">Alergias: ' + esc(an.alergias) + '</span></div>' : '') + '</div>' +
-      '<div class="pr-acts"><button class="btn" data-act="editPac">Editar ficha</button>' + (med ? '<button class="btn primary" data-act="novoExame">+ Novo exame</button>' : '') + '</div></div>' +
+      '<div class="pr-acts"><button class="btn" data-act="editPac">Editar ficha</button>' + (med ? '<button class="btn primary pr-start" data-act="novoExame">📷 Iniciar exame</button>' : '') + '</div></div>' +
       '<div class="pr-tabs">' + tabs.map(([k, t]) => '<span data-act="pacTab" data-id="' + k + '" class="' + (k === PR.pacTab ? "on" : "") + '">' + t + '</span>').join("") + '</div><div id="prTabBody"></div>';
     PM.innerHTML = html; const B = $("prTabBody");
     if (PR.pacTab === "ficha") {
@@ -3307,12 +3424,12 @@
             '<button class="btn sm" data-act="dicom" data-id="' + dir + '">Exportar DICOM</button>' +
             (nImg(x) && ex.filter(([d2, x2]) => d2 !== dir && nImg(x2)).length ? '<button class="btn sm" data-act="cmpEx" data-id="' + dir + '">' + (() => { const o = ex.find(([d2, x2]) => d2 < dir && nImg(x2)); return o ? "Comparar com " + brDate(o[1].inicio) : "Comparar com…"; })() + '</button>' : '') + '</div>'; }
         h += '</div>'; }
-      B.innerHTML = h + '</div></div>' + (med ? '<p class="pr-dim">Toque numa imagem para abrir na Métrica (a comparação mostra só imagens deste paciente).</p>' : ''); }
+      B.innerHTML = h + '</div></div>' + ''; }
     else if (PR.pacTab === "documentos") {
       const docs = await listDir(["pacientes", id, "documentos"]);
       B.innerHTML = '<div class="pr-card"><div class="pr-acts"><button class="btn" data-act="termoImp">Imprimir termo de consentimento</button><button class="btn" data-act="termoAss">Assinar termo na tela</button>' +
         '<button class="btn primary" data-act="anexar">Anexar documento…</button><input type="file" id="prDocIn" hidden multiple accept="image/*,application/pdf"></div>' +
-        '<p class="pr-dim">Termos assinados, pedidos médicos, exames externos (PDF ou foto). O nome do arquivo começa pela data.</p>' +
+        '' +
         (docs.length ? docs.map(d => '<div class="pr-row"><a href="#" data-act="abrirDoc" data-id="' + esc(d.name) + '">' + esc(d.name) + '</a></div>').join("") : '<p class="pr-dim">Nenhum documento.</p>') + '</div>';
       $("prDocIn").onchange = async e => { for (const f of e.target.files) { const n = isoNow().slice(0, 10) + "_" + f.name.replace(/[\\/:*?"<>|]+/g, "-"); await writeFile(["pacientes", id, "documentos", n], f); await audit("anexou documento", id + " · " + n); } prRender(); }; } }
   // ---------- termo de consentimento ----------
@@ -3321,7 +3438,7 @@
     w.document.write('<!doctype html><meta charset="utf-8"><title>Termo de consentimento</title><body style="font:15px/1.6 Georgia,serif;max-width:680px;margin:40px auto"><h2 style="font:700 18px Arial">' + esc(PR.cons.nome || "") +
       '</h2><h3 style="font:700 15px Arial">TERMO DE CONSENTIMENTO — ' + esc((tipo || "").toUpperCase()) + '</h3><p>Paciente: ' + esc(p.nome) + ' · ' + p.id + '</p><p style="white-space:pre-wrap">' + esc(termoTexto(p, tipo)) + '</p><script>print()<\/script></body>'); w.document.close(); }
   function termoSign(p, tipo, done) {
-    modal("Termo de consentimento — assinatura na tela", '<p style="white-space:pre-wrap;font-size:14px">' + esc(termoTexto(p, tipo)) + '</p><canvas id="sigCv" width="640" height="180" style="width:100%;background:#fff;border-radius:8px;touch-action:none"></canvas><p class="pr-dim">Assine no quadro (dedo, caneta ou mouse).</p>',
+    modal("Termo de consentimento — assinatura na tela", '<p style="white-space:pre-wrap;font-size:14px">' + esc(termoTexto(p, tipo)) + '</p><canvas id="sigCv" width="640" height="180" style="width:100%;background:#fff;border-radius:8px;touch-action:none"></canvas><p class="pr-dim">Assine no quadro.</p>',
       [["Limpar", () => { const c = $("sigCv"); c.getContext("2d").clearRect(0, 0, c.width, c.height); }], ["Salvar termo assinado", async () => {
         const c = $("sigCv"), out = document.createElement("canvas"); out.width = 900; const x = out.getContext("2d"); x.font = "18px Georgia"; const lines = [];
         termoTexto(p, tipo).split("\n").forEach(par => { let s = ""; par.split(" ").forEach(wd => { if (x.measureText(s + wd).width > 840) { lines.push(s); s = ""; } s += wd + " "; }); lines.push(s); });
@@ -3346,10 +3463,10 @@
       field("xConv", "Convênio", p ? (p.convenio || {}).nome : "") + field("xGuia", "Guia / autorização", "") + '</div>' +
       '<label>Médico solicitante</label><input id="xSol" placeholder="Nome e CRM"><label>Indicação clínica</label><textarea id="xInd" rows="2"></textarea>' +
       (an.alergias ? '<div class="pr-warn">⚠ Alergias registradas: <b>' + esc(an.alergias) + '</b>. Confirmar antes da anestesia tópica.</div>' : '') + '</div>' +
-      '<div class="pr-card" style="flex:1"><h4>Termo de consentimento</h4>' + (p ? '<p class="pr-dim">Imprima para assinatura no papel (e anexe a foto depois em Documentos) ou assine na tela.</p>' +
-        '<div class="pr-acts"><button class="btn" data-act="termoImp">Imprimir termo</button><button class="btn" data-act="termoAssEx">Assinar na tela</button></div><p id="xTermoOk" class="pr-dim"></p>' : '<p class="pr-dim">Exame avulso: anexe o termo depois de vincular ao paciente.</p>') +
+      '<div class="pr-card" style="flex:1"><h4>Termo de consentimento</h4>' + (p ? '' +
+        '<div class="pr-acts"><button class="btn" data-act="termoImp">Imprimir termo</button><button class="btn" data-act="termoAssEx">Assinar na tela</button></div><p id="xTermoOk" class="pr-dim"></p>' : '<p class="pr-dim">Sem paciente: anexe o termo depois.</p>') +
       '<div class="pr-acts" style="margin-top:16px"><button class="btn primary" data-act="iniciar">Iniciar exame →</button><button class="btn" data-act="voltarPac">Cancelar</button></div>' +
-      '<p class="pr-dim">Ao iniciar, fotos, vídeos e métricas são gravados direto na pasta deste exame.</p></div></div>'; }
+      '</div></div>'; }
   async function startExam(resume) {
     if (items.some(it => !it.saved)) { setStatus("Há capturas não salvas na galeria. Salve ou exclua antes de iniciar o exame.", "bad"); return; }
     let pid = PR.pac, x, dir, base;
@@ -3368,7 +3485,9 @@
     const p = pid ? await readJSON(["pacientes", pid, "paciente.json"]) : null;
     PR.exam = { pid, dir, base, x, nome: p ? p.nome : "Exame avulso" }; PR.termoArq = null;
     const k = { F: 0, V: 0, M: 0 }; (x.midias || []).concat(x.metricas || []).forEach(m => { const mm = /\/([FVM])(\d{3})/.exec(m.arquivo || m.imagem || ""); if (mm) k[mm[1]] = Math.max(k[mm[1]], +mm[2]); }); PR.exam.k = k;
-    clearGallery(); exBadge(); showTab("imagem"); setStatus("Exame iniciado: " + PR.exam.nome + " · " + x.tipo + ". As capturas vão direto para o exame.", "ok"); }
+    clearGallery(); exBadge(); showTab("imagem"); setStatus("Exame iniciado · " + PR.exam.nome + ".", "ok");
+    const wa = +(store.get("wbAt") || 0); if (!wa || Date.now() - wa > 4 * 3600e3) { PR.step = 3; wbBanner(); } else { PR.step = 4; setStatus("Usando o balanço de branco de " + new Date(wa).toTimeString().slice(0, 5) + ".", "ok"); }
+    navSync(); }
   function clearGallery() { while (items.length) { const it = items.pop(); try { it.el.remove(); } catch (e) {} } $("gallery").classList.remove("has"); refreshSaveUi(); fit(); }
   function exBadge() { const b = $("prExam"); if (!PR.exam) { b.hidden = true; return; } b.hidden = false; $("prExamTxt").textContent = "EXAME EM ANDAMENTO · " + PR.exam.nome + " · " + PR.exam.x.tipo; }
   $("prExamEnd").onclick = async () => {
@@ -3378,7 +3497,7 @@
     if (E.pid) { const s = PR.index.pacientes[E.pid].exames.find(e => e.id === E.x.id); if (s) s.status = E.x.status; await saveIndex(); }
     await audit("encerrou exame", (E.pid || "avulso") + " · " + E.x.id); PR.exam = null; clearGallery(); exBadge();
     if (frozen) toggleFreeze();
-    showTab("pront"); if (E.pid) go("laudo", { pac: E.pid, ldir: E.dir, lbase: E.base }); else go("pacientes"); };
+    $("wbStep").hidden = true; showTab("pront"); if (E.pid) { PR.step = 5; go("laudo", { pac: E.pid, ldir: E.dir, lbase: E.base }); } else { PR.step = 0; go("hoje"); } };
   // ---------- capturas → pasta do exame ----------
   async function examSave(it, blob) { PR.saving = (PR.saving || 0) + 1; try { return await examSave1(it, blob); } finally { PR.saving--; } }
   async function examSave1(it, blob) {
@@ -3454,10 +3573,10 @@
       '<div class="pr-acts"><select id="lMod">' + mods.map(m => '<option value="' + esc(m.id) + '"' + (m.id === L.modelo ? " selected" : "") + '>' + esc(m.nome) + '</option>').join("") + '</select><button class="btn sm" data-act="lAplicar">Aplicar modelo</button><button class="btn sm" data-act="lSalvarMod">Salvar como meu modelo…</button></div>' +
       '<div id="lSecs">' + L.secoes.map((s, i) => '<div class="pr-sec"><div class="pr-acts"><input class="lt" data-i="' + i + '" value="' + esc(s.titulo) + '"><button class="btn sm" data-act="lDel" data-id="' + i + '" title="Remover seção">✕</button></div><textarea class="lx" data-i="' + i + '" rows="2">' + esc(s.texto) + '</textarea></div>').join("") + '</div>' +
       '<div class="pr-acts"><button class="btn sm" data-act="lAdd">+ seção</button></div><label>Conclusão</label><textarea id="lConc" rows="2">' + esc(L.conclusao) + '</textarea>' +
-      '<p class="pr-dim">O modelo é do próprio médico: apague seções que não interessam e escreva livremente.</p></div>' +
-      '<div class="pr-card" style="flex:1"><h4>Imagens do laudo</h4><p class="pr-dim">Toque para incluir/retirar (a ordem é a do toque). Escreva a legenda abaixo de cada uma.</p><div class="pr-pick">' + (gal || '<p class="pr-dim">Sem imagens neste exame.</p>') + '</div>' +
+      '</div>' +
+      '<div class="pr-card" style="flex:1"><h4>Imagens do laudo</h4><p class="pr-dim">Toque para incluir ou tirar.</p><div class="pr-pick">' + (gal || '<p class="pr-dim">Sem imagens neste exame.</p>') + '</div>' +
       '<div class="pr-acts" style="margin-top:12px"><button class="btn" data-act="lPrev">Pré-visualizar PDF</button><button class="btn primary" data-act="lFinal">Finalizar laudo</button><button class="btn" data-act="lRasc">Salvar rascunho</button><button class="btn" data-act="voltarPac">Voltar</button></div>' +
-      '<p class="pr-dim">Finalizar grava laudo_v' + ((x.laudos || []).length + 1) + '.pdf na pasta do exame; correções futuras geram nova versão (as anteriores ficam guardadas). Assinatura digital ICP-Brasil: 2ª fase.</p></div></div>'; }
+      ''; }
   function lCollect() { const L = PR.L.L; L.modelo = $("lMod").value; L.secoes = [...document.querySelectorAll("#lSecs .pr-sec")].map(d => ({ titulo: d.querySelector(".lt").value.trim(), texto: d.querySelector(".lx").value }));
     L.conclusao = $("lConc").value; document.querySelectorAll(".lcap").forEach(i => { const q = L.imagens.find(m => m.arquivo === i.dataset.id); if (q) q.legenda = i.value; }); return L; }
   // ---------- PDF (jsPDF local) ----------
@@ -3550,6 +3669,10 @@
     const medN = id => (PR.meds.find(m => m.id === id) || {}).nome || id, mx = Math.max(1, ...grp(e => e.convenio).map(r => r[1]));
     const bars = arr => arr.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + v + '</td><td style="width:45%"><div class="pr-barg"><i style="width:' + Math.round(100 * v / mx) + '%"></i></div></td></tr>').join("");
     const logs = await readBlob(["_sistema", "auditoria", isoNow().slice(0, 7) + ".log"]), logTxt = logs ? (await logs.text()).trim().split("\n").slice(-40).reverse() : [];
+    const relHtml = '<div class="pr-card"><h4>Relatórios</h4><div class="pr-acts"><select id="rPer">' + [["mes", "Mês atual"], ["mesant", "Mês anterior"], ["ano", "Ano atual"], ["tudo", "Tudo"]].map(([k, t]) => '<option value="' + k + '"' + (k === per ? " selected" : "") + '>' + t + '</option>').join("") + '</select><button class="btn sm" data-act="csv">Exportar planilha (CSV)</button></div>' +
+      '<div class="pr-kpi"><div><b>' + sel.length + '</b>exames</div><div><b>' + sel.filter(e => e.status === "laudado").length + '</b>laudados</div><div><b>' + sel.filter(e => e.status !== "laudado").length + '</b>pendentes</div><div><b>' + new Set(sel.map(e => e.id.slice(0, 0) + Object.values(PR.index.pacientes).find(p => p.exames.includes(e)).id)).size + '</b>pacientes</div></div>' +
+      '<table><tr><th colspan="3">Por convênio</th></tr>' + bars(grp(e => e.convenio)) + '<tr><th colspan="3">Por médico</th></tr>' + bars(grp(e => medN(e.medico))) + '<tr><th colspan="3">Por tipo</th></tr>' + bars(grp(e => e.tipo)) + '</table></div>';
+    if (PR.scr === "relatorios") { PM.innerHTML = '<div class="pr-cols"><div style="flex:1;min-width:0">' + relHtml + '</div></div>'; $("rPer").onchange = e => { PR.per = e.target.value; prRender(); }; return; }
     PM.innerHTML = '<div class="pr-cols"><div style="flex:1;min-width:0">' +
       '<div class="pr-card"><h4>Consultório</h4><div class="pr-g2">' + '<div><label>Nome</label><input id="cNome" value="' + esc(PR.cons.nome) + '"></div><div><label>Cidade (para o termo)</label><input id="cCid" value="' + esc(PR.cons.cidade) + '"></div></div>' +
       '<label>Termo de consentimento (use {paciente}, {exame}, {data})</label><textarea id="cTermo" rows="5">' + esc(PR.cons.termo || TERMO_PADRAO) + '</textarea><div class="pr-acts" style="margin-top:8px"><button class="btn primary" data-act="cfgCons">Salvar</button></div></div>' +
@@ -3557,16 +3680,14 @@
       '<div class="pr-card"><h4>Locais (hospital, clínica, laboratório)</h4>' + rows(PR.insts, i => esc(i.nome) + ' <span class="pr-dim">(' + esc(i.tipo) + ')</span>', "inst") + '</div>' +
       '<div class="pr-card"><h4>Equipamentos</h4>' + rows(PR.equips, e => esc(e.modelo) + (e.serie ? ' · nº série ' + esc(e.serie) : ''), "eq") + '</div>' +
       '<div class="pr-card"><h4>Usuários e perfis</h4>' + rows(PR.users.map(u => Object.assign({ id: u.login }, u)), u => esc(u.login) + ' · ' + esc(u.nome) + ' · <b>' + (u.perfil === "medico" ? "Médico" : "Secretária") + '</b>' + (u.ativo === false ? ' <span class="pill">inativo</span>' : ''), "user") +
-      '<p class="pr-dim">Secretária: cadastra pacientes e documentos; não vê imagens, laudos nem dados clínicos.</p></div>' +
-      '<div class="pr-card"><h4>Modelos de laudo (seus)</h4><p class="pr-dim">Crie e edite os modelos direto no editor de laudo (“Salvar como meu modelo…”).</p></div></div>' +
+      '</div>' +
+      '<div class="pr-card"><h4>Modelos de laudo (seus)</h4><p class="pr-dim">Use “Salvar como meu modelo…” no laudo.</p></div></div>' +
       '<div style="flex:1;min-width:0"><div class="pr-card"><h4>Backup</h4><p>Último backup: <b>' + (b.ultimo ? brDT(b.ultimo) + '</b> em <b>' + esc(b.destino || "") : 'nunca') + '</b></p>' +
       '<div class="pr-acts"><button class="btn primary" data-act="backup">Fazer backup agora…</button><button class="btn" data-act="restaurar">Restaurar (usar pasta de backup)…</button><button class="btn" data-act="reindex">Refazer índice</button></div>' +
-      '<p class="pr-dim">O backup copia a pasta inteira (pacientes, imagens, laudos) para outro disco. Lembrete na entrada quando passar de 1 dia.</p></div>' +
-      '<div class="pr-card"><h4>Relatórios</h4><div class="pr-acts"><select id="rPer">' + [["mes", "Mês atual"], ["mesant", "Mês anterior"], ["ano", "Ano atual"], ["tudo", "Tudo"]].map(([k, t]) => '<option value="' + k + '"' + (k === per ? " selected" : "") + '>' + t + '</option>').join("") + '</select><button class="btn sm" data-act="csv">Exportar planilha (CSV)</button></div>' +
-      '<div class="pr-kpi"><div><b>' + sel.length + '</b>exames</div><div><b>' + sel.filter(e => e.status === "laudado").length + '</b>laudados</div><div><b>' + sel.filter(e => e.status !== "laudado").length + '</b>pendentes</div><div><b>' + new Set(sel.map(e => e.id.slice(0, 0) + Object.values(PR.index.pacientes).find(p => p.exames.includes(e)).id)).size + '</b>pacientes</div></div>' +
-      '<table><tr><th colspan="3">Por convênio</th></tr>' + bars(grp(e => e.convenio)) + '<tr><th colspan="3">Por médico</th></tr>' + bars(grp(e => medN(e.medico))) + '<tr><th colspan="3">Por tipo</th></tr>' + bars(grp(e => e.tipo)) + '</table></div>' +
+      '</div>' +
       '<div class="pr-card"><h4>Auditoria (mês atual)</h4><div class="pr-log">' + (logTxt.length ? logTxt.map(esc).join("<br>") : '<span class="pr-dim">vazio</span>') + '</div></div></div></div>';
-    $("rPer").onchange = e => { PR.per = e.target.value; prRender(); }; }
+  }
+  const scrRelatorios = () => scrConfig();
   function cfgEdit(kind, id) {
     if (kind === "med") { const m = PR.meds.find(q => q.id === id) || {};
       modal(m.id ? "Médico " + m.id : "Novo médico", '<div class="pr-g2">' + field("mNome", "Nome", m.nome) + field("mEsp", "Especialidade", m.especialidade || "Otorrinolaringologia") + field("mCrm", "CRM", m.crm) + field("mUf", "UF", m.uf) + field("mRqe", "RQE", m.rqe) + '</div>' +
@@ -3603,7 +3724,7 @@
       case "login": authStart(); break;
       case "abrirPac": go("paciente", { pac: id, pacTab: isMed() ? "exames" : "ficha" }); break;
       case "pacTab": PR.pacTab = id; prRender(); break;
-      case "novoPac": modal("Novo paciente", pacForm(), [["Salvar", async () => { const p = await savePac(); if (p) { MD.hidden = true; go("paciente", { pac: p.id, pacTab: isMed() ? "exames" : "ficha" }); } }, "primary"]]); break;
+      case "novoPac": modal("Novo paciente", pacForm(), [["Salvar", async () => { const p = await savePac(); if (p) { MD.hidden = true; if (PR.afterNovo) { PR.afterNovo = false; go("exame", { pac: p.id }); } else go("paciente", { pac: p.id, pacTab: isMed() ? "exames" : "ficha" }); } }, "primary"]]); MD.querySelector("[data-x]").addEventListener("click", () => { PR.afterNovo = false; }); break;
       case "editPac": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); modal("Editar ficha · " + p.id, pacForm(p), [["Salvar", async () => { if (await savePac(p)) { MD.hidden = true; prRender(); } }, "primary"]]); break; }
       case "saveAnt": { const old = await readJSON(["pacientes", PR.pac, "antecedentes.json"]); if (old) await writeJSON(["pacientes", PR.pac, "historico", "antecedentes_" + (old.atualizado_em || isoNow()).replace(/[:+]/g, "-") + ".json"], old);
         const o = { formato: FMT, atualizado_em: isoNow(), por: PR.user.nome }; ["queixa", "doencas", "cirurgias", "medicacoes", "alergias", "outros"].forEach(k => o[k] = $("an_" + k).value.trim());
@@ -3629,7 +3750,7 @@
         const exLab = d => { const q = all.find(z => dirOf(z) === d); return brDT(q.x.inicio) + " · " + q.x.tipo.split(" —")[0]; };
         modal("Comparar exames na Métrica", '<h4>Imagem deste exame (' + exLab(id) + ')</h4><div class="pr-pick" id="cmA">' + await thumbs(mine, "a") + '</div>' +
           '<h4>Comparar com</h4><select id="cmEx">' + others.map(d => '<option value="' + d + '"' + (d === prev ? " selected" : "") + '>' + esc(exLab(d)) + '</option>').join("") + '</select><div class="pr-pick" id="cmB" style="margin-top:8px"></div>' +
-          '<p class="pr-dim">A imagem mais antiga fica à esquerda. Marcações já feitas nessas imagens são carregadas.</p>', [["Abrir na Métrica", async () => { if (!sel.b) return; MD.hidden = true; await openCompare(pid, sel.a, sel.b); }, "primary"]]);
+          '', [["Abrir na Métrica", async () => { if (!sel.b) return; MD.hidden = true; await openCompare(pid, sel.a, sel.b); }, "primary"]]);
         const fillB = async () => { const L = all.filter(q => dirOf(q) === MD.querySelector("#cmEx").value); sel.listB = L; sel.b = L[0] || null; MD.querySelector("#cmB").innerHTML = await thumbs(L, "b"); };
         MD.querySelector("#cmEx").onchange = fillB; await fillB();
         MD.querySelector(".pr-mbody").onclick = ev => { const t = ev.target.closest("[data-k]"); if (!t) return; const [g, k] = t.dataset.k.split("|");
@@ -3658,7 +3779,7 @@
       case "lAdd": { lCollect(); PR.L.L.secoes.push({ titulo: "Nova seção", texto: "" }); PR.L.x.laudo_rascunho = PR.L.L; await scrLaudoKeep(); break; }
       case "lDel": { lCollect(); PR.L.L.secoes.splice(+id, 1); PR.L.x.laudo_rascunho = PR.L.L; await scrLaudoKeep(); break; }
       case "lAplicar": { lCollect(); const m = PR.L.mods.find(q => q.id === $("lMod").value); if (!m) return; Object.assign(PR.L.L, { modelo: m.id, secoes: JSON.parse(JSON.stringify(m.secoes)), conclusao: m.conclusao || "" }); PR.L.x.laudo_rascunho = PR.L.L; await scrLaudoKeep(); break; }
-      case "lSalvarMod": { const L = lCollect(); modal("Salvar como meu modelo", field("mdNome", "Nome do modelo", (PR.L.mods.find(q => q.id === L.modelo) || {}).nome || "Meu modelo") + '<p class="pr-dim">Se já existir um modelo com este nome, ele será substituído.</p>', [["Salvar", async () => {
+      case "lSalvarMod": { const L = lCollect(); modal("Salvar como meu modelo", field("mdNome", "Nome do modelo", (PR.L.mods.find(q => q.id === L.modelo) || {}).nome || "Meu modelo") + '<p class="pr-dim">Mesmo nome substitui o modelo.</p>', [["Salvar", async () => {
           const nome = mv("mdNome") || "Meu modelo", mods = PR.L.mods, ex = mods.find(q => q.nome === nome), o = { id: ex ? ex.id : "m" + Date.now(), nome, secoes: L.secoes, conclusao: L.conclusao };
           if (ex) Object.assign(ex, o); else mods.push(o); L.modelo = o.id; await writeJSON(["cadastros", "modelos_laudo", PR.L.medId + ".json"], mods); MD.hidden = true; setStatus("Modelo “" + nome + "” salvo.", "ok"); await scrLaudoKeep(); }, "primary"]]); break; }
       case "lRasc": { PR.L.x.laudo_rascunho = lCollect(); await writeJSON([...PR.L.base, "exame.json"], PR.L.x); setStatus("Rascunho do laudo salvo.", "ok"); break; }
@@ -3684,6 +3805,125 @@
     } } catch (er) { console.error(er); setStatus("Erro: " + er.message, "bad"); } });
   async function scrLaudoKeep() { const sy = PM.scrollTop; freeUrls(); await scrLaudo(true); PM.scrollTop = sy; }
   // ---------- início ----------
+  // =====================================================================================================
+  // ============ v6.2 · navegação: Exame · Métrica · Prontuário · Configurações · Avançado ================
+  // =====================================================================================================
+  $("sideLogo").src = LOGO_FM;
+  // ----- cards de bancada vão para Avançado (os elementos são movidos; os eventos continuam valendo) -----
+  (() => { const G = $("advGrid"), card = id => { const e = $(id); return e ? e.closest(".card") : null; };
+    [card("awb"), card("upSeg"), card("lnFov"), card("srSeg"), $("fmtCard"), document.querySelector("aside .keys")].forEach(c => { if (c) { if (c.tagName === "DETAILS") c.open = true; G.append(c); } });
+    $("cam").style.width = $("res").style.width = "100%"; })();
+  // ----- balanço de branco: o médico vê só o botão; leituras RGB e coeficientes ficam no Avançado -----
+  (() => { const c = document.createElement("div"); c.className = "card"; c.id = "advWB";
+    c.innerHTML = '<h2>Balanço de branco · leituras e coeficientes</h2><div id="advWBrows"></div><div class="btnrow" style="margin-top:8px"><button class="btn primary" id="btnWB2">Balanço de branco</button></div>';
+    $("advGrid").insertBefore(c, $("advGrid").children[1] || null);
+    [$("inR"), $("outR"), $("gR")].forEach(e => $("advWBrows").append(e.closest(".row"))); $("advWBrows").append($("btnCmp").closest(".btnrow"));
+    $("btnWB2").onclick = () => doWB(); })();
+  // ----- tema claro / escuro -----
+  try { const t = localStorage.getItem("tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  $("thBtn").onclick = () => { const n = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n; try { localStorage.setItem("tema", n); } catch (e) {} };
+  $("sideTut").onclick = () => showTab("tutorial");
+  // ----- busca global -----
+  $("gSearch").onkeydown = e => { if (e.key === "Enter") { const q = e.target.value.trim(); if (!PR.user) { showTab("pront"); return; } PR.q = q; showTab("pront"); go("pacientes", { pac: null }); e.target.blur(); } };
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("gSearch").focus(); $("gSearch").select(); } });
+  // ----- menu lateral -----
+  document.querySelectorAll("#side [data-nav]").forEach(b => b.onclick = () => navGo(b.dataset.nav));
+  function navGo(n) {
+    if (n !== "metrica" && MT.open) metricClose();
+    if (n === "exame") { if (PR.step === 1) { showTab("pront"); go("exame"); } else { showTab("imagem"); } }
+    else if (n === "metrica") { if (!MT.open) { if (viewing || frozen || items.length || cv.width) metricFromCurrent(); } showTab("imagem"); }
+    else if (n === "pront") { showTab("pront"); if (!PR.user) { prRender(); return; } if (["config", "exame"].includes(PR.scr)) go("hoje"); else prRender(); }
+    else if (n === "config") { showTab("pront"); if (!PR.user) { prRender(); return; } go("config"); }
+    else if (n === "adv") { showTab("adv"); advRender(); }
+    navSync(); }
+  function navSync() {
+    const med = isMed(), sec = PR.user && PR.user.perfil === "secretaria", cam = !sec;
+    const act = tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "";
+    document.querySelectorAll("#side [data-nav]").forEach(b => { b.classList.toggle("on", b.dataset.nav === act);
+      b.hidden = (b.dataset.nav === "exame" || b.dataset.nav === "metrica") ? !cam : b.dataset.nav === "config" ? !med : false; });
+    $("hdrStart").hidden = !med || !!PR.exam || PR.step > 0 || (tab === "imagem" && !$("exHero").hidden);
+    document.querySelector("#top .hdr-ctl").hidden = tab !== "imagem" || MT.open;
+    if ($("imagem").classList.contains("mopen") !== !!MT.open) { $("imagem").classList.toggle("mopen", !!MT.open); fit(); if (MT.open) setTimeout(mDraw, 30); }
+    $("exHero").hidden = !(tab === "imagem" && med && !PR.exam && !MT.open && !viewing && !PR.heroOff && PR.step === 0);
+    if (PR.exam && PR.step === 0) PR.step = 4; if (!PR.exam && (PR.step === 3 || PR.step === 4)) PR.step = 0;
+    $("wbStep").hidden = !(PR.step === 3 && tab === "imagem" && !MT.open);
+    const S = ["Dados do exame", "Termo de consentimento", "Balanço de branco", "Captura", "Laudo"], st = PR.step, steps = $("exSteps");
+    steps.hidden = !st; if (st) { const cls = k => st === 1 ? (k < 2 ? "on" : "") : k + 1 < st ? "done" : k + 1 === st ? "on" : "";
+      const html = S.map((t, k) => '<div class="st ' + cls(k) + '"><i>' + (cls(k) === "done" ? "✓" : k + 1) + '</i>' + t + '</div>').join(""); if (steps.innerHTML !== html) steps.innerHTML = html; }
+    if (PR.advUntil && Date.now() > PR.advUntil) { PR.advUntil = 0; if (tab === "adv") advRender(); }
+    const np = PR.index ? Object.values(PR.index.pacientes).reduce((n, p) => n + p.exames.filter(e => e.status === "aguardando laudo").length, 0) : 0;
+    $("navPend").hidden = !med || !np; $("navPend").textContent = np;
+    if (!$("exHero").hidden && !PR.heroDrawn) heroRender(); if ($("exHero").hidden) PR.heroDrawn = false; }
+  setInterval(navSync, 300);
+  // ----- tela de início do exame (sobre a imagem da câmera) -----
+  function heroList(q) {
+    if (!PR.index) return []; const n = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""), qq = n(q), dig = qq.replace(/\D/g, "");
+    return Object.values(PR.index.pacientes).filter(p => !qq || n(p.nome).includes(qq) || p.id.toLowerCase().includes(qq) || (dig && (p.cpf || "").replace(/\D/g, "").includes(dig)))
+      .sort((a, b) => ((b.exames.slice(-1)[0] || {}).data || b.id).localeCompare((a.exames.slice(-1)[0] || {}).data || a.id)).slice(0, 5); }
+  function heroRender() {
+    PR.heroDrawn = true; const L = heroList($("heroQ").value);
+    if (PR.heroSel && !PR.index.pacientes[PR.heroSel]) PR.heroSel = null;
+    $("heroL").innerHTML = L.length ? L.map(p => { const l = p.exames.slice(-1)[0], ini = p.nome.split(/\s+/).filter(Boolean).map(x => x[0]).slice(0, 2).join("").toUpperCase();
+      return '<div class="it' + (p.id === PR.heroSel ? " sel" : "") + '" data-id="' + p.id + '"><div class="av">' + esc(ini) + '</div><div style="flex:1;min-width:0"><div style="font-weight:600">' + esc(p.nome) + '</div><div class="sec">' + p.id +
+        (p.nascimento ? ' · ' + age(p.nascimento) : '') + (p.convenio ? ' · ' + esc(p.convenio) : '') + (l ? ' · último exame ' + brDate(l.data) : '') + '</div></div>' + (p.id === PR.heroSel ? '<span class="pill ok">selecionado</span>' : '') + '</div>'; }).join("")
+      : '<div class="it" style="cursor:default"><span class="sec">' + ($("heroQ").value ? "Nenhum paciente encontrado. Use “+ Paciente novo”." : "Nenhum paciente cadastrado ainda.") + '</span></div>';
+    const p = PR.heroSel && PR.index.pacientes[PR.heroSel]; $("heroHint").textContent = p ? "Paciente: " + p.nome + " (" + p.id + ")" : "Escolha o paciente."; }
+  $("heroQ").oninput = () => { PR.heroSel = null; heroRender(); };
+  $("heroQ").onkeydown = e => { if (e.key === "Enter") { const L = heroList($("heroQ").value); if (L.length === 1 || (L.length && !PR.heroSel)) { PR.heroSel = L[0].id; heroRender(); } else if (PR.heroSel) $("heroGo").click(); } };
+  $("heroL").onclick = e => { const it = e.target.closest("[data-id]"); if (!it) return; PR.heroSel = it.dataset.id; heroRender(); };
+  $("heroL").ondblclick = e => { const it = e.target.closest("[data-id]"); if (it) { PR.heroSel = it.dataset.id; $("heroGo").click(); } };
+  $("heroGo").onclick = () => { if (!PR.heroSel) { setStatus("Escolha o paciente na lista antes de iniciar.", "bad"); $("heroQ").focus(); return; }
+    if (items.some(it => !it.saved)) { setStatus("Há capturas não salvas na galeria. Salve ou exclua antes de iniciar o exame.", "bad"); return; }
+    showTab("pront"); go("exame", { pac: PR.heroSel }); };
+  $("heroNew").onclick = () => { showTab("pront"); PR.afterNovo = true; PM.querySelector('[data-act="novoPac"]') ? PM.querySelector('[data-act="novoPac"]').click() : (go("pacientes"), setTimeout(() => { const b = PM.querySelector('[data-act="novoPac"]'); if (b) b.click(); }, 150)); };
+  $("heroUrg").onclick = () => { showTab("pront"); go("exame", { pac: null }); };
+  $("heroX").onclick = () => { PR.heroOff = true; navSync(); setStatus("Só a câmera. Para um exame com paciente, use “Iniciar exame” no alto.", ""); };
+  $("hdrStart").onclick = () => { PR.heroOff = false; if (MT.open) metricClose(); if (viewing) closeViewer(); showTab("imagem"); navSync(); setTimeout(() => $("heroQ").focus(), 50); };
+  // ----- etapa 3: calibrar o branco (pula se a calibração é recente) -----
+  function wbBanner() { const wa = +(store.get("wbAt") || 0); $("wbUse").hidden = !wa; if (wa) $("wbUse").textContent = "Usar o de " + (new Date(wa).toDateString() === new Date().toDateString() ? "hoje " : new Date(wa).toLocaleDateString("pt-BR") + " ") + new Date(wa).toTimeString().slice(0, 5); }
+  function wbDoneStep(quiet) { if (PR.step !== 3) return; PR.step = 4; navSync(); if (!quiet) setStatus("Balanço de branco feito. Pode capturar.", "ok"); }
+  $("wbGo").onclick = () => doWB();
+  $("wbUse").onclick = () => wbDoneStep(true);
+  $("wbSkip").onclick = () => { wbDoneStep(true); setStatus("Balanço de branco pulado. Dá para fazer a qualquer momento no painel ao lado.", ""); };
+  // ----- Avançado (senha do fabricante) -----
+  const ADV_PASS = "123456";
+  function advRender() { const ok = PR.advUntil && Date.now() < PR.advUntil; $("advLock").hidden = !!ok; $("advBody").hidden = !ok;
+    if (ok) $("advSub").textContent = "Desbloqueado · bloqueia sozinho às " + new Date(PR.advUntil).toTimeString().slice(0, 5); else { $("advPw").value = ""; setTimeout(() => $("advPw").focus(), 30); } }
+  $("advGo").onclick = async () => { if ($("advPw").value === ADV_PASS) { PR.advUntil = Date.now() + 15 * 60e3; $("advMsg").textContent = "Acesso registrado na auditoria."; if (PR.user) await audit("abriu configurações avançadas"); advRender(); }
+    else { $("advMsg").textContent = "Senha incorreta."; $("advMsg").style.color = "var(--bad)"; if (PR.user) await audit("senha do avançado incorreta"); $("advPw").select(); } };
+  $("advPw").onkeydown = e => { if (e.key === "Enter") $("advGo").click(); };
+  $("advLockBtn").onclick = () => { PR.advUntil = 0; advRender(); };
+  // ----- Prontuário: Hoje (sem agenda) e Exames e laudos -----
+  function allExams() { return PR.index ? Object.values(PR.index.pacientes).flatMap(p => p.exames.map(e => Object.assign({ p }, e))) : []; }
+  const stPill = s => s === "laudado" ? '<span class="pill ok">laudo finalizado</span>' : s === "em andamento" ? '<span class="pill warn">em andamento</span>' : '<span class="pill warn">laudo pendente</span>';
+  async function scrHoje() {
+    const med = isMed(), today = isoNow().slice(0, 10), ex = allExams(), hoje = ex.filter(e => (e.data || "").startsWith(today)).sort((a, b) => a.data.localeCompare(b.data)), pend = ex.filter(e => e.status === "aguardando laudo").sort((a, b) => b.data.localeCompare(a.data));
+    const b = await readJSON(["_sistema", "backup.json"], {}), days = b.ultimo ? Math.floor((Date.now() - new Date(b.ultimo)) / 864e5) : null;
+    const d = new Date(), dia = d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const row = e => '<div class="pr-row" data-act="abrirPac" data-id="' + e.p.id + '" style="cursor:pointer"><span><b class="mono" style="font-weight:400;color:var(--dim);margin-right:10px">' + (e.data || "").slice(11, 16) + '</b><b>' + esc(e.p.nome) + '</b> <span class="pr-dim">· ' + esc(e.tipo) + (e.convenio ? ' · ' + esc(e.convenio) : '') + '</span></span>' + (med ? stPill(e.status) : '') + '</div>';
+    PM.innerHTML = '<div class="pr-bar" style="justify-content:space-between"><div><h3 style="margin:0;font-size:22px">' + (PR.user.perfil === "medico" ? "Olá, " + esc(PR.user.nome.split(" ")[0]) : "Bom trabalho, " + esc(PR.user.nome.split(" ")[0])) + '</h3><div class="pr-dim" style="text-transform:none">' + dia + ' · ' + esc(PR.cons.nome || "") + '</div></div>' +
+      '<button class="btn" data-act="novoPac">+ Novo paciente</button></div>' +
+      '<div class="pr-kpi4"><div><b>' + hoje.length + '</b>exames hoje</div><div><b>' + (med ? hoje.filter(e => e.status === "laudado").length : "—") + '</b>laudos finalizados hoje</div><div><b>' + (med ? pend.length : "—") + '</b>laudos pendentes</div><div><b>' + (days === null ? "nunca" : days + (days === 1 ? " dia" : " dias")) + '</b>desde o último backup</div></div>' +
+      '<div class="pr-cols"><div class="pr-card" style="flex:1.4"><h4>Exames de hoje</h4>' + (hoje.length ? hoje.map(row).join("") : '<p class="pr-dim">Nenhum exame hoje ainda.</p>') +
+      (med ? '<button class="btn primary pr-bigbtn" data-act="heroStart">📷 Iniciar exame</button>' : '') + '</div>' +
+      '<div style="flex:1;min-width:300px">' + (med ? '<div class="pr-card"><h4>Laudos pendentes</h4>' + (pend.length ? pend.slice(0, 8).map(e => '<div class="pr-row"><span><b>' + esc(e.p.nome) + '</b><br><span class="pr-dim">' + esc(e.tipo) + ' · ' + brDT(e.data) + '</span></span><button class="btn sm" data-act="laudoDe" data-id="' + e.p.id + '|' + esc(e.dir) + '">Laudar</button></div>').join("") : '<p class="pr-dim">Nenhum laudo pendente.</p>') + '</div>' : '') +
+      (days === null || days >= 1 ? '<div class="pr-warn" style="margin-top:0">⚠ <b>Backup ' + (days === null ? "ainda não feito" : "atrasado") + '.</b> ' + (b.ultimo ? "O último foi em " + brDT(b.ultimo) + "." : "") + (med ? ' <button class="btn sm" data-act="goBackup" style="margin-left:6px">Fazer backup</button>' : '') + '</div>' : '') + '</div></div>'; }
+  async function scrLaudos() {
+    const f = PR.lf || "todos", ex = allExams().sort((a, b) => b.data.localeCompare(a.data)), sel = ex.filter(e => f === "todos" || (f === "pend" ? e.status !== "laudado" : e.status === "laudado")).slice(0, 300);
+    PM.innerHTML = '<div class="pr-chips">' + [["todos", "Todos", ex.length], ["pend", "Laudo pendente", ex.filter(e => e.status !== "laudado").length], ["fin", "Laudo finalizado", ex.filter(e => e.status === "laudado").length]]
+      .map(([k, t, n]) => '<button data-act="lFilt" data-id="' + k + '" class="' + (k === f ? "on" : "") + '">' + t + ' · ' + n + '</button>').join("") + '</div>' +
+      '<div class="pr-card pr-tbl"><table><tr><th>Data</th><th>Paciente</th><th>Exame</th><th>Médico</th><th>Convênio</th><th>Situação</th><th></th></tr>' +
+      (sel.length ? sel.map(e => '<tr><td>' + brDT(e.data) + '</td><td data-act="abrirPac" data-id="' + e.p.id + '" style="cursor:pointer"><b>' + esc(e.p.nome) + '</b> <span class="pr-dim">' + e.p.id + '</span></td><td>' + esc(e.tipo) + '</td><td>' + esc((PR.meds.find(m => m.id === e.medico) || {}).nome || "") +
+        '</td><td>' + esc(e.convenio) + '</td><td>' + stPill(e.status) + '</td><td><button class="btn sm" data-act="laudoDe" data-id="' + e.p.id + '|' + esc(e.dir) + '">' + (e.status === "laudado" ? "Abrir" : "Laudar") + '</button></td></tr>').join("")
+        : '<tr><td colspan="7" class="pr-dim">Nenhum exame.</td></tr>') + '</table></div>'; }
+  PM.addEventListener("click", e => { const t = e.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, id = t.dataset.id;
+    if (a === "heroStart") $("hdrStart").click();
+    else if (a === "lFilt") { PR.lf = id; prRender(); }
+    else if (a === "goBackup") go("config");
+    else if (a === "laudoDe") { const [pid, dir] = id.split("|"); PR.pacTab = "exames"; go("laudo", { pac: pid, ldir: dir, lbase: ["pacientes", pid, "exames", dir] }); } });
+  // ----- lembrete de backup no menu lateral -----
+  setInterval(async () => { if (!isMed() || !PR.root) { $("sideBk").hidden = true; return; } const b = await readJSON(["_sistema", "backup.json"], {}); const d = b.ultimo ? Math.floor((Date.now() - new Date(b.ultimo)) / 864e5) : null;
+    $("sideBk").hidden = false; $("sideBk").innerHTML = '🛡 Último backup <b>' + (d === null ? "nunca" : d === 0 ? "hoje" : "há " + d + (d === 1 ? " dia" : " dias")) + '</b>'; }, 5000);
   authStart();
 })();
 </script>
