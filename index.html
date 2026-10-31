@@ -266,6 +266,7 @@
   .lesson .note { font-size: 14px; color: var(--dim); border-left: 3px solid var(--brand); padding: 6px 10px; background: rgba(131,63,52,.08); border-radius: 0 6px 6px 0; margin-top: 10px; }
   .demo { position: relative; background: #000; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
   .demo canvas { display: block; width: 100%; height: auto; }
+  #top #hdrCmp { display:none !important; }
   .demo .dplay { position:absolute; inset:0; margin:auto; width:72px; height:72px; border-radius:50%; border:0; cursor:pointer; background:rgba(156,76,63,.92); box-shadow:0 6px 24px rgba(0,0,0,.5); transition:transform .15s; }
   .demo .dplay::before { content:""; position:absolute; left:28px; top:22px; border-style:solid; border-width:14px 0 14px 23px; border-color:transparent transparent transparent #fff; }
   .demo .dplay:hover { transform:scale(1.08); }
@@ -423,6 +424,7 @@
   #side .nb:hover { background:var(--surface-2); }
   #side .nb.on { background:var(--soft); color:var(--brand-tint); font-weight:600; }
   #side .nb[hidden] { display:none; }
+  #side a.nb { text-decoration:none; box-sizing:border-box; }
   #side .nb .cnt { margin-left:auto; font-size:12px; background:#fbefd8; color:#8f5600; border-radius:99px; padding:0 7px; }
   #side .foot { margin-top:auto; display:flex; flex-direction:column; gap:8px; padding-top:12px; }
   #side .bk { border:1px solid var(--line); border-radius:9px; padding:9px 10px; font-size:13px; color:var(--dim); }
@@ -504,7 +506,7 @@
 </style>
 </head>
 <body>
-<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.3</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
+<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.3</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><a class="nb" id="sideMan" href="manual.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg><span>Manual (PDF)</span></a><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
     <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
@@ -741,7 +743,7 @@
 
       <div class="keys">
         <kbd>W</kbd> balanço de branco · <kbd>R</kbd> desfazer · <kbd>Espaço</kbd> congelar · <kbd>P</kbd> foto · <kbd>V</kbd> vídeo ·
-        <kbd>A</kbd> anti-vermelho · <kbd>C</kbd> antes×depois · <kbd>B</kbd> comparar ampliação · <kbd>M</kbd> método de ampliação · <kbd>N</kbd> todos os métodos · <kbd>Z</kbd> lupa · <kbd>O</kbd> sem correção · <kbd>F</kbd> tela cheia · <kbd>L</kbd> métrica · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
+        <kbd>A</kbd> anti-vermelho · <kbd>Z</kbd> lupa · <kbd>F</kbd> tela cheia · <kbd>L</kbd> métrica · <kbd>Esc</kbd> ao vivo · <kbd>Delete</kbd> excluir captura aberta
       </div>
     </aside>
   </section>
@@ -769,7 +771,7 @@
   </div></section>
   <section class="view dk" id="tutorial">
     <div class="tut">
-      <div class="tut-head"><h2>Tutorial</h2></div>
+      <div class="tut-head" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2>Tutorial</h2><a class="btn sm" href="manual.pdf" target="_blank" rel="noopener" style="margin-left:auto;text-decoration:none">Abrir manual (PDF)</a></div>
       <div class="tut-nav"><button class="btn sm" data-goto="t1">1 · Iniciar exame</button><button class="btn sm" data-goto="t2">2 · Balanço de branco</button><button class="btn sm" data-goto="t3">3 · Congelar, foto e vídeo</button><button class="btn sm" data-goto="t4">4 · Métrica</button><button class="btn sm" data-goto="t5">5 · Prontuário e laudo</button><button class="btn sm" data-goto="t6">6 · Evitar estouro de luz</button><button class="btn sm" data-goto="t7">7 · Anti-vermelho</button><button class="btn sm" data-goto="t8">8 · Ajustes de imagem</button><button class="btn sm" data-goto="t9">9 · Nitidez e ruído</button><button class="btn sm" data-goto="t10">10 · Cor travada</button></div>
       <article class="lesson" id="t1">
         <div>
@@ -2894,7 +2896,8 @@
       return; }
     const act = { " ": ["btnFreeze", toggleFreeze], "p": ["btnFoto", takePhoto], "v": ["btnVideo", toggleVideo], "a": ["btnAR", () => setAR((arLevel + 1) % 4)],
                   "w": ["btnWB", doWB], "r": ["btnReset", doReset], "o": ["btnCmp", toggleCmp], "f": ["btnFull", toggleFull], "escape": [null, closeViewer], "delete": ["btnDel", () => $("btnDel").click()], "c": ["hdrCmp", toggleAntesDepois], "b": ["btnCmpUp", () => setCmpMode(cmpMode === 1 ? 0 : 1)], "m": ["upSeg", () => setUP((upMethod + 1) % 3)], "l": ["btnMetric", metricFromCurrent], "n": ["btnCmp3", setCmp3], "z": ["btnZoom", () => setZoom(zoomF === 1)], "s": ["btnSave", () => { if (viewing) $("btnSave").click(); }] }[k];
-    if (!act || tab !== "imagem") return;
+    if (!act) return;
+    if (["c", "b", "m", "n", "o"].includes(k) ? tab !== "adv" : tab !== "imagem") return;     // comparações e métodos: só no Avançado
     e.preventDefault(); pressFx($(act[0])); act[1]();
   });
 
