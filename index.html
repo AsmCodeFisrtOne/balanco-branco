@@ -266,6 +266,16 @@
   .lesson .note { font-size: 14px; color: var(--dim); border-left: 3px solid var(--brand); padding: 6px 10px; background: rgba(131,63,52,.08); border-radius: 0 6px 6px 0; margin-top: 10px; }
   .demo { position: relative; background: #000; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
   .demo canvas { display: block; width: 100%; height: auto; }
+  .demo .dplay { position:absolute; inset:0; margin:auto; width:72px; height:72px; border-radius:50%; border:0; cursor:pointer; background:rgba(156,76,63,.92); box-shadow:0 6px 24px rgba(0,0,0,.5); transition:transform .15s; }
+  .demo .dplay::before { content:""; position:absolute; left:28px; top:22px; border-style:solid; border-width:14px 0 14px 23px; border-color:transparent transparent transparent #fff; }
+  .demo .dplay:hover { transform:scale(1.08); }
+  .demo.ended .dplay::before { left:22px; top:22px; width:22px; height:22px; border:4px solid #fff; border-right-color:transparent; border-radius:50%; }
+  .demo.playing .dplay { display:none; }
+  .demo:not(.playing) canvas { filter:brightness(.55); }
+  .demo:not(.playing) .cap { visibility:hidden; }
+  .demo canvas { cursor:pointer; }
+  .demo .dprog { position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.15); }
+  .demo .dprog i { display:block; height:100%; width:0; background:#d08c7e; }
   .demo .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 12px; font-size: 14px; font-weight: 600;
     background: linear-gradient(0deg, rgba(0,0,0,.85), rgba(0,0,0,0)); color: #fff; min-height: 34px; }
   b, strong { font-weight: normal; }
@@ -494,7 +504,7 @@
 </style>
 </head>
 <body>
-<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.2</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div><button class="lnk" id="sideTut">Ajuda · tutorial</button></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
+<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.3</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
     <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
@@ -759,119 +769,124 @@
   </div></section>
   <section class="view dk" id="tutorial">
     <div class="tut">
-      <div class="tut-head">
-        <h2>Tutorial</h2>
-        <p>Cada demonstração usa o mesmo processamento de imagem do aplicativo, sobre uma cena simulada de tecido com sangue, reflexos e uma gaze branca.</p>
-      </div>
-      <div class="tut-nav">
-        <button class="btn sm" data-goto="t1">1 · Balanço de branco</button>
-        <button class="btn sm" data-goto="t2">2 · Evitar estouro de luz</button>
-        <button class="btn sm" data-goto="t3">3 · Anti-vermelho</button>
-        <button class="btn sm" data-goto="t4">4 · Ajustes de imagem</button>
-        <button class="btn sm" data-goto="t5">5 · Congelar, foto e vídeo</button>
-        <button class="btn sm" data-goto="t6">6 · Correção automática da câmera</button>
-        <button class="btn sm" data-goto="t7">7 · Nitidez e ruído</button>
-      </div>
-
+      <div class="tut-head"><h2>Tutorial</h2></div>
+      <div class="tut-nav"><button class="btn sm" data-goto="t1">1 · Iniciar exame</button><button class="btn sm" data-goto="t2">2 · Balanço de branco</button><button class="btn sm" data-goto="t3">3 · Congelar, foto e vídeo</button><button class="btn sm" data-goto="t4">4 · Métrica</button><button class="btn sm" data-goto="t5">5 · Prontuário e laudo</button><button class="btn sm" data-goto="t6">6 · Evitar estouro de luz</button><button class="btn sm" data-goto="t7">7 · Anti-vermelho</button><button class="btn sm" data-goto="t8">8 · Ajustes de imagem</button><button class="btn sm" data-goto="t9">9 · Nitidez e ruído</button><button class="btn sm" data-goto="t10">10 · Cor travada</button></div>
       <article class="lesson" id="t1">
         <div>
-          <h3><span class="num">1</span>Balanço de branco</h3>
-          <p>Cada combinação de ótica, cabo de luz e fonte deixa a imagem com um tom diferente (amarelado, azulado). A calibração mede uma referência branca e corrige as três cores para que o branco fique branco — e, com ele, o tecido fique com a cor real.</p>
+          <h3><span class="num">1</span>Iniciar exame</h3>
           <ol>
-            <li>Ligue a fonte de luz e aponte para a <b>gaze ou alvo branco</b>, na distância de trabalho.</li>
-            <li>Preencha o <b>quadrado amarelo</b> só com o branco, sem sombra nem borda.</li>
-            <li>Toque em <b>Balanço de branco</b> (tecla W).</li>
-            <li>Confira: em <i>Após o balanço</i> (tela Avançado), os três números devem ficar praticamente iguais.</li>
+            <li>Toque em <b>Iniciar exame</b>.</li>
+            <li>Escolha o paciente ou cadastre um novo.</li>
+            <li>Faça o <b>Balanço de branco</b> (pulado se feito há menos de 4 h).</li>
+            <li>Capture fotos e vídeos.</li>
+            <li>Toque em <b>Encerrar exame</b> e faça o laudo.</li>
           </ol>
-          <div class="note">Refaça sempre que trocar a ótica, o cabo de luz ou a fonte. Se aparecer "referência escura", aproxime o alvo ou aumente a luz; se aparecer "referência saturada", afaste ou diminua a luz.</div>
         </div>
-        <div class="demo"><canvas data-demo="calib" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="12"><canvas data-demo="fluxo" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-
       <article class="lesson" id="t2">
         <div>
-          <h3><span class="num">2</span>Evitar estouro de luz</h3>
-          <p>Para deixar o branco neutro, a calibração precisa mudar a força de cada cor. Isso pode ser feito <b>aumentando</b> as cores fracas (imagem mais clara, mas as áreas claras estouram) ou <b>reduzindo</b> as cores fortes (nada estoura, mas a imagem escurece um pouco). O nível escolhe o equilíbrio entre os dois — o branco fica correto em todos.</p>
-          <ul>
-            <li><b>Desligado:</b> imagem mais clara; reflexos e áreas muito claras podem estourar (ficar brancos sem detalhe).</li>
-            <li><b>Baixo / Médio:</b> meio-termo entre claridade e proteção.</li>
-            <li><b>Alto:</b> nenhuma área clara estoura e os reflexos ficam brancos, sem mancha de cor. A imagem fica um pouco mais escura.</li>
-          </ul>
-          <div class="note">O programa abre com o nível <b>Desligado</b>. Se reflexos ou áreas claras estourarem, suba o nível; se a imagem ficar escura, desça um nível ou aumente a fonte de luz. A mudança vale na hora — não precisa calibrar de novo. Na demonstração, listras marcam onde a luz estourou.</div>
+          <h3><span class="num">2</span>Balanço de branco</h3>
+          <ol>
+            <li>Aponte para a <b>gaze branca</b>, na distância de trabalho.</li>
+            <li>Preencha o <b>quadrado amarelo</b> só com o branco.</li>
+            <li>Toque em <b>Balanço de branco</b> (tecla W).</li>
+          </ol>
+          <div class="note">Refaça ao trocar a ótica, o cabo de luz ou a fonte.</div>
         </div>
-        <div class="demo"><canvas data-demo="norm" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="9"><canvas data-demo="calib" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-
       <article class="lesson" id="t3">
         <div>
-          <h3><span class="num">3</span>Anti-vermelho</h3>
-          <p>Com sangue em campo, o vermelho é a primeira cor a "estourar": a área fica chapada, sem textura, e o vermelho se espalha pelas bordas. O anti-vermelho atua <b>só nas áreas dominadas pelo vermelho</b>, comprimindo o excesso e reduzindo a saturação, para devolver o relevo do tecido.</p>
+          <h3><span class="num">3</span>Congelar, foto e vídeo</h3>
           <ul>
-            <li><b>Desligado:</b> imagem sem alteração.</li>
-            <li><b>Baixo:</b> suaviza apenas o vermelho mais intenso.</li>
-            <li><b>Médio:</b> indicado com sangramento moderado.</li>
-            <li><b>Alto:</b> campo com muito sangue; a cor do sangue fica bem atenuada.</li>
+            <li><b>Congelar</b> — tecla Espaço.</li>
+            <li><b>Foto</b> — tecla P.</li>
+            <li><b>Vídeo</b> — tecla V para iniciar e parar.</li>
+            <li>Toque na miniatura para rever. ✕ para excluir.</li>
           </ul>
-          <div class="note">É um recurso de visualização. Para avaliar a cor real da mucosa ou do tecido, volte para <b>Desligado</b>. Atalho: tecla A alterna os níveis.</div>
         </div>
-        <div class="demo"><canvas data-demo="antired" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="10"><canvas data-demo="capture" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-
       <article class="lesson" id="t4">
         <div>
-          <h3><span class="num">4</span>Ajustes de imagem</h3>
-          <ul>
-            <li><b>Profundidade dos pretos:</b> tira o aspecto "lavado" ou esbranquiçado, devolvendo o preto às áreas escuras. Comece entre 0,05 e 0,15.</li>
-            <li><b>Contraste:</b> separa mais claros e escuros, destacando relevo e bordas.</li>
-            <li><b>Brilho:</b> clareia ou escurece a imagem toda.</li>
-            <li><b>Detalhe nas sombras:</b> clareia só os tons médios e escuros, sem estourar os claros.</li>
-            <li><b>Intensidade das cores:</b> deixa as cores mais vivas ou mais neutras.</li>
-          </ul>
-          <div class="note">Os ajustes ficam salvos para cada câmera. "Restaurar padrão" volta tudo ao neutro.</div>
+          <h3><span class="num">4</span>Métrica</h3>
+          <ol>
+            <li>Marque a referência <b>R1</b>.</li>
+            <li>Desenhe reta, círculo ou retângulo: o valor sai em <b>R</b>.</li>
+            <li>Em <b>Comparar com…</b>, escolha um exame antigo do mesmo paciente: a variação sai em %.</li>
+          </ol>
+          <div class="note">Use os mesmos pontos de referência nas duas imagens.</div>
         </div>
-        <div class="demo"><canvas data-demo="adjust" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="12"><canvas data-demo="metr" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-
       <article class="lesson" id="t5">
         <div>
-          <h3><span class="num">5</span>Congelar, foto e vídeo</h3>
-          <ul>
-            <li><b>Congelar</b> (Espaço): para a imagem para observar com calma. Com a <b>melhoria de resolução</b> ligada, o app junta os quadros dos próximos 0,5 s (ou 1 s, na opção Longa) e mostra a imagem congelada reconstruída com mais detalhe — <b>segure a câmera parada</b> enquanto aparece "CONGELANDO…". Se a imagem se mover demais, ela congela normalmente e avisa. Os ajustes continuam funcionando sobre a imagem congelada.</li>
-            <li>Foto tirada com a imagem melhorada sai com <b>MR</b> no nome e o <b>quadro original</b> é salvo junto (arquivo "_original").</li>
-            <li><b>Foto</b> (P): salva a imagem exatamente como está na tela, sem o quadrado amarelo.</li>
-            <li><b>Vídeo</b> (V): inicia e para a gravação; o botão mostra o tempo.</li>
-            <li>Cada captura aparece no <b>canto direito</b>. Toque nela para rever em tela grande; o vídeo ao vivo continua numa janela pequena. Toque na janela pequena (ou Esc) para voltar.</li>
-            <li>Para <b>excluir</b>, toque no ✕ da miniatura (ou em Excluir, com a captura aberta) e toque de novo em "Excluir?" para confirmar. Se a pasta foi escolhida em "Gravação", o arquivo também é apagado dela.</li>
-            <li>Sem pasta escolhida, a captura fica marcada <b>não salvo</b> até você tocar em <b>Salvar</b> (ou "Salvar todas" no topo das miniaturas). Excluir antes de salvar não baixa nada. Para baixar tudo sozinho, ligue "Salvar cada captura automaticamente" em Gravação.</li>
-          </ul>
-          <div class="note">Em "Gravação", informe a identificação do exame (vai no nome do arquivo) e escolha a pasta onde salvar.</div>
+          <h3><span class="num">5</span>Prontuário e laudo</h3>
+          <ol>
+            <li><b>Prontuário</b> → paciente → exame.</li>
+            <li>Escolha as imagens e escreva o laudo.</li>
+            <li><b>Gerar PDF</b> para entregar.</li>
+          </ol>
         </div>
-        <div class="demo"><canvas data-demo="capture" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="12"><canvas data-demo="laudo" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-
       <article class="lesson" id="t6">
         <div>
-          <h3><span class="num">6</span>Correção automática da câmera</h3>
-          <p>Muitas câmeras corrigem a cor sozinhas. Num campo predominantemente vermelho, essa correção automática tenta "neutralizar" o vermelho e a cor do tecido muda conforme o que aparece na imagem.</p>
+          <h3><span class="num">6</span>Evitar estouro de luz</h3>
           <ul>
-            <li>Com <b>Travar a cor da câmera ao calibrar</b> ligado, a calibração pede à câmera para parar a correção automática. O painel mostra <span class="pill ok">travado</span>.</li>
-            <li>Se continuar <span class="pill bad">AUTOMÁTICO</span>, a câmera não aceita a trava pelo navegador; desligue o automático no driver da câmera.</li>
+            <li><b>Desligado</b> — imagem mais clara.</li>
+            <li><b>Baixo / Médio</b> — meio-termo.</li>
+            <li><b>Alto</b> — nada estoura; imagem um pouco mais escura.</li>
           </ul>
         </div>
-        <div class="demo"><canvas data-demo="lock" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="10"><canvas data-demo="norm" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-
       <article class="lesson" id="t7">
         <div>
-          <h3><span class="num">7</span>Nitidez e ruído</h3>
+          <h3><span class="num">7</span>Anti-vermelho</h3>
           <ul>
-            <li><b>Realce de bordas:</b> aumenta o contraste das bordas que já existem — vasos, dobras, textura da mucosa — e a imagem parece mais nítida. Não cria estruturas novas. Detalhes muito finos de ruído não são realçados.</li>
-            <li><b>Redução de ruído:</b> soma quadros seguidos para tirar o "chuvisco" do sensor, principalmente com pouca luz. Antes de somar, acompanha o movimento do endoscópio; onde algo se move sozinho, usa só o quadro atual.</li>
-            <li>Em <b>Comparar</b> (no topo, tecla C), a tela mostra a mesma região <b>antes</b> e <b>depois</b>; com a <b>Lupa 3×</b> (tecla Z) a diferença fica clara.</li>
+            <li><b>Baixo</b> — pouco sangue.</li>
+            <li><b>Médio</b> — sangramento moderado.</li>
+            <li><b>Alto</b> — muito sangue.</li>
           </ul>
-          <div class="note">Comece em <b>Baixo</b> nos dois. No <b>Alto</b>, o realce pode criar contornos claros ("halos") em bordas fortes, e a redução de ruído pode suavizar um pouco instrumentos em movimento muito rápido. As fotos e os vídeos saem com o que estiver ligado.</div>
+          <div class="note">Para ver a cor real do tecido, deixe em Desligado. Tecla A.</div>
         </div>
-        <div class="demo"><canvas data-demo="enh" width="480" height="320"></canvas><div class="cap"></div></div>
+        <div class="demo" data-dur="10"><canvas data-demo="antired" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
+      </article>
+      <article class="lesson" id="t8">
+        <div>
+          <h3><span class="num">8</span>Ajustes de imagem</h3>
+          <ul>
+            <li><b>Profundidade dos pretos</b> — tira o aspecto lavado.</li>
+            <li><b>Contraste</b> — destaca relevo.</li>
+            <li><b>Brilho</b> — clareia ou escurece.</li>
+            <li><b>Detalhe nas sombras</b> — clareia os escuros.</li>
+            <li><b>Intensidade das cores</b> — cores mais vivas.</li>
+          </ul>
+        </div>
+        <div class="demo" data-dur="15"><canvas data-demo="adjust" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
+      </article>
+      <article class="lesson" id="t9">
+        <div>
+          <h3><span class="num">9</span>Nitidez e ruído</h3>
+          <ul>
+            <li><b>Realce de bordas</b> — imagem mais nítida.</li>
+            <li><b>Redução de ruído</b> — tira o chuvisco.</li>
+          </ul>
+          <div class="note">Comece em Baixo.</div>
+        </div>
+        <div class="demo" data-dur="9"><canvas data-demo="enh" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
+      </article>
+      <article class="lesson" id="t10">
+        <div>
+          <h3><span class="num">10</span>Cor travada</h3>
+          <ul>
+            <li><span class="pill ok">travado</span> — cor estável.</li>
+            <li><span class="pill bad">AUTOMÁTICO</span> — desligue o automático no driver da câmera.</li>
+          </ul>
+        </div>
+        <div class="demo" data-dur="11.4"><canvas data-demo="lock" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
     </div>
   </section>
@@ -993,7 +1008,7 @@
   // ================= abas =================
   let tab = "imagem";
   function showTab(t, anchor) {
-    if (tab === "adv" && t !== "adv") { try { PR.advUntil = 0; } catch (e) {} }   // saiu do Avançado: pede a senha de novo
+    if (tab === "adv" && t !== "adv") { try { PR.advUntil = 0; } catch (e) {} if (typeof advLiveOff === "function") advLiveOff(); }   // saiu do Avançado: pede a senha de novo
     tab = t;
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === t));
     if (t === "imagem") fit();
@@ -1791,7 +1806,7 @@
   // ----- laço de vídeo -----
   const authEl = $("prAuth");
   function frame() {
-    if (srCap || MT.open || (!rec && (tab !== "imagem" || !authEl.hidden))) {   // Métrica aberta, aba Prontuário/Tutorial ou tela de entrada: processamento parado, notebook livre
+    if (srCap || MT.open || (!rec && ((tab !== "imagem" && tab !== "adv") || !authEl.hidden))) {   // Métrica aberta, aba Prontuário/Tutorial ou tela de entrada: processamento parado, notebook livre
       if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
       return;
     }
@@ -1883,6 +1898,7 @@
       $("inR").textContent = lastIn[0].toFixed(0); $("inG").textContent = lastIn[1].toFixed(0); $("inB").textContent = lastIn[2].toFixed(0);
       $("outR").textContent = (cr / n).toFixed(0); $("outG").textContent = (cg / n).toFixed(0); $("outB").textContent = (cb / n).toFixed(0);
     }
+    if (tab === "adv" && typeof advLiveDraw === "function") advLiveDraw();          // imagem ao vivo dentro do Avançado (comparações de bancada)
     if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
   }
 
@@ -3051,7 +3067,104 @@
   const sceneCanvas = document.createElement("canvas"); sceneCanvas.width = TW; sceneCanvas.height = TH;
   sceneCanvas.getContext("2d").putImageData(SCENE, 0, 0);
 
+  function cursor(c2, x, y, press) {
+    if (press) { c2.fillStyle = "rgba(156,76,63,.35)"; c2.beginPath(); c2.arc(x, y, 16, 0, 7); c2.fill(); }
+    c2.fillStyle = "#fff"; c2.strokeStyle = "#000"; c2.lineWidth = 1.5; c2.beginPath(); c2.moveTo(x, y); c2.lineTo(x, y + 20); c2.lineTo(x + 5, y + 15); c2.lineTo(x + 9, y + 23); c2.lineTo(x + 12, y + 21); c2.lineTo(x + 8, y + 14); c2.lineTo(x + 14, y + 14); c2.closePath(); c2.fill(); c2.stroke();
+  }
   const DEMOS = {
+    fluxo(c2, t, cap) {
+      const T = Math.min(t, 11.95), ph = Math.floor(T / 3), k = (T % 3) / 3;
+      c2.fillStyle = "#f6f1ee"; c2.fillRect(0, 0, TW, TH);
+      c2.fillStyle = "#fff"; c2.fillRect(0, 0, 92, TH); c2.fillStyle = "#e6dcd8"; c2.fillRect(92, 0, 1, TH);
+      ["Exame", "Métrica", "Prontuário", "Config."].forEach((n, i) => { c2.fillStyle = i === (ph === 0 ? 2 : 0) ? "#f3e3df" : "#fff"; c2.fillRect(6, 40 + i * 34, 80, 26);
+        c2.fillStyle = "#3a2a26"; c2.font = "13px Bonnie, Segoe UI, sans-serif"; c2.fillText(n, 14, 58 + i * 34); });
+      c2.fillStyle = "#9c4c3f"; c2.fillRect(10, 10, 72, 18);
+      const steps = ["Paciente", "Balanço", "Captura", "Laudo"];
+      steps.forEach((n, i) => { const x = 104 + i * 92, on = i === ph, done = i < ph;
+        c2.fillStyle = done ? "#2f8a5a" : on ? "#9c4c3f" : "#d9cdc9"; c2.beginPath(); c2.arc(x + 9, 16, 8, 0, 7); c2.fill();
+        c2.fillStyle = on ? "#3a2a26" : "#8c7d79"; c2.font = "11px Bonnie, Segoe UI, sans-serif"; c2.fillText(n, x + 21, 20); });
+      const cx = 104, cy = 40, cw = TW - 116, ch = TH - 52;
+      if (ph === 0) {
+        const pr = k < 0.45; btnShape(c2, cx + cw / 2 - 110, cy + 70, 220, "Iniciar exame", k > 0.35 && k < 0.5, true);
+        c2.fillStyle = "#3a2a26"; c2.font = "13px Bonnie, Segoe UI, sans-serif"; c2.fillText("Pacientes de hoje", cx + 10, cy + 150);
+        ["Maria S.", "João P."].forEach((n, i) => { c2.fillStyle = k > 0.6 && i === 0 ? "#f3e3df" : "#fff"; c2.fillRect(cx + 10, cy + 160 + i * 30, cw - 20, 24);
+          c2.fillStyle = "#3a2a26"; c2.fillText(n, cx + 18, cy + 177 + i * 30); });
+        cursor(c2, k < 0.45 ? cx + cw / 2 + 20 : cx + 80, k < 0.45 ? cy + 92 : cy + 172, pr ? 0 : 1);
+        cap.innerHTML = k < 0.5 ? "Toque em <span class='tag-name'>Iniciar exame</span>" : "Escolha o paciente";
+      } else if (ph === 1) {
+        c2.drawImage(sceneCanvas, 0, 0, TW, TH, cx, cy, cw, ch);
+        const g = [cx + GAUZE[0] * cw / TW, cy + GAUZE[1] * ch / TH, GAUZE[2] * cw / TW, GAUZE[3] * ch / TH]; c2.strokeStyle = "#ffd400"; c2.lineWidth = 2; c2.strokeRect(...g);
+        btnShape(c2, cx + cw - 170, cy + ch - 44, 160, "Balanço de branco", k > 0.45 && k < 0.6, true);
+        if (k > 0.6) label(c2, "✓ Balanço de branco feito", cx + 10, cy + 10, "#b9ecd0");
+        cursor(c2, cx + cw - 90, cy + ch - 28, k > 0.45 && k < 0.6 ? 1 : 0);
+        cap.innerHTML = "Gaze no quadrado amarelo → <span class='tag-name'>Balanço de branco</span>";
+      } else if (ph === 2) {
+        c2.drawImage(sceneCanvas, 0, 0, TW, TH, cx, cy, cw - 70, ch);
+        c2.fillStyle = "#1a1416"; c2.fillRect(cx + cw - 70, cy, 70, ch);
+        const n = k > 0.7 ? 2 : k > 0.3 ? 1 : 0;
+        for (let i = 0; i < n; i++) c2.drawImage(sceneCanvas, 60, 40, 300, 300, cx + cw - 64, cy + 6 + i * 64, 58, 58);
+        if ((k > 0.3 && k < 0.36) || (k > 0.7 && k < 0.76)) { c2.fillStyle = "rgba(255,255,255,.6)"; c2.fillRect(cx, cy, cw - 70, ch); }
+        cap.innerHTML = "<span class='tag-name'>Foto</span> (P) · <span class='tag-name'>Vídeo</span> (V)";
+      } else {
+        c2.fillStyle = "#fff"; c2.fillRect(cx, cy, cw, ch); c2.strokeStyle = "#e6dcd8"; c2.strokeRect(cx + .5, cy + .5, cw, ch);
+        c2.fillStyle = "#3a2a26"; c2.font = "bold 14px Bonnie, Segoe UI, sans-serif"; c2.fillText("Laudo", cx + 12, cy + 24);
+        for (let i = 0; i < 2; i++) c2.drawImage(sceneCanvas, 60, 40, 300, 300, cx + 12 + i * 80, cy + 36, 70, 70);
+        const lines = Math.floor(k * 10); c2.fillStyle = "#cfc3bf";
+        for (let i = 0; i < Math.min(lines, 6); i++) c2.fillRect(cx + 12, cy + 120 + i * 14, (i % 3 === 2 ? 0.5 : 0.85) * (cw - 24), 6);
+        btnShape(c2, cx + cw - 130, cy + ch - 42, 118, "Gerar PDF", k > 0.75 && k < 0.88, true);
+        cap.innerHTML = "<span class='tag-name'>Encerrar exame</span> → laudo";
+      }
+    },
+    metr(c2, t, cap) {
+      const T = Math.min(t, 11.95);
+      const drawLine = (x1, y1, x2, y2, f, col, txt) => { const x = x1 + (x2 - x1) * f, y = y1 + (y2 - y1) * f;
+        c2.strokeStyle = col; c2.lineWidth = 3; c2.beginPath(); c2.moveTo(x1, y1); c2.lineTo(x, y); c2.stroke();
+        c2.fillStyle = col; [[x1, y1], [x, y]].forEach(p => { c2.beginPath(); c2.arc(p[0], p[1], 4, 0, 7); c2.fill(); });
+        if (f >= 1 && txt) { c2.font = "bold 15px Bonnie, Segoe UI, sans-serif"; c2.lineWidth = 3; c2.strokeStyle = "#000"; c2.strokeText(txt, x + 6, y - 6); c2.fillText(txt, x + 6, y - 6); } };
+      const cl = v => Math.max(0, Math.min(1, v));
+      if (T < 9) {
+        c2.drawImage(sceneCanvas, 0, 0);
+        drawLine(70, 270, 190, 270, cl(T / 1.6), "#ffd400", "R1");
+        drawLine(240, 90, 400, 150, cl((T - 3) / 1.6), "#7fd0ff", "1,48 R");
+        if (T > 6) { const f = cl((T - 6) / 1.6); c2.strokeStyle = "#b9ecd0"; c2.lineWidth = 3; c2.beginPath(); c2.arc(150, 130, 46, 0, f * 6.283); c2.stroke();
+          if (f >= 1) { c2.fillStyle = "#b9ecd0"; c2.font = "bold 15px Bonnie, Segoe UI, sans-serif"; c2.strokeStyle = "#000"; c2.strokeText("Ø 0,77 R", 104, 70); c2.fillText("Ø 0,77 R", 104, 70); } }
+        cap.innerHTML = T < 3 ? "Marque a referência <span class='tag-name'>R1</span>" : T < 6 ? "Reta: medida em R" : "Círculo, retângulo, contorno";
+      } else {
+        const h = TW / 2;
+        c2.drawImage(sceneCanvas, 0, 0, TW, TH, 0, 0, h, TH); c2.drawImage(sceneCanvas, 0, 0, TW, TH, h, 0, h, TH);
+        c2.fillStyle = "#000"; c2.fillRect(h - 1, 0, 2, TH);
+        c2.save(); c2.translate(0, 0); c2.scale(.5, 1); drawLine(240, 90, 400, 150, 1, "#7fd0ff", ""); c2.restore();
+        c2.save(); c2.translate(h, 0); c2.scale(.5, 1); drawLine(240, 96, 380, 148, 1, "#7fd0ff", ""); c2.restore();
+        label(c2, "Antigo", 8, 8, "#fff"); label(c2, "Atual", TW - 8, 8, "#fff", "right");
+        if (T > 10) label(c2, "−12%", h + 120, 160, "#ffd400", "center");
+        cap.innerHTML = "<span class='tag-name'>Comparar com…</span> exame antigo";
+      }
+    },
+    laudo(c2, t, cap) {
+      const T = Math.min(t, 11.95), ph = Math.floor(T / 4), k = (T % 4) / 4;
+      c2.fillStyle = "#f6f1ee"; c2.fillRect(0, 0, TW, TH);
+      c2.fillStyle = "#fff"; c2.fillRect(14, 14, TW - 28, TH - 28); c2.strokeStyle = "#e6dcd8"; c2.strokeRect(14.5, 14.5, TW - 28, TH - 28);
+      c2.fillStyle = "#3a2a26"; c2.font = "bold 15px Bonnie, Segoe UI, sans-serif";
+      if (ph === 0) {
+        c2.fillText("Pacientes", 28, 40);
+        ["Maria S.  ·  P000012", "João P.  ·  P000013", "Ana L.  ·  P000014"].forEach((n, i) => { c2.fillStyle = k > 0.5 && i === 0 ? "#f3e3df" : "#faf7f6"; c2.fillRect(28, 54 + i * 36, TW - 56, 30);
+          c2.fillStyle = "#3a2a26"; c2.font = "14px Bonnie, Segoe UI, sans-serif"; c2.fillText(n, 38, 74 + i * 36); });
+        cursor(c2, 150, 70, k > 0.5 ? 1 : 0); cap.innerHTML = "<span class='tag-name'>Prontuário</span> → paciente";
+      } else if (ph === 1) {
+        c2.fillText("Escolha as imagens", 28, 40);
+        for (let i = 0; i < 4; i++) { const x = 28 + i * 106, on = k * 4 > i && i !== 2;
+          c2.drawImage(sceneCanvas, 40 + i * 30, 30, 300, 300, x, 54, 96, 96);
+          c2.lineWidth = 3; c2.strokeStyle = on ? "#9c4c3f" : "#ddd"; c2.strokeRect(x, 54, 96, 96);
+          if (on) { c2.fillStyle = "#9c4c3f"; c2.beginPath(); c2.arc(x + 84, 66, 10, 0, 7); c2.fill(); c2.fillStyle = "#fff"; c2.font = "bold 12px sans-serif"; c2.fillText("✓", x + 79, 70); } }
+        cap.innerHTML = "Toque nas imagens do laudo";
+      } else {
+        c2.fillText("Laudo", 28, 40); c2.fillStyle = "#cfc3bf";
+        const n = Math.floor(k * 14); for (let i = 0; i < Math.min(n, 8); i++) c2.fillRect(28, 56 + i * 16, (i % 3 === 2 ? 0.45 : 0.9) * (TW - 56), 7);
+        btnShape(c2, TW - 160, TH - 70, 130, "Gerar PDF", k > 0.7 && k < 0.85, true);
+        if (k > 0.85) label(c2, "✓ PDF salvo", 28, TH - 64, "#2f8a5a");
+        cap.innerHTML = "Escreva o laudo → <span class='tag-name'>Gerar PDF</span>";
+      }
+    },
     calib(c2, t, cap) {
       const T = t % 9, k = ease((T - 3.4) / 1.2);
       const out = render(c2, SCENE_CAST, lerp3([1, 1, 1], CAL_MIN, k));
@@ -3154,14 +3267,29 @@
     }
   };
 
-  const demoEls = [...document.querySelectorAll("canvas[data-demo]")].map(c => ({ c, c2: c.getContext("2d", { willReadFrequently: true }), cap: c.parentElement.querySelector(".cap"), fn: DEMOS[c.dataset.demo], vis: false }));
-  const io = new IntersectionObserver(es => es.forEach(e => { const d = demoEls.find(x => x.c === e.target); if (d) d.vis = e.isIntersecting; }));
+  const demoEls = [...document.querySelectorAll("canvas[data-demo]")].map(c => { const box = c.parentElement;
+    return { c, box, c2: c.getContext("2d", { willReadFrequently: true }), cap: box.querySelector(".cap"), bar: box.querySelector(".dprog i"), fn: DEMOS[c.dataset.demo],
+      dur: +box.dataset.dur || 10, vis: false, play: false, t0: 0, et: 0, drawn: false }; });
+  function demoToggle(d) {
+    if (d.play) { d.play = false; d.box.classList.remove("playing"); return; }
+    demoEls.forEach(o => { if (o !== d && o.play) { o.play = false; o.box.classList.remove("playing"); } });   // só uma animação por vez
+    if (d.box.classList.contains("ended")) d.et = 0;
+    d.box.classList.remove("ended"); d.play = true; d.t0 = performance.now() - d.et * 1000; d.box.classList.add("playing");
+  }
+  demoEls.forEach(d => { d.box.querySelector(".dplay").onclick = () => demoToggle(d); d.c.onclick = () => demoToggle(d); });
+  const io = new IntersectionObserver(es => es.forEach(e => { const d = demoEls.find(x => x.c === e.target); if (d) { d.vis = e.isIntersecting;
+    if (!d.vis && d.play) { d.play = false; d.box.classList.remove("playing"); } } }));
   demoEls.forEach(d => io.observe(d.c));
   let lastDemo = 0;
   function demoLoop(now) {
     if (tab === "tutorial" && now - lastDemo > 60) {
-      lastDemo = now; const t = now / 1000;
-      demoEls.forEach(d => { if (d.vis) d.fn(d.c2, t, d.cap); });
+      lastDemo = now;
+      demoEls.forEach(d => { if (!d.vis) return;
+        if (d.play) { d.et = (now - d.t0) / 1000;
+          if (d.et >= d.dur) { d.et = d.dur - 0.05; d.play = false; d.box.classList.remove("playing"); d.box.classList.add("ended"); } }
+        else if (d.drawn) return;
+        try { d.fn(d.c2, d.play || d.box.classList.contains("ended") ? d.et : 0.6, d.cap); } catch (e) {}
+        d.drawn = true; d.bar.style.width = (100 * Math.min(1, d.et / d.dur)) + "%"; });
     }
     requestAnimationFrame(demoLoop);
   }
@@ -3814,6 +3942,20 @@
   (() => { const G = $("advGrid"), card = id => { const e = $(id); return e ? e.closest(".card") : null; };
     [card("awb"), card("upSeg"), card("lnFov"), card("srSeg"), $("fmtCard"), document.querySelector("aside .keys")].forEach(c => { if (c) { if (c.tagName === "DETAILS") c.open = true; G.append(c); } });
     $("cam").style.width = $("res").style.width = "100%"; })();
+  // ----- imagem ao vivo no Avançado: as comparações (ampliação, todos os métodos, lupa) aparecem aqui mesmo -----
+  (() => { const c = document.createElement("div"); c.className = "card"; c.id = "advLive"; c.style.gridColumn = "1 / -1";
+    c.innerHTML = '<h2>Imagem ao vivo</h2><div class="btnrow" id="advLiveBtns" style="margin-bottom:8px"></div><canvas id="advLiveCv" style="width:100%;max-height:62vh;object-fit:contain;background:#000;border-radius:8px;display:block"></canvas>';
+    $("advGrid").prepend(c);
+    const bt = (t, f, id) => { const b = document.createElement("button"); b.className = "btn sm"; b.textContent = t; b.onclick = f; if (id) b.dataset.src = id; $("advLiveBtns").append(b); };
+    bt("Comparar ampliação", () => $("btnCmpUp").click(), "btnCmpUp"); bt("Ver todos os métodos", () => $("btnCmp3").click(), "btnCmp3"); bt("Lupa 3×", () => $("btnZoom").click(), "btnZoom");
+    bt("Antes × depois", () => $("hdrCmp").click(), "hdrCmp"); bt("Ver sem correção", () => $("btnCmp").click(), "btnCmp"); })();
+  function advLiveOff() {                     // comparações do Avançado não vão para o Exame
+    for (let k = 0; k < 3; k++) document.querySelectorAll("#advLiveBtns [data-src]").forEach(b => { const o = $(b.dataset.src); if (o && o.classList.contains("on")) o.click(); }); }
+  function advLiveDraw() {
+    const c = $("advLiveCv"), src = outCv; if (!src || !src.width) return;
+    if (c.width !== src.width || c.height !== src.height) { c.width = src.width; c.height = src.height; }
+    const g = c.getContext("2d"); g.drawImage(src, 0, 0); try { if (ov.width) g.drawImage(ov, 0, 0, c.width, c.height); } catch (e) {}
+    document.querySelectorAll("#advLiveBtns [data-src]").forEach(b => { const o = $(b.dataset.src); b.classList.toggle("on", !!o && o.classList.contains("on")); }); }
   // ----- balanço de branco: o médico vê só o botão; leituras RGB e coeficientes ficam no Avançado -----
   (() => { const c = document.createElement("div"); c.className = "card"; c.id = "advWB";
     c.innerHTML = '<h2>Balanço de branco · leituras e coeficientes</h2><div id="advWBrows"></div><div class="btnrow" style="margin-top:8px"><button class="btn primary" id="btnWB2">Balanço de branco</button></div>';
@@ -3823,13 +3965,12 @@
   // ----- tema claro / escuro -----
   try { const t = localStorage.getItem("tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
   $("thBtn").onclick = () => { const n = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n; try { localStorage.setItem("tema", n); } catch (e) {} };
-  $("sideTut").onclick = () => showTab("tutorial");
   // ----- busca global -----
   $("gSearch").onkeydown = e => { if (e.key === "Enter") { const q = e.target.value.trim(); if (!PR.user) { showTab("pront"); return; } PR.q = q; showTab("pront"); go("pacientes", { pac: null }); e.target.blur(); } };
   document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("gSearch").focus(); $("gSearch").select(); } });
   // ----- menu lateral -----
   document.querySelectorAll("#side [data-nav]").forEach(b => b.onclick = () => navGo(b.dataset.nav));
-  const curNav = () => tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
+  const curNav = () => tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {
     if (n === "adv" && tab !== "adv") PR.advBack = curNav();
     if (n !== "adv" && tab === "adv") PR.advUntil = 0;                 // saiu do Avançado: na próxima vez pede a senha
@@ -3839,10 +3980,11 @@
     else if (n === "pront") { showTab("pront"); if (!PR.user) { prRender(); return; } if (["config", "exame"].includes(PR.scr)) go("hoje"); else prRender(); }
     else if (n === "config") { showTab("pront"); if (!PR.user) { prRender(); return; } go("config"); }
     else if (n === "adv") { showTab("adv"); advRender(); }
+    else if (n === "tut") showTab("tutorial");
     navSync(); }
   function navSync() {
     const med = isMed(), sec = PR.user && PR.user.perfil === "secretaria", cam = !sec;
-    const act = tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "";
+    const act = tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "";
     document.querySelectorAll("#side [data-nav]").forEach(b => { b.classList.toggle("on", b.dataset.nav === act);
       b.hidden = (b.dataset.nav === "exame" || b.dataset.nav === "metrica") ? !cam : b.dataset.nav === "config" ? !med : false; });
     $("hdrStart").hidden = !med || !!PR.exam || PR.step > 0 || (tab === "imagem" && !$("exHero").hidden);
