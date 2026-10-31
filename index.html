@@ -747,7 +747,7 @@
       <div style="color:var(--dim)">Área do fabricante: câmera, sinal de vídeo, chip, lente e testes de bancada. Alterações aqui afetam a imagem de todos os exames.</div>
       <input type="password" id="advPw" inputmode="numeric" maxlength="12" placeholder="senha" autocomplete="off"><button class="btn primary" id="advGo" style="width:100%;height:42px">Desbloquear</button>
       <p id="advMsg" style="color:var(--dim);font-size:13px;margin:10px 0 0">Acesso registrado na auditoria.</p></div>
-    <div id="advBody" hidden><div id="advHead"><div><h2>Avançado · fabricante</h2><div class="sub" id="advSub"></div></div><span class="spacer" style="flex:1"></span><button class="btn" id="advLockBtn">Bloquear agora</button></div>
+    <div id="advBody" hidden><div id="advHead"><div><h2>Avançado · fabricante</h2><div class="sub" id="advSub"></div></div><span class="spacer" style="flex:1"></span><button class="btn primary" id="advLockBtn">Salvar</button></div>
       <div id="advGrid"><div class="card" id="advCam"><h2>Câmera e sinal de vídeo</h2><div class="btnrow" style="flex-direction:column;align-items:stretch;gap:8px"><select id="cam" title="Câmera"></select>
     <select id="res" title="Resolução de ENTRADA (o que é pedido à câmera). A saída é sempre ampliada para 1080 de altura (Lanczos-3).">
       <option value="400x400" selected>Entrada 400×400</option>
@@ -993,6 +993,7 @@
   // ================= abas =================
   let tab = "imagem";
   function showTab(t, anchor) {
+    if (tab === "adv" && t !== "adv") { try { PR.advUntil = 0; } catch (e) {} }   // saiu do Avançado: pede a senha de novo
     tab = t;
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === t));
     if (t === "imagem") fit();
@@ -3828,7 +3829,10 @@
   document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("gSearch").focus(); $("gSearch").select(); } });
   // ----- menu lateral -----
   document.querySelectorAll("#side [data-nav]").forEach(b => b.onclick = () => navGo(b.dataset.nav));
+  const curNav = () => tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {
+    if (n === "adv" && tab !== "adv") PR.advBack = curNav();
+    if (n !== "adv" && tab === "adv") PR.advUntil = 0;                 // saiu do Avançado: na próxima vez pede a senha
     if (n !== "metrica" && MT.open) metricClose();
     if (n === "exame") { if (PR.step === 1) { showTab("pront"); go("exame"); } else { showTab("imagem"); } }
     else if (n === "metrica") { if (!MT.open) { if (viewing || frozen || items.length || cv.width) metricFromCurrent(); } showTab("imagem"); }
@@ -3888,11 +3892,12 @@
   // ----- Avançado (senha do fabricante) -----
   const ADV_PASS = "123456";
   function advRender() { const ok = PR.advUntil && Date.now() < PR.advUntil; $("advLock").hidden = !!ok; $("advBody").hidden = !ok;
-    if (ok) $("advSub").textContent = "Desbloqueado · bloqueia sozinho às " + new Date(PR.advUntil).toTimeString().slice(0, 5); else { $("advPw").value = ""; setTimeout(() => $("advPw").focus(), 30); } }
+    if (ok) $("advSub").textContent = "Os ajustes valem na hora. Toque em Salvar para sair."; else { $("advPw").value = ""; setTimeout(() => $("advPw").focus(), 30); } }
   $("advGo").onclick = async () => { if ($("advPw").value === ADV_PASS) { PR.advUntil = Date.now() + 15 * 60e3; $("advMsg").textContent = "Acesso registrado na auditoria."; if (PR.user) await audit("abriu configurações avançadas"); advRender(); }
     else { $("advMsg").textContent = "Senha incorreta."; $("advMsg").style.color = "var(--bad)"; if (PR.user) await audit("senha do avançado incorreta"); $("advPw").select(); } };
   $("advPw").onkeydown = e => { if (e.key === "Enter") $("advGo").click(); };
-  $("advLockBtn").onclick = () => { PR.advUntil = 0; advRender(); };
+  $("advLockBtn").onclick = async () => { PR.advUntil = 0; advRender(); if (PR.user) await audit("salvou configurações avançadas");
+    const b = PR.advBack && PR.advBack !== "adv" ? PR.advBack : "exame"; navGo(b === "metrica" ? "exame" : b); setStatus("Ajustes salvos.", "ok"); };
   // ----- Prontuário: Hoje (sem agenda) e Exames e laudos -----
   function allExams() { return PR.index ? Object.values(PR.index.pacientes).flatMap(p => p.exames.map(e => Object.assign({ p }, e))) : []; }
   const stPill = s => s === "laudado" ? '<span class="pill ok">laudo finalizado</span>' : s === "em andamento" ? '<span class="pill warn">em andamento</span>' : '<span class="pill warn">laudo pendente</span>';
