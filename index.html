@@ -511,8 +511,9 @@
   #advLock { max-width:420px; margin:60px auto; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:28px; box-shadow:0 6px 20px rgba(40,22,18,.08); }
   #advLock .lk { width:56px; height:56px; border-radius:14px; background:var(--soft); color:var(--brand-tint); display:grid; place-items:center; margin:0 auto 12px; font-size:26px; }
   #advLock input { width:100%; height:46px; font-size:22px; text-align:center; letter-spacing:.4em; margin:16px 0 10px; }
-  #advGrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:16px; align-items:start; }
-  #advGrid .card { margin:0; background:var(--surface); }
+  #advGrid { display:block; columns:360px; column-gap:16px; }          /* cartões empilhados por coluna, sem buracos */
+  #advGrid .card { margin:0 0 16px; background:var(--surface); break-inside:avoid; }
+  #advGrid #advLive { column-span:all; }
   #advHead { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
   #advHead h2 { margin:0; font-size:24px; } #advHead .sub { color:var(--dim); }
   #prSub { display:flex; gap:2px; border-bottom:1px solid var(--line); padding:0 18px; margin-top:8px; align-items:center; flex-wrap:wrap; }
@@ -4081,7 +4082,7 @@
     $("cam").style.width = $("res").style.width = "100%"; })();
   // ----- imagem ao vivo no Avançado: as comparações (ampliação, todos os métodos, lupa) aparecem aqui mesmo -----
   (() => { const c = document.createElement("div"); c.className = "card"; c.id = "advLive"; c.style.gridColumn = "1 / -1";
-    c.innerHTML = '<h2>Imagem ao vivo</h2><div class="frzbar" id="advFrz" hidden><span>Imagem congelada</span><button class="btn sm primary" data-golive>Voltar ao vivo</button></div><div class="btnrow" id="advLiveBtns" style="margin-bottom:8px"></div><canvas id="advLiveCv" style="width:100%;max-height:62vh;object-fit:contain;background:#000;border-radius:8px;display:block"></canvas>';
+    c.innerHTML = '<h2>Imagem ao vivo</h2><div class="frzbar" id="advFrz" hidden><span>Imagem congelada</span><button class="btn sm primary" data-golive>Voltar ao vivo</button></div><div class="btnrow" id="advLiveBtns" style="margin-bottom:8px"></div><canvas id="advLiveCv" style="width:100%;max-height:50vh;object-fit:contain;background:#000;border-radius:8px;display:block"></canvas>';
     $("advGrid").prepend(c);
     const bt = (t, f, id) => { const b = document.createElement("button"); b.className = "btn sm"; b.textContent = t; b.onclick = f; if (id) b.dataset.src = id; $("advLiveBtns").append(b); };
     bt("Comparar ampliação", () => $("btnCmpUp").click(), "btnCmpUp"); bt("Ver todos os métodos", () => $("btnCmp3").click(), "btnCmp3"); bt("Lupa 3×", () => $("btnZoom").click(), "btnZoom");
@@ -4392,11 +4393,15 @@
       if (f) h += '<div class="pr-pk' + (k === 0 ? " on" : "") + '" data-k="' + key + '|' + k + '"><img src="' + objUrl(f) + '"><div class="cap">' + esc(q.m.tipo === "base" ? q.m.legenda : q.m.arquivo.split("/").pop()) + '</div></div>'; } return h || '<p class="pr-dim">Sem imagens neste exame.</p>'; };
     const opt = d0 => dirs.map(d => '<option value="' + d + '"' + (d === d0 ? " selected" : "") + '>' + esc(exLab(d)) + '</option>').join("");
     modal("Comparar exames", '<h4>Imagem anterior</h4><select id="cmExA">' + opt(aDir) + '</select><div class="pr-pick" id="cmA" style="margin-top:8px"></div>' +
-      '<h4>Imagem atual</h4><select id="cmExB">' + opt(bDir) + '</select><div class="pr-pick" id="cmB" style="margin-top:8px"></div>',
-      [["Comparar", async () => { if (!sel.a || !sel.b) return; if (sel.a === sel.b) { setStatus("Escolha duas imagens diferentes.", "bad"); return; } MD.hidden = true;
+      '<h4>Imagem atual</h4><select id="cmExB">' + opt(bDir) + '</select><div class="pr-pick" id="cmB" style="margin-top:8px"></div>' +
+      '<p id="cmErr" hidden style="color:var(--bad);font-weight:700;margin:10px 0 0"></p><p class="pr-dim" style="margin:8px 0 0">Pode escolher as duas do mesmo exame ou de exames diferentes.</p>',
+      [["Comparar", async () => { if (!sel.a || !sel.b) return; if (sel.a === sel.b) { MD.querySelector("#cmErr").textContent = "Escolha duas imagens diferentes."; MD.querySelector("#cmErr").hidden = false; return; } MD.hidden = true;
         if (MT.open) metricClose(); await openCompare(pid, sel.a, sel.b); }, "primary"]]);
-    const fill = async g => { const d = MD.querySelector(g === "a" ? "#cmExA" : "#cmExB").value, L = all.filter(q => dirOf(q) === d);
-      sel["l" + g] = L; sel[g] = L[0] || null; MD.querySelector(g === "a" ? "#cmA" : "#cmB").innerHTML = await thumbs(L, g); };
+    const fill = async g => { const d = MD.querySelector(g === "a" ? "#cmExA" : "#cmExB").value, L = all.filter(q => dirOf(q) === d), o = sel[g === "a" ? "b" : "a"];
+      let k0 = 0; if (L.length > 1 && L[0] === o) k0 = 1;                 // mesmo exame nas duas: sugere outra imagem
+      sel["l" + g] = L; sel[g] = L[k0] || null; MD.querySelector(g === "a" ? "#cmA" : "#cmB").innerHTML = await thumbs(L, g);
+      MD.querySelectorAll((g === "a" ? "#cmA" : "#cmB") + " .pr-pk").forEach((z, i) => z.classList.toggle("on", i === k0)); cmErr(""); };
+    const cmErr = t => { const e = MD.querySelector("#cmErr"); if (e) { e.textContent = t; e.hidden = !t; } };
     MD.querySelector("#cmExA").onchange = () => fill("a"); MD.querySelector("#cmExB").onchange = () => fill("b"); await fill("a"); await fill("b");
     if (sel.a === sel.b && sel.la.length > 1) { sel.a = sel.la[1]; MD.querySelectorAll("#cmA .pr-pk").forEach((z, i) => z.classList.toggle("on", i === 1)); }   // mesmo exame: já sugere duas imagens diferentes
     MD.querySelector(".pr-mbody").onclick = ev => { const t = ev.target.closest("[data-k]"); if (!t) return; const [g, k] = t.dataset.k.split("|");
