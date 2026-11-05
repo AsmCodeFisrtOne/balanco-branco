@@ -533,6 +533,7 @@
   .lesson p, .lesson li { color:var(--txt); }
   @media (max-width: 900px) { body { grid-template-columns:1fr; } #side { flex-direction:row; flex-wrap:wrap; overflow-x:auto; padding:6px; } #side .brand, #side .nav-l, #side .foot { display:none; } #side .nb { width:auto; } #gSearch { width:40vw; } }
   :fullscreen #side, :fullscreen #top { display:none !important; }
+  :fullscreen body { grid-template-columns:minmax(0,1fr) !important; } :fullscreen #prExam, :fullscreen #exSteps { display:none !important; }
   .card h2 { color: var(--txt); } .keys kbd { color: var(--dim); border-color: var(--line); }
   .lt { --surface:#ffffff; --surface-2:#f9f7f6; --surface-3:#eeeae8; --line:#e5dfdc; --txt:#1f1b1a; --dim:#7d7774; --brand-tint:#833f34;
     --btn-bg:#ffffff; --btn-bd:#d0c7c3; --btn-bdh:#b9aea9; --btn-fg:#1f1b1a; --btn-sh:0 1px 2px rgba(40,22,18,.08); --btn-sha:inset 0 1px 3px rgba(0,0,0,.15); --btn-shs:0 1px 1px rgba(40,22,18,.06); --btn-press:1px;
