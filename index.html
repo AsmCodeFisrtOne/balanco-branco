@@ -353,6 +353,20 @@
   .pr-ev { border-left: 3px solid var(--line); padding: 2px 0 14px 14px; position: relative; }
   .pr-ev::before { content: ""; position: absolute; left: -7px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--brand); }
   .pr-thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .pr-vth { position: relative; display: inline-block; width: 92px; height: 92px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; background: #000; flex: none; }
+  .pr-vth img, .pr-vth .pr-vph { width: 100%; height: 100%; object-fit: cover; display: block; border: 0; border-radius: 0; }
+  .pr-vth b { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(156,76,63,.92); box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  .pr-vth b::before { content: ""; position: absolute; left: 13px; top: 10px; border-style: solid; border-width: 7px 0 7px 11px; border-color: transparent transparent transparent #fff; }
+  .pr-vth em { position: absolute; right: 4px; bottom: 4px; background: rgba(0,0,0,.75); color: #fff; font: 600 11px/1 system-ui, sans-serif; font-style: normal; padding: 3px 5px; border-radius: 4px; }
+  .pr-vth:hover { outline: 2px solid var(--brand); }
+  #pvModal { position: fixed; inset: 0; z-index: 70; background: rgba(8,9,10,.92); display: flex; flex-direction: column; }
+  #pvModal[hidden] { display: none; }
+  #pvBar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 14px; background: #16181b; border-bottom: 1px solid #2a2e33; color: #e9ecef; }
+  #pvBar .spacer { flex: 1; } #pvName { font-weight: 600; margin-right: 8px; }
+  #pvVid { flex: 1; min-height: 0; width: 100%; background: #000; }
+  .vspd { display: inline-flex; gap: 2px; margin-left: 6px; } .vspd .btn.sel, #pvSpd .btn.sel { background: var(--brand, #9c4c3f); color: #fff; border-color: var(--brand, #9c4c3f); }
+  .cfg-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; } .cfg-seg .btn.sel { background: var(--brand); color: #fff; border-color: var(--brand); }
+  #cfgLive { width: 100%; max-width: 360px; aspect-ratio: 1; background: #000; border-radius: 8px; display: block; margin: 4px 0 8px; }
   .pr-thumbs img { width: 92px; height: 92px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); cursor: zoom-in; }
   .pr-warn { margin-top: 10px; background: #3a2a10; border: 1px solid var(--warn); color: #ffd99a; padding: 8px 12px; border-radius: 8px; }
   .pr-cols { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
@@ -500,6 +514,28 @@
     --pri-bg:var(--brand); --pri-sh:0 2px 8px rgba(131,63,52,.3); --pri-sha:inset 0 2px 5px rgba(0,0,0,.3); color:var(--txt); color-scheme: light; }
   #status.ok { color: var(--ok); } #status.bad { color: var(--bad); }
   #imagem.mopen > aside { display: none; }
+  #imagem > aside { display: none !important; }                 /* v6.6: sem painel lateral no Exame */
+  #btnWBbar { background: var(--brand, #9c4c3f); border-color: var(--brand, #9c4c3f); color: #fff; }
+  #btnWBbar.done::after { content: "✓"; margin-left: 4px; font-weight: 700; }
+  #btnImg.on { box-shadow: 0 0 0 2px #d08c7e inset; }
+  #imgPop { position: fixed; z-index: 40; width: 300px; background: #1b1d21; border: 1px solid #3a3f46; border-radius: 12px; padding: 12px 16px 14px; box-shadow: 0 12px 40px rgba(0,0,0,.6); color: #e9ecef; }
+  #imgPop[hidden] { display: none; }
+  #imgPop .t { font-size: 12px; letter-spacing: .12em; color: #aab; margin-bottom: 4px; }
+  #imgPop .sl .hint { display: none; } #imgPop .btnrow { display: flex; gap: 8px; margin-top: 12px; } #imgPop .btnrow .btn { flex: 1; }
+  #imgPop::after { content: ""; position: absolute; left: var(--ax, 50%); bottom: -8px; width: 14px; height: 14px; background: #1b1d21; border-right: 1px solid #3a3f46; border-bottom: 1px solid #3a3f46; transform: translateX(-50%) rotate(45deg); }
+  #ajModal { position: fixed; inset: 0; z-index: 72; background: rgba(8,9,10,.88); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  #ajModal[hidden] { display: none; }
+  #ajModal .box { background: var(--surface, #fff); color: var(--txt); border-radius: 14px; width: min(1080px, 96vw); max-height: 92vh; display: flex; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  #ajModal .pv { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; min-width: 0; }
+  #ajModal .pv canvas { max-width: 100%; max-height: 86vh; display: block; }
+  #ajModal .pv img { position: absolute; right: 12px; bottom: 12px; width: 120px; height: 120px; object-fit: cover; border: 2px solid #fff; border-radius: 6px; }
+  #ajModal .ajtag { position: absolute; display: inline-block; width: auto; height: auto; background: rgba(0,0,0,.65); color: #fff; font-size: 12px; line-height: 1.2; padding: 4px 8px; border-radius: 6px; }
+  #ajModal .side { width: 300px; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+  #ajModal .side .hd { font-weight: 700; font-size: 18px; } #ajModal .side input[type=range] { width: 100%; accent-color: var(--brand); margin: 4px 0 12px; }
+  #ajModal .side .lv { display: flex; justify-content: space-between; } #ajModal .side .lv b { color: var(--brand); }
+  #ajModal .note { margin-top: auto; background: var(--surface-2, #f6ece9); border-left: 3px solid var(--brand); padding: 8px 10px; font-size: 13px; border-radius: 4px; }
+  .pr-pk .ajb { margin-top: 4px; width: 100%; } .pr-pk .ajt { position: absolute; left: 8px; top: 8px; background: var(--brand); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 99px; }
+  .pr-pk { position: relative; }
   #imagem > aside .desc, #imagem > aside .help, #imagem > aside .sl .hint { display: none; }
   #imagem > aside .card h2 { margin-bottom: 8px; }
   .btn[hidden] { display: none; }
@@ -507,7 +543,7 @@
 </style>
 </head>
 <body>
-<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.5</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><a class="nb" id="sideMan" href="manual.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg><span>Manual (PDF)</span></a><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
+<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v6.6</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><a class="nb" id="sideMan" href="manual.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg><span>Manual (PDF)</span></a><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
     <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
@@ -523,7 +559,7 @@
       <div id="viewer" hidden>
         <img id="vImg" alt=""><video id="vVid" controls></video>
         <div id="vbar"><span id="vName"></span>
-          <span id="vFrame"><button class="btn sm" id="vPrev" title="Quadro anterior">◀ quadro</button><button class="btn sm" id="vNext" title="Próximo quadro">quadro ▶</button><button class="btn sm" id="vSharp" title="Procura o quadro mais nítido perto deste (±0,5 s)">Mais nítido</button></span>
+          <span id="vFrame"><button class="btn sm" id="vPrev" title="Quadro anterior">◀ quadro</button><button class="btn sm" id="vNext" title="Próximo quadro">quadro ▶</button><button class="btn sm" id="vSharp" title="Procura o quadro mais nítido perto deste (±0,5 s)">Mais nítido</button><span class="vspd" id="vSpd"><button class="btn sm" data-spd="0.25">0,25×</button><button class="btn sm" data-spd="0.5">0,5×</button><button class="btn sm sel" data-spd="1">1×</button></span></span>
           <button class="btn sm" id="vMetric" title="Medir nesta imagem (L)">Métrica</button><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnPip" title="Mostrar ou ocultar a janela pequena com a câmera">Ocultar câmera</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
       </div>
       <div id="fzBar" hidden>
@@ -681,10 +717,12 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>Ajustes de imagem <button class="btn sm help" data-goto="t4" title="O que cada um faz">?</button></h2>
-        <div id="adj"></div>
-        <div class="btnrow"><button class="btn sm" id="btnAdjReset">Restaurar padrão</button></div>
+      <div class="card" id="imgCard">
+        <h2>Imagem</h2>
+        <div class="sl"><span class="name">Cor</span><span class="val" id="iCorV">0</span><input type="range" id="iCor" min="-10" max="10" step="1" value="0"></div>
+        <div class="sl"><span class="name">Brilho</span><span class="val" id="iBriV">0</span><input type="range" id="iBri" min="-10" max="10" step="1" value="0"></div>
+        <div id="adj" hidden></div>
+        <div class="btnrow"><button class="btn sm" id="btnAdjReset">Voltar ao padrão</button></div>
       </div>
 
       <div class="card">
@@ -773,7 +811,7 @@
   <section class="view dk" id="tutorial">
     <div class="tut">
       <div class="tut-head" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2>Tutorial</h2><a class="btn sm" href="manual.pdf" target="_blank" rel="noopener" style="margin-left:auto;text-decoration:none">Abrir manual (PDF)</a></div>
-      <div class="tut-nav"><button class="btn sm" data-goto="t1">1 · Iniciar exame</button><button class="btn sm" data-goto="t2">2 · Balanço de branco</button><button class="btn sm" data-goto="t3">3 · Congelar, foto e vídeo</button><button class="btn sm" data-goto="t4">4 · Métrica</button><button class="btn sm" data-goto="t5">5 · Prontuário e laudo</button><button class="btn sm" data-goto="t6">6 · Evitar estouro de luz</button><button class="btn sm" data-goto="t7">7 · Anti-vermelho</button><button class="btn sm" data-goto="t8">8 · Ajustes de imagem</button><button class="btn sm" data-goto="t9">9 · Nitidez e ruído</button><button class="btn sm" data-goto="t10">10 · Cor travada</button></div>
+      <div class="tut-nav"><button class="btn sm" data-goto="t1">1 · Iniciar exame</button><button class="btn sm" data-goto="t2">2 · Balanço de branco</button><button class="btn sm" data-goto="t3">3 · Congelar, foto e vídeo</button><button class="btn sm" data-goto="t4">4 · Métrica</button><button class="btn sm" data-goto="t5">5 · Prontuário e laudo</button><button class="btn sm" data-goto="t6">6 · Evitar estouro de luz</button><button class="btn sm" data-goto="t7">7 · Anti-vermelho</button><button class="btn sm" data-goto="t8">8 · Cor e brilho</button><button class="btn sm" data-goto="t9">9 · Nitidez e ruído</button><button class="btn sm" data-goto="t10">10 · Cor travada</button></div>
       <article class="lesson" id="t1">
         <div>
           <h3><span class="num">1</span>Iniciar exame</h3>
@@ -793,7 +831,7 @@
           <ol>
             <li>Aponte para a <b>gaze branca</b>, na distância de trabalho.</li>
             <li>Preencha o <b>quadrado amarelo</b> só com o branco.</li>
-            <li>Toque em <b>Balanço de branco</b> (tecla W).</li>
+            <li>Toque em <b>Balanço de branco</b>, o primeiro botão da barra de baixo (tecla W).</li>
           </ol>
           <div class="note">Refaça ao trocar a ótica, o cabo de luz ou a fonte.</div>
         </div>
@@ -807,6 +845,7 @@
             <li><b>Foto</b> — tecla P.</li>
             <li><b>Vídeo</b> — tecla V para iniciar e parar.</li>
             <li>Toque na miniatura para rever. ✕ para excluir.</li>
+            <li>No vídeo: <b>0,25×</b> ou <b>0,5×</b> para câmera lenta; <b>◀ quadro ▶</b> passo a passo.</li>
           </ul>
         </div>
         <div class="demo" data-dur="10"><canvas data-demo="capture" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
@@ -828,6 +867,7 @@
           <h3><span class="num">5</span>Prontuário e laudo</h3>
           <ol>
             <li><b>Prontuário</b> → paciente → exame.</li>
+            <li>Toque num vídeo <b>▶</b> para assistir.</li>
             <li>Escolha as imagens e escreva o laudo.</li>
             <li><b>Gerar PDF</b> para entregar.</li>
           </ol>
@@ -842,6 +882,7 @@
             <li><b>Baixo / Médio</b> — meio-termo.</li>
             <li><b>Alto</b> — nada estoura; imagem um pouco mais escura.</li>
           </ul>
+          <div class="note">Em <b>Configurações → Imagem</b>.</div>
         </div>
         <div class="demo" data-dur="10"><canvas data-demo="norm" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
@@ -859,16 +900,14 @@
       </article>
       <article class="lesson" id="t8">
         <div>
-          <h3><span class="num">8</span>Ajustes de imagem</h3>
+          <h3><span class="num">8</span>Cor e brilho</h3>
           <ul>
-            <li><b>Profundidade dos pretos</b> — tira o aspecto lavado.</li>
-            <li><b>Contraste</b> — destaca relevo.</li>
+            <li><b>Cor</b> — mais ou menos cor, se o Balanço de branco não bastar.</li>
             <li><b>Brilho</b> — clareia ou escurece.</li>
-            <li><b>Detalhe nas sombras</b> — clareia os escuros.</li>
-            <li><b>Intensidade das cores</b> — cores mais vivas.</li>
           </ul>
+          <div class="note">Botão <b>Imagem</b> na barra de baixo (tecla I). <b>Voltar ao padrão</b> zera os dois. No laudo, <b>Ajustar</b> melhora a foto que vai anexada.</div>
         </div>
-        <div class="demo" data-dur="15"><canvas data-demo="adjust" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
+        <div class="demo" data-dur="6"><canvas data-demo="adjust" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
       <article class="lesson" id="t9">
         <div>
@@ -877,7 +916,7 @@
             <li><b>Realce de bordas</b> — imagem mais nítida.</li>
             <li><b>Redução de ruído</b> — tira o chuvisco.</li>
           </ul>
-          <div class="note">Comece em Baixo.</div>
+          <div class="note">Em <b>Configurações → Imagem</b>. Comece em Baixo.</div>
         </div>
         <div class="demo" data-dur="9"><canvas data-demo="enh" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
@@ -1629,10 +1668,10 @@
   const stage = $("stage"), live = $("live");
   const video = document.createElement("video"); video.muted = true; video.playsInline = true;
 
-  let gains = [1, 1, 1], adj = { ...ADJ_DEF }, arLevel = 0;
+  let gains = [1, 1, 1], adj = { ...ADJ_DEF }, arLevel = 0, tintMul = [1, 1, 1];
   let evlLevel = 0;
   let luts = makeLuts(gains, adj, evlLevel), wbLuts = makeLuts(gains);
-  function rebuildLuts() { luts = makeLuts(gains, adj, evlLevel); wbLuts = makeLuts(gains); }
+  function rebuildLuts() { luts = makeLuts(gains.map((g, i) => g * tintMul[i]), adj, evlLevel); wbLuts = makeLuts(gains); }
 
   let stream = null, showOriginal = false, lastIn = [0, 0, 0], lastSat = [0, 0, 0], camKey = "";
   let roiFrac = 0.25, outW = 400, outH = 400;
@@ -1640,7 +1679,7 @@
   let rec = null; const items = []; let viewing = null, dirHandle = null, curTrack = null, wbDone = false;
 
   function setStatus(t, cls) { const s = $("status"); s.textContent = t; s.className = cls || "";
-    if (tab !== "imagem" || !$("prModal").hidden) { const q = $("prToast"); q.textContent = t; q.className = "on " + (cls || ""); clearTimeout(setStatus.t); setStatus.t = setTimeout(() => q.className = "", cls === "bad" ? 6000 : 3500); } }
+    if (t && t !== "Iniciando…") { const q = $("prToast"); q.style.bottom = tab === "imagem" && $("prModal").hidden ? "96px" : ""; q.textContent = t; q.className = "on " + (cls || ""); clearTimeout(setStatus.t); setStatus.t = setTimeout(() => q.className = "", cls === "bad" ? 6000 : 3500); } }
   function showGains() { ["gR", "gG", "gB"].forEach((id, i) => $(id).textContent = gains[i].toFixed(2)); }
   function setGains(g) { gains = g; rebuildLuts(); showGains(); }
   const store = {
@@ -1648,21 +1687,37 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
 
-  // ----- ajustes -----
-  function renderAdj() {
-    const box = $("adj"); box.innerHTML = "";
-    ADJ_UI.forEach(([k, label, min, max, step, hint]) => {
-      const row = document.createElement("div"); row.className = "sl";
-      row.innerHTML = '<span class="name"></span><span class="val"></span><input type="range"><span class="hint"></span>';
-      row.querySelector(".name").textContent = label; row.querySelector(".hint").textContent = hint;
-      const inp = row.querySelector("input"), val = row.querySelector(".val");
-      Object.assign(inp, { min, max, step, value: adj[k] }); val.textContent = (+adj[k]).toFixed(2);
-      inp.oninput = () => { adj[k] = +inp.value; val.textContent = adj[k].toFixed(2); rebuildLuts(); store.set("adj:" + camKey, adj); };
-      box.appendChild(row);
-    });
+  // ----- ajustes de imagem -----
+  // Perfil de fábrica (Avançado): base de cor/luz + tom do branco + padrões de nitidez/ruído/estouro.
+  // Médico: Cor e Brilho (Exame) + Nitidez/Ruído/Estouro (Configurações → Imagem), salvos por médico, partindo do perfil.
+  const FAB_DEF = { black: 0, contrast: 1, bright: 0, gamma: 1, sat: 1, tint: 0, shp: 0, nr: 0, evl: 0, nome: "", data: "" };
+  let FAB = { ...FAB_DEF, ...(store.get("fabImg") || {}) };
+  const docDef = () => ({ cor: 0, bri: 0, shp: FAB.shp, nr: FAB.nr, evl: FAB.evl });
+  let DOC = docDef();
+  const docKey = () => "imgDoc:" + (typeof PR !== "undefined" && PR.user ? PR.user.login : "_");
+  function imgCompose() {
+    const c = DOC.cor, b = DOC.bri, cl = (v, a, z) => Math.min(z, Math.max(a, v));
+    adj = { black: cl(FAB.black + 0.06 * c, 0, 0.35), contrast: cl(FAB.contrast * (1 + 0.12 * c), 0.5, 2.2), bright: cl(FAB.bright + 0.2 * b, -0.4, 0.4),
+            gamma: cl(FAB.gamma * (1 + 0.10 * Math.max(c, 0)), 0.5, 2.2), sat: cl(FAB.sat * (1 + 0.6 * c), 0, 2.6) };
+    tintMul = [1 + 0.08 * FAB.tint, 1, 1 - 0.08 * FAB.tint]; rebuildLuts();
   }
+  function docSave() { store.set(docKey(), DOC); clearTimeout(docSave.t); docSave.t = setTimeout(imgDiskSave, 800); }
+  function docApply() { imgCompose(); setSHP(DOC.shp); setNR(DOC.nr); setEVL(DOC.evl); renderAdj(); if (typeof cfgImgSync === "function") cfgImgSync(); }
+  function docLoad() { DOC = { ...docDef(), ...(store.get(docKey()) || {}) }; docApply(); }
+  async function imgDiskSave() {               // cópia na pasta de dados (sobrevive à limpeza do navegador)
+    try { if (typeof PR === "undefined" || !PR.user) return; const m = await readJSON(["_sistema", "imagem_medicos.json"], {}); m[PR.user.login] = DOC; await writeJSON(["_sistema", "imagem_medicos.json"], m); } catch (e) {} }
+  async function imgSession() {                // ao entrar: perfil de fábrica e ajustes do médico gravados na pasta
+    try { const f = await readJSON(["_sistema", "perfil_imagem.json"]); if (f && typeof f === "object") { FAB = { ...FAB_DEF, ...f }; store.set("fabImg", FAB); } } catch (e) {}
+    try { if (PR.user) { const m = await readJSON(["_sistema", "imagem_medicos.json"], {}); if (m[PR.user.login]) store.set(docKey(), m[PR.user.login]); } } catch (e) {}
+    docLoad(); if (typeof fabRender === "function") fabRender(); }
+  function renderAdj() {
+    $("iCor").value = Math.round(DOC.cor * 10); $("iCorV").textContent = (DOC.cor > 0 ? "+" : "") + Math.round(DOC.cor * 10);
+    $("iBri").value = Math.round(DOC.bri * 10); $("iBriV").textContent = (DOC.bri > 0 ? "+" : "") + Math.round(DOC.bri * 10);
+  }
+  $("iCor").oninput = () => { DOC.cor = +$("iCor").value / 10; imgCompose(); renderAdj(); docSave(); };
+  $("iBri").oninput = () => { DOC.bri = +$("iBri").value / 10; imgCompose(); renderAdj(); docSave(); };
   $("btnResetAll").onclick = () => armDelete($("btnResetAll"), "Retornar aos parâmetros normais", resetAll);
-  $("btnAdjReset").onclick = () => { adj = { ...ADJ_DEF }; rebuildLuts(); store.set("adj:" + camKey, adj); renderAdj(); };
+  $("btnAdjReset").onclick = () => { DOC.cor = 0; DOC.bri = 0; imgCompose(); renderAdj(); docSave(); };
 
   // ----- anti-vermelho -----
   function setAR(l) {
@@ -1780,7 +1835,8 @@
     $("cam").value = curTrack.getSettings().deviceId || $("cam").value;
     renderHw();
     { const c = caps(); $("resMax").textContent = c.width && c.height ? c.width.max + "×" + c.height.max : "não informado"; }
-    adj = { ...ADJ_DEF, ...(store.get("adj:" + camKey) || {}) }; renderAdj();
+    if (!store.get("fabImg")) { const o = store.get("adj:" + camKey); if (o) { Object.assign(FAB, o); store.set("fabImg", FAB); } }
+    docLoad();
     const g = store.get("wb:" + camKey);
     if (Array.isArray(g) && g.length === 3 && !g.every(x => x === 1)) {
       calRef = store.get("ref:" + camKey);
@@ -1813,7 +1869,7 @@
   // ----- laço de vídeo -----
   const authEl = $("prAuth");
   function frame() {
-    if (srCap || MT.open || (!rec && ((tab !== "imagem" && tab !== "adv") || !authEl.hidden))) {   // Métrica aberta, aba Prontuário/Tutorial ou tela de entrada: processamento parado, notebook livre
+    if (srCap || MT.open || (!rec && ((tab !== "imagem" && tab !== "adv" && !(tab === "pront" && typeof PR !== "undefined" && PR.scr === "config" && $("cfgLive"))) || !authEl.hidden))) {   // Métrica aberta, aba Prontuário/Tutorial ou tela de entrada: processamento parado, notebook livre
       if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
       return;
     }
@@ -1905,7 +1961,8 @@
       $("inR").textContent = lastIn[0].toFixed(0); $("inG").textContent = lastIn[1].toFixed(0); $("inB").textContent = lastIn[2].toFixed(0);
       $("outR").textContent = (cr / n).toFixed(0); $("outG").textContent = (cg / n).toFixed(0); $("outB").textContent = (cb / n).toFixed(0);
     }
-    if (tab === "adv" && typeof advLiveDraw === "function") advLiveDraw();          // imagem ao vivo dentro do Avançado (comparações de bancada)
+    if (tab === "adv" && typeof advLiveDraw === "function") advLiveDraw();
+    if (tab === "pront" && $("cfgLive")) liveTo($("cfgLive"));                     // prévia em Configurações → Imagem          // imagem ao vivo dentro do Avançado (comparações de bancada)
     if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
   }
 
@@ -1965,8 +2022,8 @@
   }
   function resetAll() {
     if (frozen || freezeReq) { frozen = null; freezeReq = false; setFreezeUi(); }
-    setCmp(false); setAR(0); setEVL(0); setSHP(0); setNR(0); setCmpMode(0); setZoom(false); setSR(1); setUP(0, true);
-    adj = { ...ADJ_DEF }; store.set("adj:" + camKey, adj); renderAdj();
+    setCmp(false); setAR(0); setCmpMode(0); setZoom(false); setSR(1); setUP(0, true);
+    DOC = docDef(); docSave(); docApply();
     roiFrac = 0.25; $("roi").value = 25; $("roiTxt").textContent = "25%";
     showRoi = true; $("showRoi").checked = true; $("lockAwb").checked = true; $("lockAe").checked = false;
     calRef = null; store.set("ref:" + camKey, null);
@@ -2679,6 +2736,9 @@
   const vv0 = $("vVid"), FR = 1 / 30;
   const seekTo = t => new Promise(r => { const done = () => { vv0.removeEventListener("seeked", done); r(); }; vv0.addEventListener("seeked", done); vv0.currentTime = Math.max(0, Math.min(vv0.duration || 0, t)); setTimeout(done, 1500); });
   $("vPrev").onclick = () => { vv0.pause(); seekTo(vv0.currentTime - FR); }; $("vNext").onclick = () => { vv0.pause(); seekTo(vv0.currentTime + FR); };
+  let vRate = 1; const vSpdSet = r => { vRate = r; vv0.defaultPlaybackRate = r; vv0.playbackRate = r; document.querySelectorAll("#vSpd [data-spd]").forEach(b => b.classList.toggle("sel", +b.dataset.spd === r)); };
+  document.querySelectorAll("#vSpd [data-spd]").forEach(b => b.onclick = () => vSpdSet(+b.dataset.spd));
+  vv0.addEventListener("loadedmetadata", () => vSpdSet(1));          // cada vídeo abre em velocidade normal
   $("vSharp").onclick = async () => {
     vv0.pause(); if (!vv0.videoWidth) return; const t0 = vv0.currentTime, c = document.createElement("canvas"), W = 256, H = Math.round(256 * vv0.videoHeight / vv0.videoWidth);
     c.width = W; c.height = H; const x = c.getContext("2d", { willReadFrequently: true }); let best = -1, bt = t0; $("vSharp").disabled = true;
@@ -2837,8 +2897,8 @@
   function fzSync() { const q = (a, v) => document.querySelectorAll("#fzBar [" + a + "]").forEach(b => b.classList.toggle("sel", +b.getAttribute(a) === v));
     let m = 0; try { m = curUp(); } catch (e) {} q("data-fup", m); q("data-fshp", shpLevel); q("data-fnr", nrLevel); }
   document.querySelectorAll("#fzBar [data-fup]").forEach(b => b.onclick = () => { setUP(+b.dataset.fup); fzSync(); });
-  document.querySelectorAll("#fzBar [data-fshp]").forEach(b => b.onclick = () => setSHP(+b.dataset.fshp));
-  document.querySelectorAll("#fzBar [data-fnr]").forEach(b => b.onclick = () => setNR(+b.dataset.fnr));
+  document.querySelectorAll("#fzBar [data-fshp]").forEach(b => b.onclick = () => { setSHP(+b.dataset.fshp); DOC.shp = shpLevel; docSave(); });
+  document.querySelectorAll("#fzBar [data-fnr]").forEach(b => b.onclick = () => { setNR(+b.dataset.fnr); DOC.nr = nrLevel; docSave(); });
   // ruído na imagem parada: a redução ao vivo é temporal (soma quadros) e não age num quadro só. Congelado, cada nível aplica
   // NON-LOCAL MEANS no quadro original do congelamento (sem acumular): só faz média entre remendos 3×3 realmente parecidos
   // (busca 7×7, força proporcional ao ruído medido na própria imagem) e devolve uma parte do detalhe — preserva bordas e textura.
@@ -3207,21 +3267,18 @@
         "Alto: vermelho bem atenuado — campo com muito sangue"][lvl];
     },
     adjust(c2, t, cap) {
-      const steps = [["black", 0.17, "Profundidade dos pretos", "tira o aspecto lavado"], ["contrast", 1.45, "Contraste", "destaca relevo e bordas"],
-        ["bright", -0.12, "Brilho", "escurece ou clareia tudo"], ["gamma", 1.5, "Detalhe nas sombras", "clareia os tons escuros"], ["sat", 1.6, "Intensidade das cores", "cores mais vivas"]];
-      const idx = Math.floor((t % 15) / 3), T = t % 3, [key, target, name, what] = steps[idx];
-      const a = { ...ADJ_DEF, black: idx > 0 ? 0.17 : 0 };
-      const k = T < 0.4 ? 0 : T < 1.6 ? ease((T - 0.4) / 1.2) : T < 2.5 ? 1 : 1 - ease((T - 2.5) / 0.5);
-      a[key] = lerp(key === "black" ? 0 : ADJ_DEF[key], target, k);
+      const idx = Math.min(1, Math.floor((t % 6) / 3)), T = t % 3, name = idx ? "Brilho" : "Cor", tgt = idx ? -0.6 : 1;
+      const k = T < 0.4 ? 0 : T < 1.6 ? ease((T - 0.4) / 1.2) : T < 2.5 ? 1 : 1 - ease((T - 2.5) / 0.5), v = tgt * k, c = idx ? 0 : v, b = idx ? v : 0;
+      const a = { black: 0.06 * c, contrast: 1 + 0.12 * c, bright: 0.2 * b, gamma: 1 + 0.10 * Math.max(c, 0), sat: 1 + 0.6 * c };
       render(c2, SCENE_WASH, [1, 1, 1], a);
-      const ui = ADJ_UI.find(u => u[0] === key), frac = (a[key] - ui[2]) / (ui[3] - ui[2]);
+      const val = Math.round(v * 10), frac = (val + 10) / 20;
       c2.fillStyle = "rgba(0,0,0,.7)"; c2.fillRect(14, TH - 94, 250, 52);
       c2.fillStyle = "#fff"; c2.font = "14px Bonnie, Segoe UI, sans-serif"; c2.fillText(name, 24, TH - 75);
-      c2.fillStyle = "#d08c7e"; c2.textAlign = "right"; c2.fillText(a[key].toFixed(2), 254, TH - 75); c2.textAlign = "left";
+      c2.fillStyle = "#d08c7e"; c2.textAlign = "right"; c2.fillText((val > 0 ? "+" : "") + val, 254, TH - 75); c2.textAlign = "left";
       c2.fillStyle = "#3a3f46"; c2.fillRect(24, TH - 62, 230, 5);
-      c2.fillStyle = "#9c4c3f"; c2.fillRect(24, TH - 62, 230 * frac, 5);
+      c2.fillStyle = "#9c4c3f"; c2.fillRect(24 + 115, TH - 62, 230 * (frac - 0.5), 5);
       c2.fillStyle = "#e9ecef"; c2.beginPath(); c2.arc(24 + 230 * frac, TH - 59.5, 7, 0, 7); c2.fill();
-      cap.innerHTML = "<span class='tag-name'>" + name + "</span>: " + what;
+      cap.innerHTML = "<span class='tag-name'>" + name + "</span>" + (idx ? ": clareia ou escurece" : ": mais ou menos cor");
     },
     capture(c2, t, cap) {
       const T = t % 10, frz = T > 4 && T < 6.2, tt = frz ? 4 : T;
@@ -3449,7 +3506,7 @@
     $("prLogout").textContent = PR.user ? "Sair" : "Entrar";
     PR.scr = "hoje"; PR.pac = null; PR.step = 0; PR.heroOff = false;
     if (med || PR.camOnly) showTab("imagem"); else showTab("pront");
-    prRender(); exBadge(); backupReminder(); navSync(); }
+    prRender(); exBadge(); backupReminder(); navSync(); imgSession(); }
   $("prLogout").onclick = async () => { if (PR.exam) { setStatus("Encerre o exame em andamento antes de sair.", "bad"); return; }
     if (PR.user) { await audit("saiu"); PR.user = null; } PR.pac = null; PR.camOnly = false; prRender(); authStart(); };
   async function backupReminder() { if (!isMed()) return; const b = await readJSON(["_sistema", "backup.json"], {}); const days = b.ultimo ? (Date.now() - new Date(b.ultimo)) / 864e5 : 999;
@@ -3555,7 +3612,10 @@
         if (med) {
           const th = (x.midias || []).filter(m => m.tipo === "foto" || m.tipo === "metrica").slice(0, 6); h += '<div class="pr-thumbs" data-dir="' + dir + '">';
           for (const m of th) { const f = await readBlob(["pacientes", id, "exames", dir, ...m.arquivo.split("/")]); if (f) h += '<img src="' + objUrl(f) + '" title="' + esc(m.legenda || m.arquivo) + (m.tipo === "foto" ? " — abrir na Métrica" : "") + '" data-act="' + (m.tipo === "foto" ? "metricaDe" : "verArq") + '" data-id="' + dir + '|' + esc(m.arquivo) + '">'; }
-          h += (x.midias || []).filter(m => m.tipo === "video").length ? '<span class="pr-dim">+ ' + x.midias.filter(m => m.tipo === "video").length + ' vídeo(s)</span>' : '';
+          for (const m of (x.midias || []).filter(m => m.tipo === "video")) {
+            let cap = m.capa ? await readBlob(["pacientes", id, "exames", dir, ...m.capa.split("/")]) : null, u = cap ? objUrl(cap) : "";
+            if (!u) { const vb = await readBlob(["pacientes", id, "exames", dir, ...m.arquivo.split("/")]); if (vb) u = await vidThumb(vb); }
+            h += '<span class="pr-vth" data-act="verVid" data-id="' + dir + '|' + esc(m.arquivo) + '" title="Assistir vídeo">' + (u ? '<img src="' + u + '" alt="">' : '<span class="pr-vph"></span>') + '<b></b>' + (m.duracao ? '<em>' + mmss(m.duracao) + '</em>' : '') + '</span>'; }
           h += '</div><div class="pr-acts" style="margin-top:8px">' + (x.status === "em andamento" && !PR.exam ? '<button class="btn sm" data-act="retomar" data-id="' + dir + '">Retomar exame</button>' : '') +
             '<button class="btn sm" data-act="laudo" data-id="' + dir + '">' + (x.status === "laudado" ? "Laudo (nova versão)" : "Fazer laudo") + '</button>' +
             ((x.laudos || []).length ? '<button class="btn sm" data-act="verPdf" data-id="' + dir + '">Abrir laudo (PDF)</button><button class="btn sm" data-act="copiaPdf" data-id="' + dir + '">Salvar cópia (pendrive)</button><button class="btn sm" data-act="email" data-id="' + dir + '">E-mail</button>' : '') +
@@ -3652,7 +3712,9 @@
         (x.metricas = x.metricas || []).push({ imagem: "metricas/" + n + ".png", dados: "metricas/" + n + ".json", hora, origem: md.origens ? md.origens.join(" | ") : "", paineis: pns.map(p => ({ ref: p.ref, data: p.data })) });
         (x.midias = x.midias || []).push({ arquivo: "metricas/" + n + ".png", tipo: "metrica", hora, legenda: "Métrica", no_laudo: true }); }
       else if (L === "V") { const ext = (blob.type || "").includes("mp4") ? "mp4" : "webm"; await writeFile([...T.base, "midia", n + "." + ext], blob);
-        x.midias.push({ arquivo: "midia/" + n + "." + ext, tipo: "video", hora, duracao: it.dur || null }); }
+        const mv = { arquivo: "midia/" + n + "." + ext, tipo: "video", hora, duracao: it.dur || null, formato: ext.toUpperCase(), ajustes: capAjustes() };
+        try { if (it.thumb && it.thumb.startsWith("data:")) { const cb = await (await fetch(it.thumb)).blob(); await writeFile([...T.base, "midia", n + "_capa.jpg"], cb); mv.capa = "midia/" + n + "_capa.jpg"; } } catch (e) {}
+        x.midias.push(mv); }
       else { await writeFile([...T.base, "midia", n + ".png"], blob); const m = { arquivo: "midia/" + n + ".png", tipo: "foto", hora, legenda: "", no_laudo: true, ajustes: capAjustes() };
         const nat = it.nativeP ? await it.nativeP : it.native; if (nat) { await writeFile([...T.base, "midia", n + "_camera.png"], nat); m.original = "midia/" + n + "_camera.png"; }
         if (it.extra && it.extra.blob) { await writeFile([...T.base, "midia", n + "_quadro.png"], it.extra.blob); m.quadro_unico = "midia/" + n + "_quadro.png"; }
@@ -3662,7 +3724,8 @@
       setStatus((L === "M" ? "Métrica" : L === "V" ? "Vídeo" : "Foto") + " gravada no exame (" + n + ").", "ok"); refreshSaveUi(); return true;
     } catch (e) { console.error(e); setStatus("Falha ao gravar no exame: " + e.message, "bad"); return false; } }
   function capAjustes() { return { balanco_branco: (typeof gains !== "undefined" && gains ? gains.map(v => +v.toFixed(3)) : null), anti_vermelho: arLevel, evitar_estouro: (EVL[evlLevel] || {}).name,
-    lente: Object.assign({ correcao_na_metrica: lensOn() }, LENS), realce: SHP[shpLevel].name, ruido: NR[nrLevel].name, ampliacao: UPM[curUp()].name, melhoria_resolucao: !!(frozen && frozenSR) }; }
+    lente: Object.assign({ correcao_na_metrica: lensOn() }, LENS), realce: SHP[shpLevel].name, ruido: NR[nrLevel].name, ampliacao: UPM[curUp()].name, melhoria_resolucao: !!(frozen && frozenSR),
+    cor: Math.round(DOC.cor * 10), brilho: Math.round(DOC.bri * 10), tom_do_branco: FAB.tint, perfil_fabrica: FAB.nome || "padrão" }; }
   async function examRemove(it) { const E = it.exam; if (!E) return false; try {
     const x = await readJSON([...E.base, "exame.json"]); const keep = m => !(m.arquivo || m.imagem || "").includes("/" + E.n);
     for (const m of (x.midias || []).concat(x.metricas || []).filter(m => !keep(m))) for (const f of [m.arquivo, m.original, m.quadro_unico, m.imagem, m.dados].filter(Boolean)) { try { await toTrash([...E.base, ...f.split("/")]); } catch (e) {} }
@@ -3704,9 +3767,10 @@
     if (!L.imagens) L.imagens = (x.midias || []).filter(m => m.tipo !== "video" && m.no_laudo !== false).map(m => ({ arquivo: m.arquivo, legenda: m.legenda || (m.tipo === "metrica" ? "Métrica (medida relativa)" : "") }));
     PR.L = { base, x, p, L, mods, medId };
     const imgs = (x.midias || []).filter(m => m.tipo !== "video"); let gal = "";
-    for (const m of imgs) { const f = await readBlob([...base, ...m.arquivo.split("/")]); const i = L.imagens.findIndex(q => q.arquivo === m.arquivo);
-      gal += '<div class="pr-pk' + (i >= 0 ? " on" : "") + '" data-act="lImg" data-id="' + esc(m.arquivo) + '">' + (f ? '<img src="' + objUrl(f) + '">' : '') + '<div class="cap">' + (i >= 0 ? '<span class="n">' + (i + 1) + '</span>' : '<span class="pr-dim">não incluída</span>') + '</div>' +
-        (i >= 0 ? '<input class="lcap" data-id="' + esc(m.arquivo) + '" value="' + esc(L.imagens[i].legenda) + '" placeholder="Legenda">' : '') + '</div>'; }
+    for (const m of imgs) { const f = await readBlob([...base, ...(m.ajustada || m.arquivo).split("/")]); const i = L.imagens.findIndex(q => q.arquivo === m.arquivo);
+      gal += '<div class="pr-pk' + (i >= 0 ? " on" : "") + '" data-act="lImg" data-id="' + esc(m.arquivo) + '">' + (f ? '<img src="' + objUrl(f) + '">' : '') + (m.ajustada ? '<span class="ajt">ajustada</span>' : '') + '<div class="cap">' + (i >= 0 ? '<span class="n">' + (i + 1) + '</span>' : '<span class="pr-dim">não incluída</span>') + '</div>' +
+        (i >= 0 ? '<input class="lcap" data-id="' + esc(m.arquivo) + '" value="' + esc(L.imagens[i].legenda) + '" placeholder="Legenda">' : '') +
+        (m.tipo === "foto" ? '<button class="btn sm ajb" data-act="ajFoto" data-id="' + esc(m.arquivo) + '">Ajustar</button>' : '') + '</div>'; }
     PM.innerHTML = '<div class="pr-cols"><div class="pr-card" style="flex:1.15"><h4>Laudo · ' + esc(x.tipo) + ' · ' + brDate(x.inicio) + (p ? ' · ' + esc(p.nome) : '') + (x.laudos && x.laudos.length ? ' · nova versão (v' + (x.laudos.length + 1) + ')' : '') + '</h4>' +
       '<div class="pr-acts"><select id="lMod">' + mods.map(m => '<option value="' + esc(m.id) + '"' + (m.id === L.modelo ? " selected" : "") + '>' + esc(m.nome) + '</option>').join("") + '</select><button class="btn sm" data-act="lAplicar">Aplicar modelo</button><button class="btn sm" data-act="lSalvarMod">Salvar como meu modelo…</button></div>' +
       '<div id="lSecs">' + L.secoes.map((s, i) => '<div class="pr-sec"><div class="pr-acts"><input class="lt" data-i="' + i + '" value="' + esc(s.titulo) + '"><button class="btn sm" data-act="lDel" data-id="' + i + '" title="Remover seção">✕</button></div><textarea class="lx" data-i="' + i + '" rows="2">' + esc(s.texto) + '</textarea></div>').join("") + '</div>' +
@@ -3747,7 +3811,7 @@
       doc.setFont("times", bold ? "bold" : "normal"); doc.setFontSize(11); doc.splitTextToSize(txt.trim(), CW).forEach(l => { need(5.2); doc.text(l, M, y); y += 5.2; }); y += 2.5; };
     L.secoes.forEach(s => sec(s.titulo || "", s.texto)); sec("Conclusão", L.conclusao, true);
     if (L.imagens.length) { const cols = 3, gw = (CW - 2 * 5) / cols; need(gw + 10); let col = 0, rowH = 0;
-      for (const [i, q] of L.imagens.entries()) { const f = await readBlob([...PR.L.base, ...q.arquivo.split("/")]); if (!f) continue; const im = await imgJpeg(f, 900);
+      for (const [i, q] of L.imagens.entries()) { const mq = (PR.L.x.midias || []).find(m => m.arquivo === q.arquivo), f = await readBlob([...PR.L.base, ...((mq && mq.ajustada) || q.arquivo).split("/")]); if (!f) continue; const im = await imgJpeg(f, 900);
         const ih = gw * im.h / im.w, capL = doc.splitTextToSize((i + 1) + ". " + (q.legenda || ""), gw); const h = ih + 3.5 * capL.length + 4;
         if (col === 0) { need(h); rowH = 0; } const xx = M + col * (gw + 5); doc.addImage(im.url, "JPEG", xx, y, gw, ih); doc.setFont("helvetica", "normal"); doc.setFontSize(7.8); doc.setTextColor(60); doc.text(capL, xx, y + ih + 3.5); doc.setTextColor(0);
         rowH = Math.max(rowH, h); col++; if (col === cols) { col = 0; y += rowH; } }
@@ -3820,7 +3884,7 @@
       '<div class="pr-card"><h4>Usuários e perfis</h4>' + rows(PR.users.map(u => Object.assign({ id: u.login }, u)), u => esc(u.login) + ' · ' + esc(u.nome) + ' · <b>' + (u.perfil === "medico" ? "Médico" : "Secretária") + '</b>' + (u.ativo === false ? ' <span class="pill">inativo</span>' : ''), "user") +
       '</div>' +
       '<div class="pr-card"><h4>Modelos de laudo (seus)</h4><p class="pr-dim">Use “Salvar como meu modelo…” no laudo.</p></div></div>' +
-      '<div style="flex:1;min-width:0"><div class="pr-card"><h4>Backup</h4><p>Último backup: <b>' + (b.ultimo ? brDT(b.ultimo) + '</b> em <b>' + esc(b.destino || "") : 'nunca') + '</b></p>' +
+      '<div style="flex:1;min-width:0">' + (isMed() ? cfgImgHtml() : '') + '<div class="pr-card"><h4>Backup</h4><p>Último backup: <b>' + (b.ultimo ? brDT(b.ultimo) + '</b> em <b>' + esc(b.destino || "") : 'nunca') + '</b></p>' +
       '<div class="pr-acts"><button class="btn primary" data-act="backup">Fazer backup agora…</button><button class="btn" data-act="restaurar">Restaurar (usar pasta de backup)…</button><button class="btn" data-act="reindex">Refazer índice</button></div>' +
       '</div>' +
       '<div class="pr-card"><h4>Auditoria (mês atual)</h4><div class="pr-log">' + (logTxt.length ? logTxt.map(esc).join("<br>") : '<span class="pr-dim">vazio</span>') + '</div></div></div></div>';
@@ -3879,6 +3943,14 @@
       case "voltarPac": if (PR.pac) go("paciente"); else go("pacientes"); break;
       case "iniciar": await startExam(null); break;
       case "retomar": await startExam(id); break;
+      case "cfgShp": setSHP(+id); DOC.shp = +id; docSave(); cfgImgSync(); break;
+      case "cfgNr": setNR(+id); DOC.nr = +id; docSave(); cfgImgSync(); break;
+      case "cfgEvl": setEVL(+id); DOC.evl = +id; docSave(); cfgImgSync(); break;
+      case "cfgOpen": showTab("imagem"); navSync(); $("btnOpen").click(); break;
+      case "cfgResetAll": $("btnResetAll").click(); break;
+      case "cfgImgDef": DOC.shp = FAB.shp; DOC.nr = FAB.nr; DOC.evl = FAB.evl; docSave(); docApply(); setStatus("Imagem: padrão de fábrica.", "ok"); break;
+      case "ajFoto": ajOpen(id); break;
+      case "verVid": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) pvOpen(f, arq.split("/").pop()); await audit("assistiu vídeo", PR.pac + " · " + arq); break; }
       case "verArq": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) openBlob(f); break; }
       case "cmpEx": {                                          // escolher uma imagem de cada exame e abrir a comparação
         const pid = PR.pac, all = await patientPhotos(pid), dirOf = q => q.base[3], mine = all.filter(q => dirOf(q) === id), others = [...new Set(all.filter(q => dirOf(q) !== id).map(dirOf))];
@@ -4080,6 +4152,144 @@
   // ----- lembrete de backup no menu lateral -----
   setInterval(async () => { if (!isMed() || !PR.root) { $("sideBk").hidden = true; return; } const b = await readJSON(["_sistema", "backup.json"], {}); const d = b.ultimo ? Math.floor((Date.now() - new Date(b.ultimo)) / 864e5) : null;
     $("sideBk").hidden = false; $("sideBk").innerHTML = '🛡 Último backup <b>' + (d === null ? "nunca" : d === 0 ? "hoje" : "há " + d + (d === 1 ? " dia" : " dias")) + '</b>'; }, 5000);
+
+  // ===== v6.6: Configurações → Imagem (médico), player de vídeo do prontuário, perfil de fábrica (Avançado) =====
+  function liveTo(c) { const src = outCv; if (!src || !src.width || !c) return; if (c.width !== src.width || c.height !== src.height) { c.width = src.width; c.height = src.height; } c.getContext("2d").drawImage(src, 0, 0); }
+  const LV4 = ["Desligado", "Baixo", "Médio", "Alto"];
+  function cfgImgHtml() {
+    const seg = (act, cur) => '<div class="cfg-seg">' + LV4.map((n, i) => '<button class="btn sm' + (i === cur ? ' sel' : '') + '" data-act="' + act + '" data-id="' + i + '">' + n + '</button>').join("") + '</div>';
+    return '<div class="pr-card" id="cfgImg"><h4>Imagem</h4><canvas id="cfgLive"></canvas>' +
+      '<label>Realce de bordas</label>' + seg("cfgShp", shpLevel) + '<label>Redução de ruído</label>' + seg("cfgNr", nrLevel) +
+      '<label>Evitar estouro de luz</label>' + seg("cfgEvl", evlLevel) +
+      '<div class="pr-acts" style="margin-top:10px"><button class="btn sm" data-act="cfgImgDef">Voltar ao padrão de fábrica</button></div></div>'; }
+  function cfgImgSync() { const q = (act, v) => document.querySelectorAll('#cfgImg [data-act="' + act + '"]').forEach(b => b.classList.toggle("sel", +b.dataset.id === v));
+    q("cfgShp", shpLevel); q("cfgNr", nrLevel); q("cfgEvl", evlLevel); }
+  // Nitidez/ruído e estouro saem do painel do Exame (ficam em Configurações → Imagem)
+  ["shpSeg", "evlSeg"].forEach(i => { const c = $(i) && $(i).closest(".card"); if (c) c.style.display = "none"; });
+  // ----- miniatura de vídeo gerada na hora (vídeos antigos, sem capa) -----
+  function vidThumb(blob) { return new Promise(res => { const v = document.createElement("video"), u = URL.createObjectURL(blob); v.muted = true; v.preload = "auto"; v.src = u;
+    const end = r => { try { URL.revokeObjectURL(u); } catch (e) {} res(r); };
+    v.onloadeddata = () => { v.currentTime = Math.min(0.2, (v.duration || 1) / 2); };
+    v.onseeked = () => { const c = document.createElement("canvas"); c.width = 160; c.height = Math.round(160 * v.videoHeight / v.videoWidth) || 160; c.getContext("2d").drawImage(v, 0, 0, c.width, c.height); end(c.toDataURL("image/jpeg", 0.7)); };
+    v.onerror = () => end(""); setTimeout(() => end(""), 5000); }); }
+  // ----- player de vídeo do prontuário (só assistir) -----
+  (() => { const m = document.createElement("div"); m.id = "pvModal"; m.hidden = true;
+    m.innerHTML = '<div id="pvBar"><span id="pvName"></span><button class="btn sm" id="pvPrev">◀ quadro</button><button class="btn sm" id="pvNext">quadro ▶</button>' +
+      '<span class="vspd" id="pvSpd"><button class="btn sm" data-spd="0.25">0,25×</button><button class="btn sm" data-spd="0.5">0,5×</button><button class="btn sm sel" data-spd="1">1×</button></span>' +
+      '<span class="spacer"></span><button class="btn sm" id="pvFull">Tela cheia</button><button class="btn sm primary" id="pvClose">Fechar</button></div><video id="pvVid" controls playsinline></video>';
+    document.body.appendChild(m); })();
+  const pv = $("pvVid"); let pvUrl = null;
+  const pvSpd = r => { pv.defaultPlaybackRate = r; pv.playbackRate = r; document.querySelectorAll("#pvSpd [data-spd]").forEach(b => b.classList.toggle("sel", +b.dataset.spd === r)); };
+  document.querySelectorAll("#pvSpd [data-spd]").forEach(b => b.onclick = () => pvSpd(+b.dataset.spd));
+  const pvSeek = d => { pv.pause(); pv.currentTime = Math.max(0, Math.min(pv.duration || 0, pv.currentTime + d)); };
+  $("pvPrev").onclick = () => pvSeek(-1 / 30); $("pvNext").onclick = () => pvSeek(1 / 30);
+  $("pvFull").onclick = () => { try { pv.requestFullscreen(); } catch (e) {} };
+  function pvClose() { pv.pause(); $("pvModal").hidden = true; pv.removeAttribute("src"); pv.load(); if (pvUrl) { URL.revokeObjectURL(pvUrl); pvUrl = null; } }
+  $("pvClose").onclick = pvClose;
+  function pvOpen(blob, name) { if (pvUrl) URL.revokeObjectURL(pvUrl); pvUrl = URL.createObjectURL(blob); $("pvName").textContent = name || "Vídeo";
+    pv.src = pvUrl; pv.addEventListener("loadedmetadata", () => pvSpd(1), { once: true }); $("pvModal").hidden = false; pv.play().catch(() => {}); }
+  document.addEventListener("keydown", e => { if ($("pvModal").hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); pvClose(); } else if (e.key === "ArrowLeft") { e.preventDefault(); pvSeek(-1 / 30); } else if (e.key === "ArrowRight") { e.preventDefault(); pvSeek(1 / 30); }
+    else if (e.key === " ") { e.preventDefault(); pv.paused ? pv.play() : pv.pause(); } e.stopPropagation(); }, true);
+  // ----- Avançado: perfil de imagem de fábrica -----
+  (() => { const c = document.createElement("div"); c.className = "card"; c.id = "advFab";
+    c.innerHTML = '<h2>Perfil de imagem de fábrica</h2><div id="fabSl"></div>' +
+      '<div class="lensg" style="margin-top:6px"><label>Realce padrão<select id="fabShp"></select></label><label>Ruído padrão<select id="fabNr"></select></label><label>Estouro padrão<select id="fabEvl"></select></label>' +
+      '<label>Nome do perfil<input type="text" id="fabNome" placeholder="ex.: OV6946 · LED"></label></div>' +
+      '<p class="desc" id="fabInfo" style="margin:6px 0"></p>' +
+      '<div class="btnrow"><button class="btn sm primary" id="fabSave">Salvar perfil</button><button class="btn sm" id="fabExp">Exportar</button><button class="btn sm" id="fabImp">Importar</button><button class="btn sm" id="fabNeutro">Neutro</button></div>' +
+      '<input type="file" id="fabFile" accept=".json,application/json" hidden><p class="desc" id="fabFmt" style="margin:6px 0 0"></p>';
+    const g = $("advGrid"), live = $("advLive"); if (live && live.nextSibling) g.insertBefore(c, live.nextSibling); else g.appendChild(c);
+    ["fabShp", "fabNr", "fabEvl"].forEach(i => $(i).innerHTML = LV4.map((n, k) => '<option value="' + k + '">' + n + '</option>').join("")); })();
+  const FAB_UI = ADJ_UI.concat([["tint", "Tom do branco (frio ↔ quente)", -1, 1, 0.05, ""]]);
+  function fabStore() { store.set("fabImg", FAB); imgCompose(); fabInfo(); }
+  function fabInfo() { $("fabInfo").textContent = FAB.data ? "Salvo: " + (FAB.nome || "sem nome") + " · " + FAB.data : "Perfil ainda não salvo na pasta de dados."; }
+  function fabRender() { const box = $("fabSl"); box.innerHTML = "";
+    FAB_UI.forEach(([k, label, min, max, step]) => { const row = document.createElement("div"); row.className = "sl";
+      row.innerHTML = '<span class="name"></span><span class="val"></span><input type="range">'; row.querySelector(".name").textContent = label;
+      const inp = row.querySelector("input"), val = row.querySelector(".val"); Object.assign(inp, { min, max, step, value: FAB[k] }); val.textContent = (+FAB[k]).toFixed(2);
+      inp.oninput = () => { FAB[k] = +inp.value; val.textContent = FAB[k].toFixed(2); fabStore(); }; box.appendChild(row); });
+    $("fabShp").value = FAB.shp; $("fabNr").value = FAB.nr; $("fabEvl").value = FAB.evl; $("fabNome").value = FAB.nome || ""; fabInfo();
+    $("fabFmt").textContent = "Gravação de vídeo neste computador: " + ((pickMime() || "").includes("mp4") ? "MP4" : (pickMime() ? "WebM (este navegador não grava MP4)" : "não suportada")) + "."; }
+  $("fabShp").onchange = e => { FAB.shp = +e.target.value; fabStore(); }; $("fabNr").onchange = e => { FAB.nr = +e.target.value; fabStore(); };
+  $("fabEvl").onchange = e => { FAB.evl = +e.target.value; fabStore(); }; $("fabNome").oninput = e => { FAB.nome = e.target.value; store.set("fabImg", FAB); };
+  $("fabSave").onclick = async () => { FAB.data = new Date().toLocaleString("pt-BR"); store.set("fabImg", FAB);
+    let ok = false; try { if (typeof PR !== "undefined" && PR.user) { await writeJSON(["_sistema", "perfil_imagem.json"], FAB); ok = true; await audit("salvou perfil de imagem de fábrica", FAB.nome || ""); } } catch (e) {}
+    fabInfo(); setStatus(ok ? "Perfil de imagem salvo." : "Perfil salvo neste computador (entre com um usuário para gravar na pasta de dados).", "ok"); };
+  $("fabExp").onclick = () => { const b = new Blob([JSON.stringify(Object.assign({ tipo: "perfil_imagem", versao: APP_VER }, FAB), null, 2)], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "perfil_imagem_" + (FAB.nome || "fabrica").replace(/[^\w.-]+/g, "_") + ".json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); };
+  $("fabImp").onclick = () => $("fabFile").click();
+  $("fabFile").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try { const j = JSON.parse(await f.text()); const o = {}; Object.keys(FAB_DEF).forEach(k => { if (k in j) o[k] = j[k]; }); FAB = { ...FAB_DEF, ...o }; fabStore(); fabRender(); docLoad();
+      setStatus("Perfil importado: " + (FAB.nome || f.name) + ". Toque em Salvar perfil para gravar na pasta.", "ok"); } catch (err) { setStatus("Arquivo de perfil inválido.", "bad"); } };
+  $("fabNeutro").onclick = () => { const n = FAB.nome; FAB = { ...FAB_DEF, nome: n }; fabStore(); fabRender(); };
+  fabRender(); imgCompose(); renderAdj();
+
+  // ===== v6.6b: barra do Exame (Balanço de branco fixo + atalho Imagem), Configurações (gravação/padrão), Ajustar foto do laudo =====
+  (() => { const tools = $("tools"), svg = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + p + '</svg>';
+    const wb = document.createElement("button"); wb.className = "btn big"; wb.id = "btnWBbar"; wb.title = "Balanço de branco (W)";
+    wb.innerHTML = svg('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12h8"/>') + 'Balanço de branco<span class="k">W</span>';
+    tools.insertBefore(wb, tools.firstChild); wb.onclick = () => $("btnWB").click();
+    const im = document.createElement("button"); im.className = "btn big"; im.id = "btnImg"; im.title = "Cor e brilho (I)";
+    im.innerHTML = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>') + 'Imagem<span class="k">I</span>';
+    tools.insertBefore(im, $("btnMetric"));
+    const pop = document.createElement("div"); pop.id = "imgPop"; pop.hidden = true; pop.innerHTML = '<div class="t">IMAGEM</div>';
+    const card = $("iCor").closest(".card"); [...card.querySelectorAll(".sl")].forEach(r => pop.appendChild(r));
+    const row = document.createElement("div"); row.className = "btnrow";
+    row.innerHTML = '<button class="btn sm" id="popWBundo">Desfazer balanço</button>'; row.appendChild($("btnAdjReset")); pop.appendChild(row);
+    document.body.appendChild(pop); $("popWBundo").onclick = () => $("btnReset").click();
+    $("btnAdjReset").className = "btn sm";
+  })();
+  function imgPopPlace() { const b = $("btnImg").getBoundingClientRect(), p = $("imgPop"), w = 300, x = Math.max(8, Math.min(innerWidth - w - 8, b.left + b.width / 2 - w / 2));
+    p.style.left = x + "px"; p.style.top = (b.top - p.offsetHeight - 14) + "px"; p.style.setProperty("--ax", (b.left + b.width / 2 - x) + "px"); }
+  function imgPopToggle(on) { const p = $("imgPop"); on = on === undefined ? p.hidden : on; p.hidden = !on; $("btnImg").classList.toggle("on", on); if (on) imgPopPlace(); }
+  $("btnImg").onclick = e => { e.stopPropagation(); imgPopToggle(); };
+  document.addEventListener("pointerdown", e => { const p = $("imgPop"); if (!p.hidden && !p.contains(e.target) && !$("btnImg").contains(e.target)) imgPopToggle(false); });
+  addEventListener("resize", () => { if (!$("imgPop").hidden) imgPopPlace(); });
+  document.addEventListener("keydown", e => { if ((e.key === "i" || e.key === "I") && tab === "imagem" && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA|SELECT/.test((e.target || {}).tagName || "")) { e.preventDefault(); imgPopToggle(); } });
+  setInterval(() => { if (tab !== "imagem" && !$("imgPop").hidden) imgPopToggle(false); $("btnWBbar").classList.toggle("done", !!wbDone); }, 400);
+  // ----- Configurações: Gravação e Padrão geral (saíram do painel do Exame) -----
+  const _cfgImgHtml = cfgImgHtml;
+  cfgImgHtml = function () {
+    return _cfgImgHtml() + '<div class="pr-card" id="cfgRec"><h4>Gravação</h4>' +
+      '<div class="pr-row"><span>Fotos e vídeos do exame</span><b>' + (PR.camOnly ? esc($("dirName").textContent || "Downloads") : "Pasta do prontuário") + '</b></div>' +
+      '<label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:15px;color:var(--txt)"><span>Salvar cada captura automaticamente</span><input type="checkbox" data-mirror="autoSave" style="width:auto"' + ($("autoSave").checked ? " checked" : "") + '></label>' +
+      '<label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:15px;color:var(--txt)"><span>Salvar na resolução da câmera (sem ampliar)</span><input type="checkbox" data-mirror="saveNative" style="width:auto"' + ($("saveNative").checked ? " checked" : "") + '></label>' +
+      '<div class="pr-acts"><button class="btn sm" data-act="cfgOpen">Abrir arquivo…</button></div></div>' +
+      '<div class="pr-card"><h4>Padrão geral</h4><p class="pr-dim">Desfaz o Balanço de branco, desliga o anti-vermelho e volta os ajustes ao padrão de fábrica. Fotos e vídeos não são apagados.</p>' +
+      '<div class="pr-acts"><button class="btn" data-act="cfgResetAll">Voltar ao padrão</button></div></div>'; };
+  document.addEventListener("change", e => { const m = e.target.dataset && e.target.dataset.mirror; if (!m) return; const o = $(m); if (o && o.checked !== e.target.checked) o.click(); });
+  // ----- Ajustar foto do laudo (cópia "ajustada"; original intacta) -----
+  (() => { const m = document.createElement("div"); m.id = "ajModal"; m.hidden = true;
+    m.innerHTML = '<div class="box"><div class="pv"><canvas id="ajCv"></canvas><span class="ajtag" style="left:12px;top:12px">Ajustada</span><img id="ajOrig" alt=""><span class="ajtag" style="right:12px;bottom:138px">Original</span></div>' +
+      '<div class="side"><div class="hd">Ajustar imagem</div><div class="pr-dim" id="ajName" style="margin-bottom:12px"></div>' +
+      '<div class="lv"><span>Cor</span><b id="ajCv1">0</b></div><input type="range" id="ajCor" min="-10" max="10" step="1" value="0">' +
+      '<div class="lv"><span>Brilho</span><b id="ajCv2">0</b></div><input type="range" id="ajBri" min="-10" max="10" step="1" value="0">' +
+      '<div><button class="btn sm" id="ajZero">Voltar ao original</button></div>' +
+      '<div class="note">A original não é alterada. A ajustada é salva ao lado e vai para o laudo.</div>' +
+      '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" id="ajCancel" style="flex:1">Cancelar</button><button class="btn primary" id="ajSave" style="flex:1">Salvar ajustada</button></div></div></div>';
+    document.body.appendChild(m); })();
+  let AJ = null;
+  function ajParams(c, b) { return { black: Math.max(0, 0.06 * c), contrast: 1 + 0.12 * c, bright: 0.2 * b, gamma: 1 + 0.10 * Math.max(c, 0), sat: Math.max(0, 1 + 0.6 * c) }; }
+  function ajDraw() { if (!AJ) return; const c = +$("ajCor").value / 10, b = +$("ajBri").value / 10, cv = $("ajCv"), g = cv.getContext("2d", { willReadFrequently: true });
+    $("ajCv1").textContent = (c > 0 ? "+" : "") + Math.round(c * 10); $("ajCv2").textContent = (b > 0 ? "+" : "") + Math.round(b * 10);
+    g.putImageData(AJ.src, 0, 0); if (!c && !b) return; const d = g.getImageData(0, 0, cv.width, cv.height), a = ajParams(c, b);
+    applyPipeline(d.data, makeLuts([1, 1, 1], a, 0), a.sat, 0, false); g.putImageData(d, 0, 0); }
+  async function ajOpen(arq) { const x = PR.L.x, mm = (x.midias || []).find(q => q.arquivo === arq); if (!mm) return;
+    const f = await readBlob([...PR.L.base, ...arq.split("/")]); if (!f) return setStatus("Imagem não encontrada.", "bad");
+    const bmp = await createImageBitmap(f), cv = $("ajCv"); cv.width = bmp.width; cv.height = bmp.height; const g = cv.getContext("2d", { willReadFrequently: true }); g.drawImage(bmp, 0, 0);
+    AJ = { arq, mm, src: g.getImageData(0, 0, cv.width, cv.height) }; $("ajOrig").src = objUrl(f); $("ajName").textContent = arq.split("/").pop();
+    $("ajCor").value = Math.round(((mm.ajuste || {}).cor || 0)); $("ajBri").value = Math.round(((mm.ajuste || {}).brilho || 0)); ajDraw(); $("ajModal").hidden = false; }
+  $("ajCor").oninput = ajDraw; $("ajBri").oninput = ajDraw; $("ajZero").onclick = () => { $("ajCor").value = 0; $("ajBri").value = 0; ajDraw(); };
+  const ajClose = () => { $("ajModal").hidden = true; AJ = null; }; $("ajCancel").onclick = ajClose;
+  $("ajSave").onclick = async () => { if (!AJ) return; const c = +$("ajCor").value, b = +$("ajBri").value, x = PR.L.x, mm = AJ.mm;
+    try { lCollect(); } catch (e) {}
+    if (!c && !b) { if (mm.ajustada) { delete mm.ajustada; delete mm.ajuste; } }
+    else { const blob = await new Promise(r => $("ajCv").toBlob(r, "image/png")), name = mm.arquivo.replace(/\.[a-z0-9]+$/i, "") + "_ajustada.png";
+      await writeFile([...PR.L.base, ...name.split("/")], blob); mm.ajustada = name; mm.ajuste = { cor: c, brilho: b, quando: new Date().toISOString(), por: PR.user ? PR.user.login : "" }; }
+    await writeJSON([...PR.L.base, "exame.json"], x); await audit(c || b ? "ajustou imagem do laudo" : "voltou imagem ao original", mm.arquivo + (c || b ? " · cor " + c + " · brilho " + b : ""));
+    ajClose(); setStatus(c || b ? "Imagem ajustada salva. Ela vai para o laudo." : "Imagem voltou ao original.", "ok"); scrLaudo(true); };
+  document.addEventListener("keydown", e => { if (!$("ajModal").hidden && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); ajClose(); } }, true);
   authStart();
 })();
 </script>
