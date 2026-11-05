@@ -144,6 +144,31 @@
     background: rgba(15,16,18,.88); border: 1px solid var(--line); padding: 6px 8px 6px 12px; border-radius: 10px; width: max-content; max-width: calc(100% - 20px); }
   #mBar .t { font-size: 14px; color: var(--brand-tint); letter-spacing: .05em; margin-right: 4px; }
   #mBar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 2px; }
+  /* v7.1: Métrica simples (padrão) × Comparar exames (#metric.m-cmp) */
+  #mBar .sep, #mZout, #mZin, #mZfit, #mDel, #mClear, #mBar [data-tool=cref], #mSnap, #mHideR, #mCmp, #mHow { display: none; }
+  #mView, #mUndo { margin-left: 12px; }
+  #metric.m-cmp #mBar [data-tool=cref], #metric.m-cmp #mSnap, #metric.m-cmp #mHideR, #metric.m-cmp #mCmp, #metric.m-cmp #mHow { display: inline-flex; }
+  #metric.m-cmp #mBar [data-tool=rect], #metric.m-cmp #mBar [data-tool=angle], #metric.m-cmp #mBar [data-tool=note] { display: none; }
+  #metric.m-cmp #mBar > * { order: 30; } #metric.m-cmp #mBar .t { order: 0; } #metric.m-cmp #mCmp { order: 1; }
+  #metric.m-cmp #mBar [data-tool=cref] { order: 2; margin-left: 12px; } #metric.m-cmp #mSnap { order: 3; } #metric.m-cmp #mHideR { order: 4; }
+  #metric.m-cmp #mBar [data-tool=line] { order: 5; margin-left: 12px; } #metric.m-cmp #mBar [data-tool=circle] { order: 6; } #metric.m-cmp #mBar [data-tool=poly] { order: 7; }
+  #metric.m-cmp #mView { order: 8; } #metric.m-cmp #mUndo { order: 9; } #metric.m-cmp #mSave { order: 10; } #metric.m-cmp #mClose { order: 11; } #metric.m-cmp #mHow { order: 12; margin-left: 12px; }
+  #mHow { background: #2f8a5a; border-color: #2f8a5a; color: #fff; }
+  #mGuide { display: none; position: absolute; left: 50%; transform: translateX(-50%); z-index: 3; gap: 8px; align-items: center; background: #1b1d21; border: 1px solid #3a3f46; border-radius: 999px; padding: 6px 14px; color: #e9ecef; font-weight: 600; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; }
+  #metric.m-cmp #mGuide { display: flex; }
+  #mGuide .st { display: inline-flex; align-items: center; gap: 6px; opacity: .55; } #mGuide .st.now, #mGuide .st.done { opacity: 1; }
+  #mGuide .st b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #3a3f46; color: #fff; font-size: 12px; }
+  #mGuide .st.now b { background: #9c4c3f; } #mGuide .st.done b { background: #2f8a5a; } #mGuide .dash { opacity: .4; }
+  body.cmp-off [data-act=cmpEx] { display: none !important; }
+  #howModal { position: fixed; inset: 0; z-index: 95; background: rgba(8,9,10,.88); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #howModal[hidden] { display: none; }
+  #howModal .box { width: min(1180px, 96vw); max-height: 94vh; background: #16181b; border: 1px solid #2a2e33; border-radius: 14px; overflow: hidden; color: #e9ecef; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  #howModal .hd { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #2a2e33; } #howModal .hd b { font-size: 17px; } #howModal .hd span { opacity: .6; } #howModal .hd .btn { margin-left: auto; }
+  #howModal .bd { display: flex; min-height: 0; } #howModal video { flex: 1; min-width: 0; max-height: 80vh; background: #000; display: block; }
+  #howModal .ch { width: 300px; padding: 14px 16px; border-left: 1px solid #2a2e33; overflow: auto; } #howModal .ch .t { font-size: 12px; letter-spacing: .12em; color: #aab; margin-bottom: 8px; }
+  #howModal .ch button { display: flex; gap: 10px; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid #2a2e33; color: inherit; font: inherit; padding: 10px 0; cursor: pointer; }
+  #howModal .ch button b { color: #d08c7e; min-width: 40px; } #howModal .ch button.on { color: #ffd9d2; } #howModal .ch button:hover { background: rgba(255,255,255,.04); }
+  @media (max-width: 800px) { #howModal .bd { flex-direction: column; } #howModal .ch { width: auto; border-left: 0; } }
   #mBar .btn.sel { background: var(--brand); border-color: var(--brand-hi); color: #fff; }
   #mSide { width: 300px; flex: none; background: var(--surface); border-left: 1px solid var(--line); padding: 12px; overflow-y: auto; }
   #mSide .card { margin-bottom: 10px; }
@@ -549,7 +574,7 @@
 </style>
 </head>
 <body>
-<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v7.0</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><a class="nb" id="sideMan" href="manual.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg><span>Manual (PDF)</span></a><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
+<div id="side"><div class="brand"><div class="fm"><img id="sideLogo" alt="Ferrari Medical"></div><h1>Ajuste de Imagem <small>Videonasofibrolaringoscopia · v7.2</small></h1></div><button class="nb" data-nav="exame"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Exame</span></button><button class="nb" data-nav="metrica"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Métrica</span></button><button class="nb" data-nav="pront"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3.2-6 6.5-6s6.1 2.4 6.5 6M16 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5c-.3-2.7-1.8-4.8-4-5.7"/></svg><span>Prontuário</span><span class=cnt id=navPend hidden></span></button><button class="nb" data-nav="config"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Configurações</span></button><button class="nb" data-nav="tut"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg><span>Tutorial</span></button><a class="nb" id="sideMan" href="manual.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg><span>Manual (PDF)</span></a><div class="nav-l">Fabricante</div><button class="nb" data-nav="adv"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Avançado</span></button><div class="foot"><div class="bk" id="sideBk" hidden></div></div></div><div id="mainc"><div id="prExam" hidden><span class="dot"></span><span id="prExamTxt"></span><button class="btn sm" id="prExamEnd">Encerrar exame</button></div><div id="top"><input type="text" id="gSearch" placeholder="Buscar paciente por nome, CPF ou código   (Ctrl K)" autocomplete="off"><span class="spacer"></span><button class="btn primary" id="hdrStart" hidden><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Iniciar exame</button><div class="hdr-ctl"><button class="btn ghost" id="hdrCmp" title="Comparar ANTES × DEPOIS do realce de bordas e da redução de ruído (C)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg><span>Comparar</span></button>
     <button class="btn ghost" id="hdrZoom" title="Lupa 3× no centro da imagem (Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span>Lupa 3×</span></button>
@@ -577,7 +602,7 @@
       <div id="metric" hidden>
         <div id="mMain"><canvas id="mCv"></canvas>
           <div id="mBar"><span class="t">MÉTRICA</span>
-            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, verifica a perspectiva)">Ref. comum R</button><button class="btn sm sel" id="mSnap" title="Ímã: a linha gruda na horizontal/vertical quando está a até 5° dela (fora disso fica livre)">Ímã 0°/90°</button><button class="btn sm" id="mHideR" title="Mostrar ou ocultar R1 e R2 na imagem (continuam valendo nas medidas)">Ocultar R</button>
+            <button class="btn sm sel" data-tool="line">Reta</button><button class="btn sm" data-tool="circle">Círculo</button><button class="btn sm" data-tool="rect">Retângulo</button><button class="btn sm" data-tool="poly">Contorno</button><button class="btn sm" data-tool="angle">Ângulo</button><button class="btn sm" data-tool="note">Anotação</button><button class="btn sm" data-tool="cref" title="Referência comum entre exames: a mesma estrutura anatômica marcada nas duas imagens (R1; a 2ª, R2, outra estrutura, confere a 1ª e entra na escala)">Ref. comum R</button><button class="btn sm sel" id="mSnap" title="Ímã: a linha gruda na horizontal/vertical quando está a até 5° dela (fora disso fica livre)">Ímã 0°/90°</button><button class="btn sm" id="mHideR" title="Mostrar ou ocultar R1 e R2 na imagem (continuam valendo nas medidas)">Ocultar R</button>
             <select id="mLw" title="Espessura da linha" style="height:32px"><option value="0.6">Linha fina</option><option value="1" selected>Linha média</option><option value="1.7">Linha grossa</option></select>
             <span class="sep"></span><button class="btn sm" id="mZout" title="Diminuir zoom (ou roda do mouse / pinça)">−</button><button class="btn sm" id="mZin" title="Aumentar zoom">+</button><button class="btn sm" id="mZfit" title="Ver a imagem inteira">Ajustar</button>
             <button class="btn sm" id="mView">Ver original</button>
@@ -817,7 +842,7 @@
   <section class="view dk" id="tutorial">
     <div class="tut">
       <div class="tut-head" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2>Tutorial</h2><a class="btn sm" href="manual.pdf" target="_blank" rel="noopener" style="margin-left:auto;text-decoration:none">Abrir manual (PDF)</a></div>
-      <div class="tut-nav"><button class="btn sm" data-goto="t1">1 · Iniciar exame</button><button class="btn sm" data-goto="t2">2 · Balanço de branco</button><button class="btn sm" data-goto="t3">3 · Congelar, foto e vídeo</button><button class="btn sm" data-goto="t4">4 · Métrica</button><button class="btn sm" data-goto="t5">5 · Prontuário e laudo</button><button class="btn sm" data-goto="t6">6 · Evitar estouro de luz</button><button class="btn sm" data-goto="t7">7 · Cor e brilho</button><button class="btn sm" data-goto="t8">8 · Nitidez e ruído</button><button class="btn sm" data-goto="t9">9 · Cor travada</button></div>
+      <div class="tut-nav"><button class="btn sm" data-goto="t1">1 · Iniciar exame</button><button class="btn sm" data-goto="t2">2 · Balanço de branco</button><button class="btn sm" data-goto="t3">3 · Congelar, foto e vídeo</button><button class="btn sm" data-goto="t4">4 · Métrica</button><button class="btn sm" data-goto="t5">5 · Comparar exames</button><button class="btn sm" data-goto="t6">6 · Prontuário e laudo</button><button class="btn sm" data-goto="t7">7 · Evitar estouro de luz</button><button class="btn sm" data-goto="t8">8 · Cor e brilho</button><button class="btn sm" data-goto="t9">9 · Nitidez e ruído</button><button class="btn sm" data-goto="t10">10 · Cor travada</button></div>
       <article class="lesson" id="t1">
         <div>
           <h3><span class="num">1</span>Iniciar exame</h3>
@@ -860,17 +885,30 @@
         <div>
           <h3><span class="num">4</span>Métrica</h3>
           <ol>
-            <li>Marque a referência <b>R1</b>.</li>
-            <li>Desenhe reta, círculo ou retângulo: o valor sai em <b>R</b>.</li>
-            <li>Em <b>Comparar com…</b>, escolha um exame antigo do mesmo paciente: a variação sai em %.</li>
+            <li>Toque em <b>Métrica</b> (tecla L) com a imagem congelada, foto ou vídeo pausado.</li>
+            <li>A 1ª forma é a <b>referência</b>; a 2ª sai em % dela (ex.: lesão = 70% da ref.).</li>
+            <li><b>Salvar</b> grava a imagem com as medidas no exame.</li>
           </ol>
-          <div class="note">Use os mesmos pontos de referência nas duas imagens.</div>
         </div>
-        <div class="demo" data-dur="12"><canvas data-demo="metr" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
+        <div class="demo" data-dur="9"><canvas data-demo="metr1" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
       <article class="lesson" id="t5">
         <div>
-          <h3><span class="num">5</span>Prontuário e laudo</h3>
+          <h3><span class="num">5</span>Comparar exames</h3>
+          <ol>
+            <li>Escolha a <b>imagem anterior</b> e a <b>imagem atual</b> (sempre salvas).</li>
+            <li><b>R1</b>: marque a mesma estrutura nas duas.</li>
+            <li><b>R2</b>: marque outra estrutura nas duas.</li>
+            <li>Meça a lesão nas duas: a variação sai em <b>%</b>.</li>
+            <li>Veja o selo: <b>✓ Referências coerentes</b> ou <b>⚠ Confira as referências</b>.</li>
+          </ol>
+          <div class="note">Vídeo completo em <b>Comparar exames → ▶ Como usar</b>.</div>
+        </div>
+        <div class="demo" data-dur="12"><canvas data-demo="metr" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
+      </article>
+      <article class="lesson" id="t6">
+        <div>
+          <h3><span class="num">6</span>Prontuário e laudo</h3>
           <ol>
             <li><b>Prontuário</b> → paciente → exame.</li>
             <li>Toque num vídeo <b>▶</b> para assistir.</li>
@@ -880,9 +918,9 @@
         </div>
         <div class="demo" data-dur="12"><canvas data-demo="laudo" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-      <article class="lesson" id="t6">
+      <article class="lesson" id="t7">
         <div>
-          <h3><span class="num">6</span>Evitar estouro de luz</h3>
+          <h3><span class="num">7</span>Evitar estouro de luz</h3>
           <ul>
             <li><b>Desligado</b> — imagem mais clara.</li>
             <li><b>Baixo / Médio</b> — meio-termo.</li>
@@ -892,9 +930,9 @@
         </div>
         <div class="demo" data-dur="10"><canvas data-demo="norm" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-      <article class="lesson" id="t7">
+      <article class="lesson" id="t8">
         <div>
-          <h3><span class="num">7</span>Cor e brilho</h3>
+          <h3><span class="num">8</span>Cor e brilho</h3>
           <ul>
             <li><b>Cor</b> — mais ou menos cor, se o Balanço de branco não bastar.</li>
             <li><b>Brilho</b> — clareia ou escurece.</li>
@@ -903,9 +941,9 @@
         </div>
         <div class="demo" data-dur="6"><canvas data-demo="adjust" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-      <article class="lesson" id="t8">
+      <article class="lesson" id="t9">
         <div>
-          <h3><span class="num">8</span>Nitidez e ruído</h3>
+          <h3><span class="num">9</span>Nitidez e ruído</h3>
           <ul>
             <li><b>Realce de bordas</b> — imagem mais nítida.</li>
             <li><b>Redução de ruído</b> — tira o chuvisco.</li>
@@ -914,9 +952,9 @@
         </div>
         <div class="demo" data-dur="9"><canvas data-demo="enh" width="480" height="320"></canvas><div class="cap"></div><div class="dprog"><i></i></div><button class="dplay" aria-label="Reproduzir"></button></div>
       </article>
-      <article class="lesson" id="t9">
+      <article class="lesson" id="t10">
         <div>
-          <h3><span class="num">9</span>Cor travada</h3>
+          <h3><span class="num">10</span>Cor travada</h3>
           <ul>
             <li><span class="pill ok">travado</span> — cor estável.</li>
             <li><span class="pill bad">AUTOMÁTICO</span> — desligue o automático no driver da câmera.</li>
@@ -2268,7 +2306,7 @@
     const rOf = (S, v) => R1 && S.t !== "cref" ? (S.t === "line" ? v / R1 : v / (R1 * R1)) : null, rStr = (S, r) => r === null ? "" : fR(r) + (S.t === "line" ? " R" : " R²");
     return list.map(S => {
       if (S.t === "cref") { nr++; const v = mVal(P, S), q = nr > 1 && R1 ? v / R1 : null;
-        return { S, kind: "cref", idx: nr, col: RCOL, num: q, name: nr === 1 ? "R1 · referência comum" : "R" + nr + " · verificação de perspectiva", txt: nr === 1 ? "R1 · referência comum" : "R" + nr + " = " + fR(q || 0) + " R1",
+        return { S, kind: "cref", idx: nr, col: RCOL, num: q, name: nr === 1 ? "R1 · referência comum" : "R" + nr + " · segunda referência", txt: nr === 1 ? "R1 · referência comum" : "R" + nr + " = " + fR(q || 0) + " R1",
           val: (nr === 1 ? "unidade R" : fR(q || 0) + " × R1") + " · incl. " + fDeg(lineDeg(P, S)) }; }
       if (S.t === "angle") { ang++; const v = mVal(P, S); return { S, kind: "angle", col: "#ffffff", idx: ang, num: v, name: "Ângulo " + ang, txt: "Ângulo " + ang + ": " + deg(v), val: deg(v) }; }
       if (S.t === "note") return { S, kind: "note", col: "#ffffff", name: "Anotação", txt: S.text || "", val: S.text ? "“" + S.text + "”" : "(sem texto)" };
@@ -2415,25 +2453,31 @@
       const IA = mInfo(MT.panels[0], MT.panels[0].shapes), sg = d => (Math.abs(d) < 0.05 ? "" : d > 0 ? "+" : "−") + pct(Math.abs(d)) + "%";
       const hasR = [IA, B].map(L => L.some(i => i.kind === "cref" && i.idx === 1)); let persp = null;
       const qR = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, qa = qR(IA), qb = qR(B);
-      MT.swapP = null;
+      MT.swapP = null; MT.seal = null;
       if (hasR[0] && hasR[1] && qa && qb && Math.abs(qa * qb - 1) < 0.25 && Math.abs(qb / qa - 1) > 0.3) {   // R1 e R2 marcados em ordem invertida numa das imagens
         MT.swapP = MT.panels[1];
         rows.push("⚠ R1 e R2 estão em ordem trocada entre as imagens (R2 = " + fR(qa) + " × R1 numa e " + fR(qb) + " × R1 na outra). O R1 tem que ser a MESMA estrutura nas duas. Use o botão abaixo para trocar."); }
       else if (hasR[0] && hasR[1]) { const RA = new Map(); IA.forEach(i => { if (i.kind === "rmeas") RA.set(i.S.t + "|" + i.idx, i); });
         const PA = MT.panels[0], PB = MT.panels[1], RA1 = PA.shapes.find(q => q.t === "cref"), RB1 = PB.shapes.find(q => q.t === "cref"), k2 = S => S.t === "line" ? 1 : 2;
-        B.forEach(i => { const a = i.kind === "rmeas" && RA.get(i.S.t + "|" + i.idx); if (!a || !a.rv) return; const d = 100 * (i.rv / a.rv - 1), u = i.S.t === "line" ? " R" : " R²";
-          const e = 100 * Math.sqrt(relErr(PA, a.S) ** 2 + relErr(PB, i.S) ** 2 + (k2(i.S) * relErr(PA, RA1)) ** 2 + (k2(i.S) * relErr(PB, RB1)) ** 2);   // margem (1 desvio) da marcação
+        const R2of = P => P.shapes.filter(S => S.t === "cref")[1], both = !!(qa && qb);        // com R2 nas duas: escala = média geométrica de R1 e R2
+        const fA = both ? Math.sqrt(qa) : 1, fB = both ? Math.sqrt(qb) : 1;
+        const eRef = (P, R1x) => both ? 0.5 * Math.sqrt(relErr(P, R1x) ** 2 + relErr(P, R2of(P)) ** 2) : relErr(P, R1x);
+        if (both) rows.push("Escala pelas duas referências (média de R1 e R2).");
+        B.forEach(i => { const a = i.kind === "rmeas" && RA.get(i.S.t + "|" + i.idx); if (!a || !a.rv) return; const kk = k2(i.S), arv = a.rv / fA ** kk, brv = i.rv / fB ** kk;
+          const d = 100 * (brv / arv - 1), u = i.S.t === "line" ? " R" : " R²";
+          const e = 100 * Math.sqrt(relErr(PA, a.S) ** 2 + relErr(PB, i.S) ** 2 + (kk * eRef(PA, RA1)) ** 2 + (kk * eRef(PB, RB1)) ** 2);   // margem (1 desvio) da marcação
           // mesmo trecho nas duas datas: fator (novo ÷ antigo) e conclusão contra a margem de marcação (2 desvios)
-          const fat = i.rv / a.rv, sig = Math.abs(d) > 2 * e, vd = !sig ? "sem mudança além da margem de marcação" : d < 0 ? (i.S.t === "line" ? "diminuiu" : "a área diminuiu") : (i.S.t === "line" ? "aumentou" : "a área aumentou");
-          rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + " ± " + pct(e) + "%" + (i.S.t === "line" ? "" : " na área · " + sg(100 * (i.deq / a.deq - 1)) + " no diâmetro eq.") + ")");
+          const fat = brv / arv, sig = Math.abs(d) > 2 * e, vd = !sig ? "sem mudança além da margem de marcação" : d < 0 ? (i.S.t === "line" ? "diminuiu" : "a área diminuiu") : (i.S.t === "line" ? "aumentou" : "a área aumentou");
+          rows.push(i.name + ": " + fR(a.rv) + u + " → " + fR(i.rv) + u + " (" + sg(d) + " ± " + pct(e) + "%" + (i.S.t === "line" ? "" : " na área · " + sg(100 * (Math.sqrt(brv / arv) - 1)) + " no diâmetro eq.") + ")");
           rows.push("   ↳ mesmo trecho nas duas imagens: ficou ×" + fat.toFixed(2).replace(".", ",") + " do anterior → " + vd);
           MT.cmpMap.set(i.S, (i.S.t === "line" ? "" : "área ") + sg(d) + " vs " + pLab(PA, 0) + " · " + (!sig ? "sem mudança" : d < 0 ? "diminuiu" : "aumentou")); });
         if (!rows.length) rows.push("Trace as medidas na mesma ordem nas duas imagens (Reta 1 com Reta 1, Círculo 1 com Círculo 1…).");
         const q = L => (L.find(i => i.kind === "cref" && i.idx === 2) || {}).num, q1 = q(IA), q2 = q(B);
-        const crefs = P => P.shapes.filter(S => S.t === "cref"), ang12 = P => { const [a, b] = crefs(P); let d = Math.abs(lineDeg(P, a) - lineDeg(P, b)) % 180; return d > 90 ? 180 - d : d; };
+        let angBad = false; const crefs = P => P.shapes.filter(S => S.t === "cref"), ang12 = P => { const [a, b] = crefs(P); let d = Math.abs(lineDeg(P, a) - lineDeg(P, b)) % 180; return d > 90 ? 180 - d : d; };
         if (crefs(PA).length > 1 && crefs(PB).length > 1) {      // o ângulo ENTRE R1 e R2 não muda quando o aparelho gira: se mudou, alguma régua foi marcada torta
           const a1 = ang12(PA), a2 = ang12(PB), dA = Math.abs(a2 - a1), angErr = P => crefs(P).reduce((s2, S) => s2 + (mSig(P) * Math.SQRT2 / Math.max(1, mRaw(P, S))) ** 2, 0);
           const tolA = Math.max(3, 2 * Math.sqrt(angErr(PA) + angErr(PB)) * 180 / Math.PI);
+          angBad = dA > tolA;
           rows.push(dA <= tolA ? "✓ Ângulo entre R1 e R2: " + fDeg(a1) + " → " + fDeg(a2) + " (difere " + fDeg(dA) + "; margem ±" + fDeg(tolA) + ")"
             : "⚠ Ângulo entre R1 e R2: " + fDeg(a1) + " → " + fDeg(a2) + " (difere " + fDeg(dA) + ", margem ±" + fDeg(tolA) + ") — R1 ou R2 marcados em direção diferente; confira as pontas"); }
         if (q1 && q2) { const d = 100 * Math.abs(q2 / q1 - 1), R2 = P => P.shapes.filter(S => S.t === "cref")[1];
@@ -2443,11 +2487,15 @@
             : lvl === 1 ? "⚠ Atenção: R2/R1 variou " + pct(d) + "%, pouco acima da margem de marcação (±" + pct(T) + "%) — confira os pontos de R1 e R2 (use zoom)"
             : "⚠ Perspectiva diferente: R2/R1 variou " + pct(d) + "% (margem ±" + pct(T) + "%) — ângulo ou distância da câmera mudaram; comparação em R pouco confiável");
           if (T > 12) rows.push("Marque R1 e R2 mais longos (estruturas mais distantes entre si) e em pontos nítidos: a margem de marcação está alta (±" + pct(T) + "%)."); }
-        else rows.push("Marque também R2 (outra estrutura fixa) nas duas imagens para verificar a perspectiva."); }
+        else rows.push("Marque também R2 (outra estrutura fixa) nas duas imagens para conferir as referências.");
+        MT.seal = !persp ? null : (persp.lvl === 0 && !angBad) ? 1 : 0;
+        if (MT.seal === 1) rows.unshift("✓ Referências coerentes — resultado confiável");
+        else if (MT.seal === 0) rows.unshift("⚠ Confira as referências — remarque R1 e R2 nas duas imagens (use zoom), nos mesmos pontos"); }
       else if (hasR[0] || hasR[1]) rows.push("Marque a referência comum R1 nas DUAS imagens (a mesma estrutura) para comparar em R.");
       const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + ")"; el.append(h);
       const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
       rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t.startsWith("   ↳")) { d.style.cssText = "padding-left:14px;color:var(--dim);font-size:13px"; if (/aumentou|diminuiu/.test(t)) d.style.color = "var(--brand-tint)"; } else if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p);
+      if (MT.seal != null && p.firstChild) p.firstChild.style.cssText = "font-weight:700;font-size:15px;padding:6px 8px;border-radius:8px;margin-bottom:4px;background:" + (MT.seal ? "rgba(46,200,120,.15)" : "rgba(240,170,60,.18)");
       if (MT.swapP) { const bt = document.createElement("button"); bt.className = "btn sm primary"; bt.style.margin = "6px 0"; bt.textContent = "Trocar R1 e R2 na imagem " + pLab(MT.swapP, MT.panels.indexOf(MT.swapP)); bt.onclick = () => swapR(MT.swapP); el.append(bt); }
       MT.cmpRows = rows; mDraw(); } else MT.cmpRows = []; }
   function swapR(P) { const ix = P.shapes.map((S, i) => S.t === "cref" ? i : -1).filter(i => i >= 0); if (ix.length < 2) return;
@@ -2461,7 +2509,7 @@
     $("mProg").querySelector("i").style.width = (P.cIA ? 100 : P.err ? 0 : 100 * st / n) + "%";
     $("mMsg").textContent = P.err ? "Contornos por IA: " + P.err : P.cIA ? "Contornos por IA aplicado em " + (P.ms / 1000).toFixed(1).replace(".", ",") + " s." : "Aplicando Contornos por IA… etapa " + st + "/" + n + ".";
     $("mView").textContent = P.showIA ? "Ver original" : "Ver com IA"; $("mView").disabled = !P.cIA;
-    $("mCmp").textContent = two ? "Fechar comparação" : "Comparar exame…"; }
+    $("mCmp").textContent = "Trocar imagens…"; if (typeof cmpGuide === "function") cmpGuide(); }
   async function mRunIA(P) {
     if (P.tok) P.tok.cancel = true; const tok = P.tok = { cancel: false }; P.cIA = null; P.err = ""; P.step = 0; P.showIA = true; mStatus(); mDraw();
     if (!UP.esr || !UP.esrImage) { P.err = "precisa de WebGL2 com aceleração de hardware"; P.showIA = false; mStatus(); mDraw(); return; }
@@ -2484,9 +2532,9 @@
     esrStrength = 1;                                           // Contornos por IA começa com a redução de ruído no máximo
     MT.open = true; MT.panels = [Object.assign(newPanel(im, origin, lens), { date: isoNow(), ref: null })]; MT.act = 0; MT.hist = []; MT.drag = MT.edit = MT.pend = MT.sel = MT.loupe = MT.pinch = MT.pan = null; MT.ptrs.clear(); noteHide(false);
     $("mStr").value = esrStrength; $("mStrTxt").textContent = fmtStr(esrStrength);
-    $("metric").hidden = false; try { navSync(); } catch (e) {} mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
+    $("metric").hidden = false; mMode(MT.mode || "met"); try { navSync(); } catch (e) {} mList(); mStatus(); requestAnimationFrame(mDraw); mRunIA(MT.panels[0]); }
   function metricClose() { MT.panels.forEach(P => { if (P.tok) P.tok.cancel = true; }); noteHide(false); $("mPick").hidden = true;
-    MT.open = false; MT.loupe = null; MT.pend = null; MT.target = null; MT.patient = null; $("metric").hidden = true; try { navSync(); } catch (e) {} }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
+    MT.open = false; MT.loupe = null; MT.pend = null; MT.target = null; MT.patient = null; MT.mode = "met"; $("metric").classList.remove("m-cmp"); $("metric").hidden = true; try { navSync(); } catch (e) {} }   // o laço de vídeo continua sozinho (só ficou parado enquanto a Métrica estava aberta)
   const nowTxt = () => { const d = new Date(), z = n => String(n).padStart(2, "0"); return z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()); };
   const mmssc = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, "0") + ":" + s.toFixed(2).padStart(5, "0").replace(".", ","); };
   async function imageOfItem(it) {                             // foto da galeria → imagem na resolução da câmera
@@ -2681,7 +2729,7 @@
   function addPanel(im, origin, lens, extra) { const P = Object.assign(newPanel(im, origin, lens), extra || {}, { added: true }), A = MT.panels[0];
     if (P.date && A.date && P.date < A.date) { MT.panels = [P, A]; MT.act = 0; } else { MT.panels = [A, P]; MT.act = 1; }   // exame mais antigo sempre à esquerda MT.sel = null; MT.pend = null;
     mDraw(); mList(); mStatus(); mRunIA(P); setStatus(P.shapes.length ? "Comparação: marcações da métrica anterior desta imagem carregadas (pode ajustar). Marque o mesmo na outra imagem." : "Comparação: meça o mesmo nas duas imagens (mesma ordem) para ver a diferença.", "ok"); }
-  $("mCmp").onclick = () => { if (MT.panels.length > 1) { const k = Math.max(0, MT.panels.findIndex(q => q.added)), P = MT.panels.splice(k, 1)[0]; if (P.tok) P.tok.cancel = true; /* fecha a imagem que veio da comparação (esquerda ou direita) */ MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); return; } pickOpen(); };
+  $("mCmp").onclick = () => { if (MT.mode === "cmp") { cmpChooser(MT.patient || (PR.exam && PR.exam.pid) || PR.pac); return; } const swap = MT.panels.length > 1; if (swap) { const k = Math.max(0, MT.panels.findIndex(q => q.added)), P = MT.panels.splice(k, 1)[0]; if (P.tok) P.tok.cancel = true; /* fecha a imagem que veio da comparação (esquerda ou direita) */ MT.act = 0; MT.sel = null; mDraw(); mList(); mStatus(); } pickOpen(); };
   $("mPickClose").onclick = () => { $("mPick").hidden = true; };
   $("mPickFile").onclick = () => $("mFile").click();
   $("mFile").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; $("mPick").hidden = true;
@@ -3177,6 +3225,16 @@
         btnShape(c2, cx + cw - 130, cy + ch - 42, 118, "Gerar PDF", k > 0.75 && k < 0.88, true);
         cap.innerHTML = "<span class='tag-name'>Encerrar exame</span> → laudo";
       }
+    },
+    metr1(c2, t, cap) {
+      const T = Math.min(t, 8.95), cl = v => Math.max(0, Math.min(1, v));
+      const L = (x1, y1, x2, y2, f, col, txt) => { const x = x1 + (x2 - x1) * f, y = y1 + (y2 - y1) * f; c2.strokeStyle = col; c2.lineWidth = 3; c2.setLineDash([7, 5]); c2.beginPath(); c2.moveTo(x1, y1); c2.lineTo(x, y); c2.stroke(); c2.setLineDash([]);
+        if (f >= 1 && txt) { c2.font = "bold 15px Bonnie, Segoe UI, sans-serif"; c2.lineWidth = 3; c2.strokeStyle = "#000"; c2.strokeText(txt, x + 6, y - 6); c2.fillStyle = col; c2.fillText(txt, x + 6, y - 6); } };
+      c2.drawImage(sceneCanvas, 0, 0);
+      L(70, 270, 190, 270, cl(T / 1.5), "#ffd400", "Referência");
+      L(250, 110, 330, 160, cl((T - 3) / 1.5), "#ff6b6b", "70% da ref.");
+      if (T > 6) { c2.fillStyle = "rgba(0,0,0,.6)"; c2.fillRect(330, 260, 130, 34); c2.fillStyle = "#fff"; c2.font = "bold 14px Bonnie, Segoe UI, sans-serif"; c2.fillText("Salvar ✓", 352, 282); }
+      cap.innerHTML = T < 3 ? "1ª reta: <span class='tag-name'>referência</span>" : T < 6 ? "2ª reta: sai em % da referência" : "<span class='tag-name'>Salvar</span>";
     },
     metr(c2, t, cap) {
       const T = Math.min(t, 11.95);
@@ -3743,8 +3801,8 @@
   async function photoPanel(pid, it) {                         // foto/quadro do prontuário → { imagem, origem, data, ref, marcações anteriores }
     const { base, x, m, ref, date } = it, g = await readBlob([...base, ...(m.original || m.arquivo).split("/")]); if (!g) return null; const bmp = await createImageBitmap(g);
     const mk = await findMarks(pid, ref); return { im: toNative(bmp, bmp.width, bmp.height, null), origin: x.tipo.split(" —")[0] + " " + brDate(date) + " · " + (m.tipo === "base" ? m.legenda : m.arquivo.split("/").pop()),
-      extra: { date, ref, shapes: mk ? JSON.parse(JSON.stringify(mk.formas)) : [] } }; }
-  async function openCompare(pid, a, b) {                       // abre a Métrica já com as duas imagens (a mais antiga fica à esquerda)
+      extra: { date, ref, shapes: [] } }; }                      // Comparar exames: imagens salvas abrem limpas
+  async function openCompare(pid, a, b) { MT.mode = "cmp"; if (MT.open) metricClose(); MT.mode = "cmp";                       // abre a Métrica já com as duas imagens (a mais antiga fica à esquerda)
     const A = await photoPanel(pid, a), B = await photoPanel(pid, b); if (!A || !B) { setStatus("Não consegui ler uma das imagens.", "bad"); return; }
     showTab("imagem"); metricOpen(A.im, A.origin); Object.assign(MT.panels[0], A.extra); MT.patient = pid; MT.target = null;
     addPanel(B.im, B.origin, true, B.extra); }
@@ -3948,7 +4006,8 @@
       case "ajFoto": ajOpen(id); break;
       case "verVid": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) pvOpen(f, arq.split("/").pop()); await audit("assistiu vídeo", PR.pac + " · " + arq); break; }
       case "verArq": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) openBlob(f); break; }
-      case "cmpEx": {                                          // escolher uma imagem de cada exame e abrir a comparação
+      case "cmpEx": { await cmpChooser(PR.pac, id); break; }
+      case "cmpExOld": {                                       // (substituído por cmpChooser)
         const pid = PR.pac, all = await patientPhotos(pid), dirOf = q => q.base[3], mine = all.filter(q => dirOf(q) === id), others = [...new Set(all.filter(q => dirOf(q) !== id).map(dirOf))];
         if (!mine.length || !others.length) { setStatus("É preciso ter imagens nos dois exames.", "bad"); return; }
         const prev = others.find(d => d < id) || others[0], sel = { a: mine[0], b: null };
@@ -4058,13 +4117,17 @@
   document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("gSearch").focus(); $("gSearch").select(); } });
   // ----- menu lateral -----
   document.querySelectorAll("#side [data-nav]").forEach(b => b.onclick = () => navGo(b.dataset.nav));
-  const curNav = () => tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
+  const curNav = () => tab === "imagem" ? (MT.open ? (MT.mode === "cmp" ? "cmp" : "metrica") : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {
     if (n === "adv" && tab !== "adv") PR.advBack = curNav();
     if (n !== "adv" && tab === "adv") PR.advUntil = 0;                 // saiu do Avançado: na próxima vez pede a senha
-    if (n !== "metrica" && MT.open) metricClose();
+    if (n !== "metrica" && n !== "cmp" && MT.open) metricClose();
     if (n === "exame") { if (PR.step === 1) { showTab("pront"); go("exame"); } else { showTab("imagem"); } }
-    else if (n === "metrica") { if (!MT.open) { if (viewing || frozen || items.length || cv.width) metricFromCurrent(); } showTab("imagem"); }
+    else if (n === "metrica") { if (MT.open && MT.mode === "cmp") metricClose();
+      if (!MT.open) { MT.mode = "met"; if (viewing || frozen || items.length || cv.width) metricFromCurrent(); } showTab("imagem"); }
+    else if (n === "cmp") { const pid = (PR.exam && PR.exam.pid) || PR.pac;
+      if (!pid) { showTab("pront"); go("pacientes"); setStatus("Abra o paciente e toque em Comparar exames.", "ok"); return; }
+      cmpChooser(pid); }
     else if (n === "pront") { showTab("pront"); if (!PR.user) { if (["config", "exame"].includes(PR.scr)) PR.scr = "hoje"; prRender(); return; } if (["config", "exame"].includes(PR.scr)) go("hoje"); else prRender(); }
     else if (n === "config") { showTab("pront"); if (!PR.user && !PR.camOnly) { prRender(); return; } go("config"); }
     else if (n === "adv") { showTab("adv"); advRender(); }
@@ -4072,9 +4135,9 @@
     navSync(); }
   function navSync() {
     const med = isMed(), sec = PR.user && PR.user.perfil === "secretaria", cam = !sec;
-    const act = tab === "imagem" ? (MT.open ? "metrica" : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "";
+    const act = tab === "imagem" ? (MT.open ? (MT.mode === "cmp" ? "cmp" : "metrica") : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "";
     document.querySelectorAll("#side [data-nav]").forEach(b => { b.classList.toggle("on", b.dataset.nav === act);
-      b.hidden = (b.dataset.nav === "exame" || b.dataset.nav === "metrica") ? !cam : b.dataset.nav === "config" ? !(med || PR.camOnly) : false; });
+      b.hidden = (b.dataset.nav === "exame" || b.dataset.nav === "metrica") ? !cam : b.dataset.nav === "cmp" ? !(cam && PR.user && store.get("cmpOn") !== false) : b.dataset.nav === "config" ? !(med || PR.camOnly) : false; });
     $("hdrStart").hidden = !med || !!PR.exam || PR.step > 0 || (tab === "imagem" && !$("exHero").hidden);
     document.querySelector("#top .hdr-ctl").hidden = tab !== "imagem" || MT.open;
     if ($("imagem").classList.contains("mopen") !== !!MT.open) { $("imagem").classList.toggle("mopen", !!MT.open); fit(); if (MT.open) setTimeout(mDraw, 30); }
@@ -4300,6 +4363,78 @@
     await writeJSON([...PR.L.base, "exame.json"], x); await audit(c || b ? "ajustou imagem do laudo" : "voltou imagem ao original", mm.arquivo + (c || b ? " · cor " + c + " · brilho " + b : ""));
     ajClose(); setStatus(c || b ? "Imagem ajustada salva. Ela vai para o laudo." : "Imagem voltou ao original.", "ok"); scrLaudo(true); };
   document.addEventListener("keydown", e => { if (!$("ajModal").hidden && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); ajClose(); } }, true);
+
+  // ===== v7.1: Métrica simples, Comparar exames (modo da Métrica), vídeo "Como usar", interruptor no Avançado =====
+  (() => { // menu: Comparar exames, logo abaixo de Métrica
+    const met = document.querySelector('#side [data-nav="metrica"]'), b = met.cloneNode(true); b.dataset.nav = "cmp"; b.querySelector("span").textContent = "Comparar exames";
+    b.querySelector("svg").innerHTML = '<path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/>'; met.after(b); b.onclick = () => navGo("cmp");
+    // Linha: sai da barra e vai para a lateral ("Escritas e linhas")
+    const lw = $("mLw"), card = $("mFs").closest(".card"); card.querySelector("h2").textContent = "Escritas e linhas";
+    const row = document.createElement("div"); row.className = "row"; row.innerHTML = '<span class="lbl">Linha</span>'; lw.style.height = "";
+    [["0.6", "Fina"], ["1", "Média"], ["1.7", "Grossa"]].forEach(([v, t]) => { const o = lw.querySelector('option[value="' + v + '"]'); if (o) o.textContent = t; });
+    row.appendChild(lw); card.querySelector(".btnrow").before(row);
+    $("mSave").textContent = "Salvar";
+    // botão "Como usar" e guia de passos
+    const how = document.createElement("button"); how.className = "btn sm"; how.id = "mHow"; how.textContent = "▶ Como usar"; $("mBar").appendChild(how);
+    const g = document.createElement("div"); g.id = "mGuide"; $("mBar").after(g);
+    how.onclick = () => howOpen();
+  })();
+
+  // ----- Comparar exames: escolher duas imagens SALVAS do paciente (anterior e atual) -----
+  async function cmpChooser(pid, atualDir) {
+    const all = await patientPhotos(pid), dirOf = q => q.base[3], dirs = [...new Set(all.map(dirOf))].sort().reverse();   // mais recente primeiro
+    if (all.length < 2) { setStatus("Este paciente precisa de pelo menos 2 imagens salvas para comparar.", "bad"); if (tab !== "pront") { showTab("pront"); go("paciente", { pac: pid }); } return; }
+    const exLab = d => { const q = all.find(z => dirOf(z) === d); return brDT(q.x.inicio) + " · " + q.x.tipo.split(" —")[0]; };
+    const bDir = atualDir && dirs.includes(atualDir) ? atualDir : dirs[0], aDir = dirs.find(d => d < bDir) || dirs.find(d => d !== bDir) || bDir;
+    const sel = { a: null, b: null, la: [], lb: [] };
+    const thumbs = async (list, key) => { let h = ""; for (const [k, q] of list.entries()) { const f = await readBlob([...q.base, ...q.m.arquivo.split("/")]);
+      if (f) h += '<div class="pr-pk' + (k === 0 ? " on" : "") + '" data-k="' + key + '|' + k + '"><img src="' + objUrl(f) + '"><div class="cap">' + esc(q.m.tipo === "base" ? q.m.legenda : q.m.arquivo.split("/").pop()) + '</div></div>'; } return h || '<p class="pr-dim">Sem imagens neste exame.</p>'; };
+    const opt = d0 => dirs.map(d => '<option value="' + d + '"' + (d === d0 ? " selected" : "") + '>' + esc(exLab(d)) + '</option>').join("");
+    modal("Comparar exames", '<h4>Imagem anterior</h4><select id="cmExA">' + opt(aDir) + '</select><div class="pr-pick" id="cmA" style="margin-top:8px"></div>' +
+      '<h4>Imagem atual</h4><select id="cmExB">' + opt(bDir) + '</select><div class="pr-pick" id="cmB" style="margin-top:8px"></div>',
+      [["Comparar", async () => { if (!sel.a || !sel.b) return; if (sel.a === sel.b) { setStatus("Escolha duas imagens diferentes.", "bad"); return; } MD.hidden = true;
+        if (MT.open) metricClose(); await openCompare(pid, sel.a, sel.b); }, "primary"]]);
+    const fill = async g => { const d = MD.querySelector(g === "a" ? "#cmExA" : "#cmExB").value, L = all.filter(q => dirOf(q) === d);
+      sel["l" + g] = L; sel[g] = L[0] || null; MD.querySelector(g === "a" ? "#cmA" : "#cmB").innerHTML = await thumbs(L, g); };
+    MD.querySelector("#cmExA").onchange = () => fill("a"); MD.querySelector("#cmExB").onchange = () => fill("b"); await fill("a"); await fill("b");
+    if (sel.a === sel.b && sel.la.length > 1) { sel.a = sel.la[1]; MD.querySelectorAll("#cmA .pr-pk").forEach((z, i) => z.classList.toggle("on", i === 1)); }   // mesmo exame: já sugere duas imagens diferentes
+    MD.querySelector(".pr-mbody").onclick = ev => { const t = ev.target.closest("[data-k]"); if (!t) return; const [g, k] = t.dataset.k.split("|");
+      t.parentElement.querySelectorAll(".pr-pk").forEach(z => z.classList.toggle("on", z === t)); sel[g] = sel["l" + g][+k]; };
+  }
+  function mMode(m) { MT.mode = m; $("metric").classList.toggle("m-cmp", m === "cmp"); $("mBar").querySelector(".t").textContent = m === "cmp" ? "COMPARAR EXAMES" : "MÉTRICA";
+    if (m !== "cmp" && ["cref"].includes(MT.tool)) { const b = document.querySelector('#mBar [data-tool="line"]'); if (b) b.click(); }
+    cmpGuide(); try { navSync(); } catch (e) {} }
+  function cmpGuide() { const g = $("mGuide"); if (!g || MT.mode !== "cmp") return;
+    const two = MT.panels.length > 1, nR = P => P.shapes.filter(S => S.t === "cref").length, hasR = two && MT.panels.every(P => nR(P) > 0), hasR2 = hasR && MT.panels.every(P => nR(P) > 1),
+      hasM = hasR2 && MT.panels.every(P => P.shapes.some(S => S.t !== "cref" && S.t !== "note"));
+    const st = [two, hasR, hasR2, hasM], now = st.indexOf(false), txt = ["Duas imagens salvas", "R1 nas duas", "R2 nas duas (outra estrutura)", "Meça a lesão nas duas"];
+    g.innerHTML = txt.map((t, i) => '<span class="st ' + (st[i] ? "done" : i === now ? "now" : "") + '"><b>' + (st[i] ? "✓" : i + 1) + '</b>' + t + '</span>').join('<span class="dash">—</span>') +
+      (now < 0 ? '<span class="dash">→</span><span class="st done" style="color:#b9ecd0">Resultado na lateral · toque em Salvar</span>' : "");
+    g.style.top = ($("mBar").offsetTop + $("mBar").offsetHeight + 10) + "px"; }
+  setInterval(() => { if (MT.open && MT.mode === "cmp") cmpGuide(); }, 600);
+  // ----- vídeo "Como usar" -----
+  const HOW_CH = [[0, "Escolher as duas imagens salvas"], [17, "Marcar R1 nas duas, nos mesmos pontos"], [36, "Marcar R2 nas duas (outra estrutura)"], [54, "Medir a lesão nas duas"], [73, "Ler o resultado, o selo e salvar"]];
+  (() => { const m = document.createElement("div"); m.id = "howModal"; m.hidden = true;
+    m.innerHTML = '<div class="box"><div class="hd"><b>Como comparar exames</b><span>vídeo · 1 min</span><button class="btn sm" id="howClose">Fechar</button></div>' +
+      '<div class="bd"><video id="howVid" controls playsinline preload="metadata" src="como_comparar.mp4"></video><div class="ch"><div class="t">PASSO A PASSO</div><div id="howCh"></div></div></div></div>';
+    document.body.appendChild(m);
+    $("howCh").innerHTML = HOW_CH.map(([t, x], i) => '<button data-t="' + t + '"><b>' + Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0") + '</b><span>' + (i + 1) + ". " + x + '</span></button>').join("");
+    $("howCh").onclick = e => { const b = e.target.closest("button"); if (!b) return; const v = $("howVid"); v.currentTime = +b.dataset.t; v.play().catch(() => {}); };
+    $("howVid").ontimeupdate = () => { const t = $("howVid").currentTime; let k = 0; HOW_CH.forEach(([s], i) => { if (t >= s) k = i; }); $("howCh").querySelectorAll("button").forEach((b, i) => b.classList.toggle("on", i === k)); };
+    $("howClose").onclick = howClose; })();
+  function howOpen() { $("howModal").hidden = false; const v = $("howVid"); v.currentTime = 0; v.play().catch(() => {}); }
+  function howClose() { const v = $("howVid"); v.pause(); $("howModal").hidden = true; }
+  document.addEventListener("keydown", e => { if (!$("howModal").hidden && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); howClose(); } }, true);
+  // ----- Avançado: liga/desliga "Comparar exames" -----
+  (() => { const c = document.createElement("div"); c.className = "card"; c.id = "advFeat";
+    c.innerHTML = '<h2>Funções do médico</h2><label style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>Mostrar <b>Comparar exames</b></span><input type="checkbox" id="featCmp" style="width:auto"></label>' +
+      '<p class="desc" style="margin:6px 0 0">Desligado: some do menu e do prontuário.</p>';
+    const fab = $("advFab"); if (fab) fab.after(c); else $("advGrid").appendChild(c);
+    $("featCmp").checked = store.get("cmpOn") !== false;
+    $("featCmp").onchange = async e => { store.set("cmpOn", e.target.checked); cmpFeatSync(); navSync(); if (PR.user) await audit((e.target.checked ? "ligou" : "desligou") + " Comparar exames");
+      setStatus(e.target.checked ? "Comparar exames ligado." : "Comparar exames desligado.", "ok"); }; })();
+  function cmpFeatSync() { document.body.classList.toggle("cmp-off", store.get("cmpOn") === false); }
+  cmpFeatSync();
   authStart();
 })();
 </script>
