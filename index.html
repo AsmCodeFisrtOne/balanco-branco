@@ -4583,6 +4583,7 @@
   // ================= RECEPÇÃO (computador da assistente) =================
   (() => { const st = document.createElement("style"); st.textContent = `
     #recWrap[hidden]{display:none!important}
+    #hdrStart,#hdrPre{white-space:nowrap;flex-shrink:0}
     #recWrap{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;overflow:auto}
     #recWrap .rh{display:flex;align-items:center;gap:14px;padding:12px 22px;background:var(--surface);border-bottom:1px solid var(--line)}
     #recWrap .rh img{height:40px;border:1px solid var(--line);border-radius:8px;padding:3px 7px;background:#fff}
