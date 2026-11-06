@@ -3714,7 +3714,7 @@
       x = { formato: FMT, id: eid, paciente: pid || null, tipo, inicio: isoNow(), fim: null, status: "em andamento", medico: med ? { id: med.id, nome: med.nome, crm: med.crm, uf: med.uf, rqe: med.rqe } : null,
         local: loc ? { id: loc.id, nome: loc.nome } : null, equipamento: eq ? { id: eq.id, modelo: eq.modelo, serie: eq.serie } : null, convenio: { nome: $("xConv").value.trim(), guia: $("xGuia").value.trim() },
         solicitante: $("xSol").value.trim(), indicacao: $("xInd").value.trim(), termo: PR.termoArq || null, midias: [], metricas: [], laudos: [], dicom_study_uid: dicomUid() };
-      if (PR.preRec && PR.preRec.pid === pid && PR.preRec.doc) { x.recepcao = { doc: PR.preRec.doc, code: PR.preRec.code, sala: PR.preRec.f.sala || "", recebido: isoNow() }; } PR.preRec = null;
+      if (PR.preRec && PR.preRec.pid === pid && PR.preRec.doc) { x.recepcao = { doc: PR.preRec.doc, code: PR.preRec.code, ek: PR.preRec.ek || "", sala: PR.preRec.f.sala || "", recebido: isoNow() }; } PR.preRec = null;
       await writeJSON([...base, "exame.json"], x);
       if (pid) { PR.index.pacientes[pid].exames.push(examSummary(x, dir)); await saveIndex(); }
       await audit("iniciou exame", (pid || "avulso") + " · " + eid); }
@@ -4553,7 +4553,9 @@
   const rcClinic = k => shaHex("FMED-CX|id|" + k).then(h => h.slice(0, 24));
   const rcDoc = (k, code) => shaHex("FMED-CX|doc|" + k + "|" + code).then(h => h.slice(0, 40));
   const rcPart = (doc, i) => shaHex("FMED-CX|parte|" + doc + "|" + i).then(h => h.slice(0, 40));
-  async function rcAes(k, code) { const raw = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("FMED-CX|enc|" + k + "|" + code)); return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]); }
+  const rcRaw = async (k, code) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("FMED-CX|enc|" + k + "|" + code)));
+  async function rcAes(k, code) { return crypto.subtle.importKey("raw", await rcRaw(k, code), "AES-GCM", false, ["encrypt", "decrypt"]); }
+  const rcAesB64 = b => crypto.subtle.importKey("raw", b64u8(b), "AES-GCM", false, ["encrypt", "decrypt"]);
   async function rcEnc(key, u8) { const iv = crypto.getRandomValues(new Uint8Array(12)); return { iv: u8b64(iv), d: u8b64(new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, u8))) }; }
   async function rcDec(key, iv, d) { return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64u8(iv) }, key, b64u8(d))); }
   // ---- acesso anônimo + Firestore (REST, sem biblioteca) ----
@@ -4662,10 +4664,12 @@
   async function recLaudo(doc) { const L = recList(), f = L.find(x => x.doc === doc); if (!f) return;
     let blob = await idbGet("rlaudo:" + doc);
     if (!blob) { try { const k = rkGet(), d = await fsGet("caixa", doc); if (!d || !d.n) { alert("O laudo não está mais na caixa postal."); return; }
-        let b64 = ""; for (let i = 0; i < d.n; i++) { const p = await fsGet("parte", await rcPart(doc, i)); if (!p) throw new Error("pedaço " + i + " faltando"); b64 += p.d; }
-        blob = new Blob([await rcDec(await rcAes(k, f.code), d.iv, b64)], { type: "application/pdf" }); await idbSet("rlaudo:" + doc, blob);
-        for (let i = 0; i < d.n; i++) await fsDel("parte", await rcPart(doc, i)); await fsDel("caixa", doc); f.st = "baixado"; recSave(L); recRender();
-      } catch (e) { alert("Não consegui baixar o laudo: " + e.message); return; } }
+        const [sid, iv] = String(d.iv || "").includes(".") ? d.iv.split(".") : ["", d.iv], pid = i => rcPart(doc, sid ? sid + "|" + i : i);
+        let b64 = ""; for (let i = 0; i < d.n; i++) { const p = await fsGet("parte", await pid(i)); if (!p) throw new Error("pedaço " + i + " faltando"); b64 += p.d || ""; }
+        blob = new Blob([await rcDec(await rcAes(k, f.code), iv, b64)], { type: "application/pdf" }); await idbSet("rlaudo:" + doc, blob);
+        for (let i = 0; i < d.n; i++) await fsDel("parte", await pid(i)); await fsDel("caixa", doc); f.st = "baixado"; recSave(L); recRender();
+      } catch (e) { alert(e && e.name === "OperationError" ? "O laudo não abriu com a chave desta recepção.\n\nConfira se a chave do consultório é a mesma aqui e no computador do médico (Configurações → Recepção) e peça ao médico para tocar em “Enviar à recepção” de novo."
+          : "Não consegui baixar o laudo: " + ((e && (e.message || e.name)) || "erro desconhecido")); return; } }
     openBlob(blob); }
   RW.addEventListener("click", async e => { const t = e.target.closest("[data-r]"); if (!t) return; const a = t.dataset.r;
     if (a === "sair") recClose();
@@ -4732,19 +4736,23 @@
       PR.index.pacientes[p.id] = Object.assign(idxEntry(p), { exames: [] }); await saveIndex(); await audit("cadastrou paciente (pré-cadastro da recepção)", p.id); pid = p.id; }
     if (doc) { try { await fsPatch("caixa", doc, { st: "aberta", at: new Date(), d: "", iv: "", exp: hrs(24 * 7) }); } catch (e) {} }
     await audit("abriu pré-cadastro da recepção", pid + (code ? " · código " + code : ""));
-    PR.preRec = { pid, doc, code, f }; MD.hidden = true; showTab("pront"); go("exame", { pac: pid });
+    let ek = ""; try { ek = u8b64(await rcRaw(rkGet(), code)); } catch (e) {}
+    PR.preRec = { pid, doc, code, f, ek }; MD.hidden = true; showTab("pront"); go("exame", { pac: pid });
     const fill = (id, v) => { const el = $(id); if (el && v && !el.value) el.value = v; };
     setTimeout(() => { fill("xConv", f.conv); fill("xInd", f.obs); fill("xSol", f.sol); if ($("xTipo") && f.tipo) [...$("xTipo").options].forEach(o => { if (o.value === f.tipo) $("xTipo").value = f.tipo; }); }, 400); }
   // devolver o laudo em PDF à recepção
-  async function recSendLaudo(dir) { const base = ["pacientes", PR.pac, "exames", dir], x = await readJSON([...base, "exame.json"]), r = x && x.recepcao;
+  let recSending = false;
+  async function recSendLaudo(dir) { if (recSending) return; recSending = true; try { await recSendLaudo2(dir); } finally { recSending = false; } }
+  async function recSendLaudo2(dir) { const base = ["pacientes", PR.pac, "exames", dir], x = await readJSON([...base, "exame.json"]), r = x && x.recepcao;
     if (!r || !r.doc) return; const pdf = await pdfOf(base, x); if (!pdf) { setStatus("Finalize o laudo antes de enviar.", "bad"); return; }
     const k = rkGet(); if (!k) { setStatus("Recepção desligada neste computador (Configurações → Recepção).", "bad"); return; }
     setStatus("Enviando laudo à recepção…", "");
     try { const cur = await fsGet("caixa", r.doc); if (!cur) { setStatus("A ficha da recepção não está mais na caixa postal (expirou ou já foi baixada).", "bad"); return; }
-      const e = await rcEnc(await rcAes(k, r.code), new Uint8Array(await pdf.arrayBuffer())), parts = [];
+      const e = await rcEnc(r.ek ? await rcAesB64(r.ek) : await rcAes(k, r.code), new Uint8Array(await pdf.arrayBuffer())), parts = [];
       for (let i = 0; i < e.d.length; i += RC_CHUNK) parts.push(e.d.slice(i, i + RC_CHUNK));
-      for (let i = 0; i < parts.length; i++) await fsPut("parte", await rcPart(r.doc, i), { d: parts[i], exp: hrs(24 * 7) });
-      await fsPatch("caixa", r.doc, { st: "laudo", n: parts.length, iv: e.iv, lt: new Date(), exp: hrs(24 * 7) });
+      const sid = [...crypto.getRandomValues(new Uint8Array(4))].map(b => b.toString(16).padStart(2, "0")).join("");
+      for (let i = 0; i < parts.length; i++) await fsPut("parte", await rcPart(r.doc, sid + "|" + i), { d: parts[i], exp: hrs(24 * 7) });
+      await fsPatch("caixa", r.doc, { st: "laudo", n: parts.length, iv: sid + "." + e.iv, lt: new Date(), exp: hrs(24 * 7) });
       r.enviado = isoNow(); await writeJSON([...base, "exame.json"], x); await audit("enviou laudo à recepção", PR.pac + " · " + x.id); setStatus("Laudo enviado à recepção.", "ok"); prRender();
     } catch (er) { setStatus(er.message === "sem internet" ? "Sem internet. Use “Salvar cópia (pendrive)”." : "Não consegui enviar (" + er.message + ").", "bad"); } }
   rkLoadDisk();
