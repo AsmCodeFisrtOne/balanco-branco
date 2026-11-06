@@ -427,6 +427,8 @@
   #prToast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 30px); opacity: 0; transition: .25s; z-index: 80; background: var(--surface-3); border: 1px solid var(--line);
     padding: 10px 16px; border-radius: 10px; max-width: min(640px, 92vw); pointer-events: none; font-size: 15px; }
   #prToast.on { opacity: 1; transform: translate(-50%, 0); } #prToast.ok { border-color: var(--ok); } #prToast.bad { border-color: var(--bad); color: #ffd0d0; }
+  #prToast { background: rgba(30,26,25,.94) !important; color: #f4f1f0 !important; border-color: rgba(255,255,255,.18); }   /* aviso sempre legível (tema claro e escuro, sobre a imagem) */
+  #prToast.ok { color: #c4f0d8 !important; } #prToast.bad { color: #ffc1b8 !important; border-color: #e0786a; }
   @media (max-width: 700px) { .au-g2 { grid-template-columns: 1fr; } #prHdr span { display: none; } }
 
   /* ===================== v6.2 · layout novo (menu lateral, tema claro Ferrari) ===================== */
@@ -827,7 +829,7 @@
     <div id="prMain"></div></div>
   </section>
   <section class="view" id="adv"><div id="advIn">
-    <div id="advLock"><div class="lk">🔒</div><h2 style="margin:0 0 6px">Configurações avançadas</h2>
+    <div id="advLock"><div class="lk"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h2 style="margin:0 0 6px">Configurações avançadas</h2>
       <div style="color:var(--dim)">Área do fabricante: câmera, sinal de vídeo, chip, lente e testes de bancada. Alterações aqui afetam a imagem de todos os exames.</div>
       <div id="advInst" hidden style="margin-top:14px;text-align:left"><b>Instalação</b><div style="color:var(--dim);font-size:13px;margin:4px 0 0">Primeira vez neste computador: digite a chave de instalação (uma vez só).</div>
         <input type="password" id="advKeyIn" placeholder="chave de instalação (XXXX-XXXX-…)" autocomplete="off" spellcheck="false"><button class="btn primary" id="advKeyGo" style="width:100%;height:42px">Instalar</button></div>
@@ -910,7 +912,7 @@
             <li><b>R1</b>: marque a mesma estrutura nas duas.</li>
             <li><b>R2</b>: marque outra estrutura nas duas.</li>
             <li>Meça a lesão nas duas: a variação sai em <b>%</b>.</li>
-            <li>Veja o selo: <b>✓ Referências coerentes</b> ou <b>⚠ Confira as referências</b>.</li>
+            <li>Veja o selo: <b>✓ Referências coerentes</b> ou <b>Confira as referências</b>.</li>
           </ol>
           <div class="note">Vídeo completo em <b>Comparar exames → ▶ Como usar</b>.</div>
         </div>
@@ -1698,7 +1700,8 @@
   const camModeOf = id => store.get("camMode:" + id) || "auto";
   function dirFilter() { const c = DOC.cor || 0, b = DOC.bri || 0;               // Cor e Brilho do médico, aplicados pela tela
     return "saturate(" + (1 + 0.6 * c).toFixed(3) + ") contrast(" + (1 + 0.12 * c).toFixed(3) + ") brightness(" + (1 + 0.35 * b).toFixed(3) + ")"; }
-  function dirToCv() { if (!dcv.width) return; if (cv.width !== dcv.width || cv.height !== dcv.height) { cv.width = dcv.width; cv.height = dcv.height; } ctx.drawImage(dcv, 0, 0); }
+  function dirToCv() { const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return; if (cv.width !== vw || cv.height !== vh) { cv.width = vw; cv.height = vh; }   // quadro inteiro (sem lupa), com Cor/Brilho
+    ctx.filter = showOriginal ? "none" : dirFilter(); ctx.drawImage(video, 0, 0, vw, vh); ctx.filter = "none"; }
   function dirShow(on) { dcv.style.display = on ? "block" : "none"; outCv.style.display = on ? "none" : ""; document.body.classList.toggle("cam-direct", !!on); }
   let roiFrac = 0.25, outW = 400, outH = 400;
   let frozen = null, frozenRaw = null, frozenSR = null, freezeReq = false, showRoi = true, frozenNR = 0, fzCache = null;   // frozenNR: nível de ruído usado ao congelar
@@ -1913,15 +1916,21 @@
       if (dcv.width !== vw || dcv.height !== vh) { dcv.width = vw; dcv.height = vh; outCv.width = vw; outCv.height = vh; ov.width = vw; ov.height = vh; fit();
         $("resIn").textContent = vw + "×" + vh + " (câmera HD · direta)"; $("resOut").textContent = vw + "×" + vh + " · sem tratamento"; }
       if (dcv.style.display !== "block") dirShow(true);
-      dctx.filter = showOriginal ? "none" : dirFilter(); dctx.drawImage(video, 0, 0, vw, vh); dctx.filter = "none";
+      dctx.filter = showOriginal ? "none" : dirFilter();
+      if (zoomF > 1) { const sw = vw / zoomF, sh = vh / zoomF; dctx.drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, vw, vh); }   // Lupa 3× (centro)
+      else dctx.drawImage(video, 0, 0, vw, vh);
+      dctx.filter = "none";
       if (freezeReq) { dirToCv(); frozen = ctx.getImageData(0, 0, cv.width, cv.height); frozenRaw = null; frozenSR = null; freezeReq = false; setFreezeUi(); }
     }
+    else if (cv.width) {                                      // congelada: mostra o quadro parado (com a Lupa, se ligada)
+      const W = cv.width, H = cv.height; if (zoomF > 1) { const sw = W / zoomF, sh = H / zoomF; dctx.drawImage(cv, (W - sw) / 2, (H - sh) / 2, sw, sh, 0, 0, W, H); } else dctx.drawImage(cv, 0, 0); }
     { const show = !!frozen && !viewing && !srCap; if ($("fzBar").hidden === show) { $("fzBar").hidden = !show; fzSync(); } }
     const w = ov.width, fs = Math.max(12, 15 * w / 640); octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, ov.width, ov.height);
     octx.font = fs * 1.1 + "px Bonnie, Segoe UI, sans-serif"; let ty = 8;
     const tag = (txt, color) => { const tw = octx.measureText(txt).width + fs; octx.fillStyle = "rgba(0,0,0,.6)"; octx.fillRect(w - tw - 8, ty, tw, fs * 1.55); octx.fillStyle = color; octx.fillText(txt, w - tw - 8 + fs / 2, ty + fs * 1.15); ty += fs * 1.8; };
     if (rec) { const t = (performance.now() - rec.start) / 1000; tag("● REC " + mmss(t), "#ff5a5a"); if ($("lblVideo").textContent !== mmss(t)) $("lblVideo").textContent = mmss(t); }
     if (frozen) tag("CONGELADO", "#7fd0ff");
+    if (zoomF > 1) tag("LUPA " + zoomF + "×", "#ffd400");
     if (showOriginal) tag("SEM COR/BRILHO — só para comparar", "#ffd400");
   }
   function frame() {
@@ -2531,7 +2540,7 @@
       else if (hasR[0] || hasR[1]) rows.push("Marque a referência comum R1 nas DUAS imagens (a mesma estrutura) para comparar em R.");
       const h = document.createElement("div"); h.className = "mhead"; h.textContent = "Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + ")"; el.append(h);
       const p = document.createElement("div"); p.className = "mcmp"; p.innerHTML = rows.length ? "" : '<p class="desc" style="margin:4px 0">Meça os mesmos pares nos dois exames (mesma ferramenta e mesma letra) para comparar.</p>';
-      rows.forEach(t => { const d = document.createElement("div"); d.textContent = t; if (t.startsWith("   ↳")) { d.style.cssText = "padding-left:14px;color:var(--dim);font-size:13px"; if (/aumentou|diminuiu/.test(t)) d.style.color = "var(--brand-tint)"; } else if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p);
+      rows.forEach(t => { const d = document.createElement("div"); const wn = t.startsWith("⚠"); d.textContent = wn ? t.replace(/^⚠\s*/, "") : t; if (wn) d.insertAdjacentHTML("afterbegin", '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>'); if (t.startsWith("   ↳")) { d.style.cssText = "padding-left:14px;color:var(--dim);font-size:13px"; if (/aumentou|diminuiu/.test(t)) d.style.color = "var(--brand-tint)"; } else if (t[0] === "⚠" || t.startsWith("Marque") || t.startsWith("Trace")) d.className = "warn"; else if (t[0] === "✓") d.className = "ok"; p.append(d); }); el.append(p);
       if (MT.seal != null && p.firstChild) p.firstChild.style.cssText = "font-weight:700;font-size:15px;padding:6px 8px;border-radius:8px;margin-bottom:4px;background:" + (MT.seal ? "rgba(46,200,120,.15)" : "rgba(240,170,60,.18)");
       if (MT.swapP) { const bt = document.createElement("button"); bt.className = "btn sm primary"; bt.style.margin = "6px 0"; bt.textContent = "Trocar R1 e R2 na imagem " + pLab(MT.swapP, MT.panels.indexOf(MT.swapP)); bt.onclick = () => swapR(MT.swapP); el.append(bt); }
       MT.cmpRows = rows; mDraw(); } else MT.cmpRows = []; }
@@ -2786,7 +2795,7 @@
       if (MT.hideR && P.shapes.some(S => S.t === "cref")) lines.push(["R1/R2 marcados e usados nas medidas (ocultos no desenho)", "#959ba3"]);
       lines.push(["Lente: " + (!P.lens ? "arquivo externo — sem correção" : lensOn() ? "medidas com correção de lente (" + lensTxt(true) + ")" : "sem correção de lente (calibração ainda estimada)"), "#959ba3"]);
       info.forEach(i => lines.push([(two ? "  " : "") + (i.kind === "ref" ? i.name + " (100%)" : i.kind === "note" ? "Anotação: " + (i.S.text || "(seta)") : i.kind === "cref" ? i.name + (i.idx > 1 ? ": " + i.val : " (unidade R)") : i.name + ": " + i.val) + (i.rs ? " · " + i.rs : ""), i.kind === "note" ? "#eceef0" : i.col])); });
-    if (two) { lines.push(["Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + "):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t, "#eceef0"])); }
+    if (two) { lines.push(["Comparação (" + pLab(MT.panels[0], 0) + " → " + pLab(MT.panels[1], 1) + "):", "#d08c7e"]); (MT.cmpRows.length ? MT.cmpRows : ["(meça os mesmos pares nos dois exames)"]).forEach(t => lines.push(["  " + t.replace(/^⚠\s*(Atenção:\s*)?/, "Atenção: "), "#eceef0"])); }
     const Wt = Wp * MT.panels.length + gap, c = document.createElement("canvas"); c.width = Wt;
     const x = c.getContext("2d"); x.font = mFont(fs);
     const wrap = []; lines.forEach(([t, col]) => { let s = t; while (x.measureText(s).width > Wt - fs * 1.4 && s.length > 20) { let k = s.length; while (k > 10 && x.measureText(s.slice(0, k)).width > Wt - fs * 1.4) k--; const sp = s.lastIndexOf(" ", k); const cut = sp > 20 ? sp : k; wrap.push([s.slice(0, cut), col]); s = "   " + s.slice(cut).trim(); } wrap.push([s, col]); });
@@ -3677,7 +3686,7 @@
     let html = '<div class="pr-card pr-pat"><div class="pr-big">' + esc(ini) + '</div><div><h3>' + esc(p.nome) + '</h3><div class="pr-dim"><b>' + p.id + '</b> · ' + age(p.nascimento) + ' (' + brDate(p.nascimento) + ')' + (p.sexo ? ' · ' + esc(p.sexo) : '') +
       ((p.convenio || {}).nome ? ' · ' + esc(p.convenio.nome) + (p.convenio.carteirinha ? ' (' + esc(p.convenio.carteirinha) + ')' : '') : '') + (p.telefone ? ' · ' + esc(p.telefone) : '') + '</div>' +
       (med && an.alergias ? '<div style="margin-top:6px"><span class="pill bad">Alergias: ' + esc(an.alergias) + '</span></div>' : '') + '</div>' +
-      '<div class="pr-acts"><button class="btn" data-act="editPac">Editar ficha</button>' + (med ? '<button class="btn primary pr-start" data-act="novoExame">📷 Iniciar exame</button>' : '') + '</div></div>' +
+      '<div class="pr-acts"><button class="btn" data-act="editPac">Editar ficha</button>' + (med ? '<button class="btn primary pr-start" data-act="novoExame"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Iniciar exame</button>' : '') + '</div></div>' +
       '<div class="pr-tabs">' + tabs.map(([k, t]) => '<span data-act="pacTab" data-id="' + k + '" class="' + (k === PR.pacTab ? "on" : "") + '">' + t + '</span>').join("") + '</div><div id="prTabBody"></div>';
     PM.innerHTML = html; const B = $("prTabBody");
     if (PR.pacTab === "ficha") {
@@ -3752,7 +3761,7 @@
       '<div><label>Equipamento</label><select id="xEq"><option value="">—</option>' + opt(PR.equips, (PR.equips[0] || {}).id, e => e.modelo + (e.serie ? " · nº série " + e.serie : "")) + '</select></div>' +
       field("xConv", "Convênio", p ? (p.convenio || {}).nome : "") + field("xGuia", "Guia / autorização", "") + '</div>' +
       '<label>Médico solicitante</label><input id="xSol" placeholder="Nome e CRM"><label>Indicação clínica</label><textarea id="xInd" rows="2"></textarea>' +
-      (an.alergias ? '<div class="pr-warn">⚠ Alergias registradas: <b>' + esc(an.alergias) + '</b>. Confirmar antes da anestesia tópica.</div>' : '') + '</div>' +
+      (an.alergias ? '<div class="pr-warn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg> Alergias registradas: <b>' + esc(an.alergias) + '</b>. Confirmar antes da anestesia tópica.</div>' : '') + '</div>' +
       '<div class="pr-card" style="flex:1"><h4>Termo de consentimento</h4>' + (p ? '' +
         '<div class="pr-acts"><button class="btn" data-act="termoImp">Imprimir termo</button><button class="btn" data-act="termoAssEx">Assinar na tela</button></div><p id="xTermoOk" class="pr-dim"></p>' : '<p class="pr-dim">Sem paciente: anexe o termo depois.</p>') +
       '<div class="pr-acts" style="margin-top:16px"><button class="btn primary" data-act="iniciar">Iniciar exame →</button><button class="btn" data-act="voltarPac">Cancelar</button></div>' +
@@ -4284,9 +4293,9 @@
       '<button class="btn" data-act="novoPac">+ Novo paciente</button></div>' +
       '<div class="pr-kpi4"><div><b>' + hoje.length + '</b>exames hoje</div><div><b>' + (med ? hoje.filter(e => e.status === "laudado").length : "—") + '</b>laudos finalizados hoje</div><div><b>' + (med ? pend.length : "—") + '</b>laudos pendentes</div><div><b>' + (days === null ? "nunca" : days + (days === 1 ? " dia" : " dias")) + '</b>desde o último backup</div></div>' +
       '<div class="pr-cols"><div class="pr-card" style="flex:1.4"><h4>Exames de hoje</h4>' + (hoje.length ? hoje.map(row).join("") : '<p class="pr-dim">Nenhum exame hoje ainda.</p>') +
-      (med ? '<button class="btn primary pr-bigbtn" data-act="heroStart">📷 Iniciar exame</button>' : '') + '</div>' +
+      (med ? '<button class="btn primary pr-bigbtn" data-act="heroStart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Iniciar exame</button>' : '') + '</div>' +
       '<div style="flex:1;min-width:300px">' + (med ? '<div class="pr-card"><h4>Laudos pendentes</h4>' + (pend.length ? pend.slice(0, 8).map(e => '<div class="pr-row"><span><b>' + esc(e.p.nome) + '</b><br><span class="pr-dim">' + esc(e.tipo) + ' · ' + brDT(e.data) + '</span></span><button class="btn sm" data-act="laudoDe" data-id="' + e.p.id + '|' + esc(e.dir) + '">Laudar</button></div>').join("") : '<p class="pr-dim">Nenhum laudo pendente.</p>') + '</div>' : '') +
-      (days === null || days >= 1 ? '<div class="pr-warn" style="margin-top:0">⚠ <b>Backup ' + (days === null ? "ainda não feito" : "atrasado") + '.</b> ' + (b.ultimo ? "O último foi em " + brDT(b.ultimo) + "." : "") + (med ? ' <button class="btn sm" data-act="goBackup" style="margin-left:6px">Fazer backup</button>' : '') + '</div>' : '') + '</div></div>'; }
+      (days === null || days >= 1 ? '<div class="pr-warn" style="margin-top:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg> <b>Backup ' + (days === null ? "ainda não feito" : "atrasado") + '.</b> ' + (b.ultimo ? "O último foi em " + brDT(b.ultimo) + "." : "") + (med ? ' <button class="btn sm" data-act="goBackup" style="margin-left:6px">Fazer backup</button>' : '') + '</div>' : '') + '</div></div>'; }
   async function scrLaudos() {
     const f = PR.lf || "todos", ex = allExams().sort((a, b) => b.data.localeCompare(a.data)), sel = ex.filter(e => f === "todos" || (f === "pend" ? e.status !== "laudado" : e.status === "laudado")).slice(0, 300);
     PM.innerHTML = '<div class="pr-chips">' + [["todos", "Todos", ex.length], ["pend", "Laudo pendente", ex.filter(e => e.status !== "laudado").length], ["fin", "Laudo finalizado", ex.filter(e => e.status === "laudado").length]]
@@ -4302,7 +4311,7 @@
     else if (a === "laudoDe") { const [pid, dir] = id.split("|"); PR.pacTab = "exames"; go("laudo", { pac: pid, ldir: dir, lbase: ["pacientes", pid, "exames", dir] }); } });
   // ----- lembrete de backup no menu lateral -----
   setInterval(async () => { if (!isMed() || !PR.root) { $("sideBk").hidden = true; return; } const b = await readJSON(["_sistema", "backup.json"], {}); const d = b.ultimo ? Math.floor((Date.now() - new Date(b.ultimo)) / 864e5) : null;
-    $("sideBk").hidden = false; $("sideBk").innerHTML = '🛡 Último backup <b>' + (d === null ? "nunca" : d === 0 ? "hoje" : "há " + d + (d === 1 ? " dia" : " dias")) + '</b>'; }, 5000);
+    $("sideBk").hidden = false; $("sideBk").innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/></svg> Último backup <b>' + (d === null ? "nunca" : d === 0 ? "hoje" : "há " + d + (d === 1 ? " dia" : " dias")) + '</b>'; }, 5000);
 
   // ===== v6.6: Configurações → Imagem (médico), player de vídeo do prontuário, perfil de fábrica (Avançado) =====
   function liveTo(c) { const src = camDirect ? (frozen ? cv : dcv) : outCv; if (!src || !src.width || !c) return; if (c.width !== src.width || c.height !== src.height) { c.width = src.width; c.height = src.height; } c.getContext("2d").drawImage(src, 0, 0); }
@@ -4670,7 +4679,7 @@
       '<input id="rKey" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XX" spellcheck="false" autocomplete="off" style="text-transform:uppercase">' +
       '<p id="rKeyMsg" style="min-height:20px;font-size:13px;margin:8px 0"></p><button class="btn primary" data-r="chave" style="width:100%;height:42px">Ligar</button></div></div>'; return; }
     const L = recList(), today = new Date().toDateString(), hoje = L.filter(f => new Date(f.criado).toDateString() === today).sort((a, b) => b.criado - a.criado);
-    const stTxt = f => f.st === "baixado" ? '<span class="rpill rp-ok">📄 Laudo recebido</span>' : f.st === "laudo" ? '<span class="rpill rp-b">📄 Laudo pronto ' + (f.lt ? hhmm(f.lt) : '') + '</span>' :
+    const stTxt = f => f.st === "baixado" ? '<span class="rpill rp-ok">Laudo recebido</span>' : f.st === "laudo" ? '<span class="rpill rp-b">Laudo pronto ' + (f.lt ? hhmm(f.lt) : '') + '</span>' :
       f.st === "aberta" ? '<span class="rpill rp-ok">✓ Aberta pelo médico ' + (f.at ? hhmm(f.at) : '') + '</span>' : f.st === "expirou" ? '<span class="rpill rp-x">Expirou</span>' :
       f.st === "arquivo" ? '<span class="rpill rp-w">Arquivo salvo (pen drive)</span>' : '<span class="rpill rp-w">Aguardando · código ' + f.code + '</span>';
     const acts = f => (f.st === "laudo" || f.st === "baixado" ? '<button class="btn sm" data-r="laudo" data-doc="' + f.doc + '">Abrir laudo</button>' : '') +
@@ -4768,7 +4777,7 @@
     else if (a === "rcCopy") { try { await navigator.clipboard.writeText(rkFmt(rkGet())); setStatus("Chave copiada.", "ok"); } catch (er) {} }
     else if (a === "recPdf") { await recSendLaudo(t.dataset.id); } });
   // botão "Abrir pré-cadastro" no alto
-  (() => { const b = document.createElement("button"); b.className = "btn"; b.id = "hdrPre"; b.hidden = true; b.innerHTML = "⌨ Abrir pré-cadastro"; $("hdrStart").after(b); b.onclick = preOpen; })();
+  (() => { const b = document.createElement("button"); b.className = "btn"; b.id = "hdrPre"; b.hidden = true; b.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg> Abrir pré-cadastro'; $("hdrStart").after(b); b.onclick = preOpen; })();
   setInterval(() => { const b = $("hdrPre"); if (b) b.hidden = !(isMed() && rkGet() && !PR.exam && tab !== "adv" && authEl.hidden); }, 700);
   let preFails = 0, preWait = 0;
   function preOpen() { if (PR.exam) { setStatus("Há um exame em andamento. Encerre antes.", "bad"); return; }
