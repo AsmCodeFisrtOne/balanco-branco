@@ -596,7 +596,7 @@
           <button class="btn sm" id="vMetric" title="Medir nesta imagem (L)">Métrica</button><button class="btn sm primary" id="btnSave" title="Salvar esta captura (S)">Salvar</button><button class="btn sm" id="btnDel" title="Excluir esta captura (Delete)">Excluir</button><button class="btn sm" id="btnPip" title="Mostrar ou ocultar a janela pequena com a câmera">Ocultar câmera</button><button class="btn sm" id="btnLive" title="Esc">Voltar ao vivo</button></div>
       </div>
       <div id="fzBar" hidden>
-        <span class="t">IMAGEM CONGELADA</span>
+        <span class="t">IMAGEM CONGELADA</span><span class="dirNote">Câmera HD · imagem direta, sem tratamento</span>
         <span class="g"><span>Ampliação</span><button class="btn" data-fup="0">Lanczos-3</button><button class="btn" data-fup="1">FSR</button><button class="btn" data-fup="2">Nitidez por IA</button></span>
         <span class="g"><span>Realce de bordas</span><button class="btn" data-fshp="0">Desl.</button><button class="btn" data-fshp="1">Baixo</button><button class="btn" data-fshp="2">Médio</button><button class="btn" data-fshp="3">Alto</button></span>
         <span class="g"><span>Ruído</span><button class="btn" data-fnr="0">Desl.</button><button class="btn" data-fnr="1">Baixo</button><button class="btn" data-fnr="2">Médio</button><button class="btn" data-fnr="3">Alto</button></span>
@@ -1699,7 +1699,7 @@
   function dirFilter() { const c = DOC.cor || 0, b = DOC.bri || 0;               // Cor e Brilho do médico, aplicados pela tela
     return "saturate(" + (1 + 0.6 * c).toFixed(3) + ") contrast(" + (1 + 0.12 * c).toFixed(3) + ") brightness(" + (1 + 0.35 * b).toFixed(3) + ")"; }
   function dirToCv() { if (!dcv.width) return; if (cv.width !== dcv.width || cv.height !== dcv.height) { cv.width = dcv.width; cv.height = dcv.height; } ctx.drawImage(dcv, 0, 0); }
-  function dirShow(on) { dcv.style.display = on ? "block" : "none"; outCv.style.display = on ? "none" : ""; }
+  function dirShow(on) { dcv.style.display = on ? "block" : "none"; outCv.style.display = on ? "none" : ""; document.body.classList.toggle("cam-direct", !!on); }
   let roiFrac = 0.25, outW = 400, outH = 400;
   let frozen = null, frozenRaw = null, frozenSR = null, freezeReq = false, showRoi = true, frozenNR = 0, fzCache = null;   // frozenNR: nível de ruído usado ao congelar
   let rec = null; const items = []; let viewing = null, dirHandle = null, curTrack = null, wbDone = false;
@@ -1867,7 +1867,11 @@
         try { await curTrack.applyConstraints({ width: { ideal: W }, height: { ideal: H } }); } catch (e) {}
         const st = sets(); outW = st.width || W; outH = st.height || H; const v = outW + "x" + outH;
         if (![...$("res").options].some(o => o.value === v)) $("res").add(new Option("Entrada " + outW + "×" + outH, v)); $("res").value = v; }
-      if (!camDirect && mode === "auto" && !store.get("camRes:" + did) && $("res").value !== "400x400" && !camIsHD) { $("res").value = "400x400"; }
+      if (!camDirect && !store.get("camRes:" + did)) {                     // OV6946 (sem escolha manual): sempre 400×400 — não herda a resolução da câmera HD
+        if (!camIsHD && $("res").value !== "400x400") { $("res").value = "400x400"; try { await curTrack.applyConstraints({ width: { ideal: 400 }, height: { ideal: 400 } }); } catch (e) {} }
+        const st = sets(); outW = st.width || 400; outH = st.height || 400;
+        if (!camIsHD) { outW = Math.min(outW, 400); outH = Math.min(outH, 400); } }
+      if (!camDirect) { const st = sets(); if (st.width && st.height && (outW > st.width || outH > st.height)) { outW = st.width; outH = st.height; } }   // nunca pede mais que a câmera entrega
       dcv.width = 0; cv.width = 0; dirShow(camDirect); if (typeof camModeSync === "function") camModeSync(); }
     renderHw();
     { const c = caps(); $("resMax").textContent = c.width && c.height ? c.width.max + "×" + c.height.max : "não informado"; }
@@ -4637,6 +4641,7 @@
   (() => { const st = document.createElement("style"); st.textContent = `
     #recWrap[hidden]{display:none!important}
     #hdrStart,#hdrPre{white-space:nowrap;flex-shrink:0}
+    #fzBar .dirNote{display:none;color:var(--dim);font-size:13px}body.cam-direct #fzBar .g{display:none}body.cam-direct #fzBar .dirNote{display:inline}
     #recWrap{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;overflow:auto}
     #recWrap .rh{display:flex;align-items:center;gap:14px;padding:12px 22px;background:var(--surface);border-bottom:1px solid var(--line)}
     #recWrap .rh img{height:40px;border:1px solid var(--line);border-radius:8px;padding:3px 7px;background:#fff}
@@ -4657,7 +4662,7 @@
   const recSave = L => store.set("recFichas", L);
   function recOpen() { AU.hidden = true; RW.hidden = false; PR.user = null; recRender(); clearInterval(recOpen.t); recOpen.t = setInterval(recPoll, 15000); recPoll(); }
   function recClose() { clearInterval(recOpen.t); RW.hidden = true; AU.hidden = false; }
-  function recHead(sub) { return '<div class="rh"><img src="' + LOGO_FM + '"><div><b style="font-size:18px">Recepção</b><div class="pr-dim" style="font-size:13px">' + sub + '</div></div><span style="flex:1"></span>' +
+  function recHead(sub) { return '<div class="rh"><img src="' + LOGO_FM + '"><div><b style="font-size:18px">Recepção</b><div class="pr-dim" style="font-size:13px">' + sub + '</div></div><span style="flex:1"></span><a class="btn sm" href="manual_recepcao.pdf" target="_blank" rel="noopener">📖 Manual</a>' +
     (rkGet() ? '<button class="btn sm" data-r="trocar">Trocar chave</button>' : '') + '<button class="btn" data-r="sair">Sair</button></div>'; }
   function recRender() {
     if (!rkGet()) { RW.innerHTML = recHead("Pré-cadastro de pacientes") + '<div class="rb" style="justify-content:center"><div class="rc" style="width:480px;margin-top:40px"><h4>Ligar a recepção</h4>' +
