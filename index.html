@@ -4618,7 +4618,8 @@
       f.st === "aberta" ? '<span class="rpill rp-ok">✓ Aberta pelo médico ' + (f.at ? hhmm(f.at) : '') + '</span>' : f.st === "expirou" ? '<span class="rpill rp-x">Expirou</span>' :
       f.st === "arquivo" ? '<span class="rpill rp-w">Arquivo salvo (pen drive)</span>' : '<span class="rpill rp-w">Aguardando · código ' + f.code + '</span>';
     const acts = f => (f.st === "laudo" || f.st === "baixado" ? '<button class="btn sm" data-r="laudo" data-doc="' + f.doc + '">Abrir laudo</button>' : '') +
-      (f.st === "aguardando" ? '<button class="btn sm" data-r="ver" data-doc="' + f.doc + '">Código</button>' : '');
+      (f.st === "aguardando" ? '<button class="btn sm" data-r="ver" data-doc="' + f.doc + '">Código</button>' : '') +
+      (f.st === "laudo" && !f.err ? '' : ' <button class="btn sm" data-r="rem" data-doc="' + f.doc + '" title="Tira só desta lista. O laudo oficial continua no prontuário do médico.">Tirar da lista</button>');
     const tipos = typeof TIPOS !== "undefined" ? TIPOS : ["Videonasofibrolaringoscopia"];
     RW.innerHTML = recHead("Pré-cadastro de pacientes · " + new Date().toLocaleDateString("pt-BR")) + '<div class="rb"><div class="rc" style="flex:1.35;min-width:520px"><h4>Nova ficha</h4>' +
       '<div class="g g3"><div><label>Nome completo *</label><input id="rNome"></div><div><label>Nascimento *</label><input id="rNasc" type="date"></div><div><label>Sexo</label><select id="rSexo"><option></option><option>F</option><option>M</option><option>Outro</option></select></div></div>' +
@@ -4668,7 +4669,7 @@
         let b64 = ""; for (let i = 0; i < d.n; i++) { const p = await fsGet("parte", await pid(i)); if (!p) throw new Error("pedaço " + i + " faltando"); b64 += p.d || ""; }
         blob = new Blob([await rcDec(await rcAes(k, f.code), iv, b64)], { type: "application/pdf" }); await idbSet("rlaudo:" + doc, blob);
         for (let i = 0; i < d.n; i++) await fsDel("parte", await pid(i)); await fsDel("caixa", doc); f.st = "baixado"; recSave(L); recRender();
-      } catch (e) { alert(e && e.name === "OperationError" ? "O laudo não abriu com a chave desta recepção.\n\nConfira se a chave do consultório é a mesma aqui e no computador do médico (Configurações → Recepção) e peça ao médico para tocar em “Enviar à recepção” de novo."
+      } catch (e) { f.err = true; recSave(L); recRender(); alert(e && e.name === "OperationError" ? "O laudo não abriu com a chave desta recepção.\n\nConfira se a chave do consultório é a mesma aqui e no computador do médico (Configurações → Recepção) e peça ao médico para tocar em “Enviar à recepção” de novo."
           : "Não consegui baixar o laudo: " + ((e && (e.message || e.name)) || "erro desconhecido")); return; } }
     openBlob(blob); }
   RW.addEventListener("click", async e => { const t = e.target.closest("[data-r]"); if (!t) return; const a = t.dataset.r;
@@ -4680,7 +4681,16 @@
     else if (a === "enviar") recSend(false);
     else if (a === "arquivo") recSend(true);
     else if (a === "ver") { const f = recList().find(x => x.doc === t.dataset.doc); if (f) recCode(f); }
-    else if (a === "laudo") recLaudo(t.dataset.doc); });
+    else if (a === "laudo") recLaudo(t.dataset.doc);
+    else if (a === "rem") { const L = recList(), f = L.find(x => x.doc === t.dataset.doc); if (!f) return;
+      if (f.st === "laudo" && !f.err) return;
+      if (!confirm("Tirar " + f.nome + " da lista?\n\nO laudo oficial continua no prontuário do médico." + (f.st === "aguardando" ? "\nO código " + f.code + " deixa de funcionar." : ""))) return;
+      try { const d = await fsGet("caixa", f.doc);
+        if (d) { const sid = String(d.iv || "").includes(".") ? d.iv.split(".")[0] : "";
+          for (let i = 0; i < (d.n || 0); i++) { await fsDel("parte", await rcPart(f.doc, i)); if (sid) await fsDel("parte", await rcPart(f.doc, sid + "|" + i)); }
+          await fsDel("caixa", f.doc); } } catch (e) {}
+      try { await idbSet("rlaudo:" + f.doc, null); } catch (e) {}
+      recSave(L.filter(x => x !== f)); recRender(); } });
   // botão "Recepção" na tela de entrada
   setInterval(() => { const c = document.getElementById("auCam"); if (c && !document.getElementById("auRec")) { const b = document.createElement("button"); b.className = "btn"; b.id = "auRec"; b.textContent = "Recepção";
     b.title = "Pré-cadastro de pacientes para o médico (computador da recepção)"; b.onclick = recOpen; c.after(b); } }, 400);
