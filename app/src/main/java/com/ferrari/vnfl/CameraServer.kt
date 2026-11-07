@@ -12,7 +12,7 @@ import java.io.PipedOutputStream
  * Serve:
  *  - os assets do app (o sistema web inteiro, offline) — com sobrescrita opcional em Dados/web/;
  *  - /camera.mjpeg — stream multipart/x-mixed-replace com os quadros da câmera UVC;
- *  - /fs/* — filesystem do consultório (o sistema web usa quando host = 127.0.0.1:47832):
+ *  - /fs/... — filesystem do consultório (o sistema web usa quando host = 127.0.0.1:47832):
  *      GET  /fs/stat?p=a/b/c        → {"k":"d"|"f"} ou 404
  *      GET  /fs/list?p=a/b          → [{"n":"nome","k":"d"|"f"}...]
  *      GET  /fs/file?p=a/b/c        → bytes do arquivo (header Last-Modified)
