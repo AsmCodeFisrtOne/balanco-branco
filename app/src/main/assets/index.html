@@ -1706,13 +1706,15 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
   // MJPEG em http://127.0.0.1:47832/camera.mjpeg. Só a ORIGEM da imagem muda: o mesmo laço frame() desenha
   // esses quadros nos mesmos canvases, e todo o processamento (balanço de branco, congelar, foto, vídeo) continua.
   const FVN = {
-    img: null, ok: false, stamps: [], _cnv: null,
+    img: null, vid: null, ok: false, stamps: [], _cnv: null,
     init() { if (this.img || !document.body) return; const i = document.createElement("img"); i.id = "camNative"; i.alt = "câmera nativa"; i.style.cssText = "position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none"; i.src = "/camera.mjpeg"; document.body.appendChild(i); this.img = i; },
-    ready() { this.init(); return new Promise(res => { if (this.ok) return res(); const p = () => { if (!this.img) this.init(); if (this.img && this.img.naturalWidth > 0) { this.ok = true; return res(); } setTimeout(p, 100); }; p(); setTimeout(res, 10000); }); },
-    vw() { return this.ok && this.img ? this.img.naturalWidth : 0; },
-    vh() { return this.ok && this.img ? this.img.naturalHeight : 0; },
-    drawInto(ctx, sx, sy, sw, sh, W, H) { if (!this.ok || !this.img) return; if (sx === 0 && sy === 0 && sw === W && sh === H) { ctx.drawImage(this.img, 0, 0, W, H); return; } if (!this._cnv) this._cnv = document.createElement("canvas"); const W0 = this.img.naturalWidth, H0 = this.img.naturalHeight; if (this._cnv.width !== W0 || this._cnv.height !== H0) { this._cnv.width = W0; this._cnv.height = H0; } this._cnv.getContext("2d").drawImage(this.img, 0, 0); ctx.drawImage(this._cnv, sx, sy, sw, sh, 0, 0, W, H); },
-    tick() { if (window.Android && this.ok) { this.stamps.push(window.Android.stamp()); if (this.stamps.length > 30) this.stamps.shift(); } }
+    ready() { this.init(); return new Promise(res => { let n = 0; const p = () => { if (this.img && this.img.naturalWidth > 0) { this.ok = true; return res(); } if (++n > 25) return res(); setTimeout(p, 100); }; p(); }); },   // ~2,5 s esperando a câmera USB
+    useVideo(v) { this.vid = v; this.ok = true; },                                   // sem câmera USB: usa a câmera do próprio aparelho
+    src() { return this.vid || this.img; },
+    vw() { if (!this.ok) return 0; return this.vid ? this.vid.videoWidth : (this.img ? this.img.naturalWidth : 0); },
+    vh() { if (!this.ok) return 0; return this.vid ? this.vid.videoHeight : (this.img ? this.img.naturalHeight : 0); },
+    drawInto(ctx, sx, sy, sw, sh, W, H) { const s = this.src(); if (!this.ok || !s) return; try { ctx.drawImage(s, sx, sy, sw, sh, 0, 0, W, H); } catch (e) {} },
+    tick() { if (window.Android && this.img && this.ok && !this.vid) { this.stamps.push(window.Android.stamp()); if (this.stamps.length > 30) this.stamps.shift(); } }
   };
 
   let gains = [1, 1, 1], adj = { ...ADJ_DEF }, arLevel = 0, tintMul = [1, 1, 1];
@@ -1881,7 +1883,6 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffb4a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><path d="M3 3l18 18"/></svg><div style="flex:1"><b>Câmera não abriu</b><div style="margin-top:4px">' + esc(msg) + '</div><div style="margin-top:10px;display:flex;gap:8px"><button class="btn primary sm" id="camErrTry">Tentar de novo</button><button class="btn sm" id="camErrX">Fechar aviso</button></div></div>';
     $("camErrTry").onclick = () => startCam(); $("camErrX").onclick = () => b.remove(); }
   if (navigator.mediaDevices) navigator.mediaDevices.addEventListener("devicechange", () => { if (!stream && $("camErrBox")) startCam(); });   // câmera ligada no USB: tenta sozinho
-  if (window.Android) startCam();                                             // modo nativo (app): câmera USB já conectada
   async function startCam() {
     if (rec) stopVideo();
     if (stream) stream.getTracks().forEach(t => t.stop());
@@ -1889,21 +1890,29 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     const id = $("cam").value, resK = store.get("camRes:" + id);
     if (resK) { if (![...$("res").options].some(o => o.value === resK)) $("res").add(new Option("Entrada " + resK.replace("x", "×"), resK)); $("res").value = resK; }
     const [w, h] = $("res").value.split("x").map(Number); outW = w; outH = h;
-    if (window.Android) {                                            // MODO NATIVO: a câmera USB é o stream MJPEG do app — sem getUserMedia
-      await FVN.ready();
-      stream = null; curTrack = null; camKey = "nativo";
-      await listCams();
-    } else {
-      try {
-        try { stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: id ? { exact: id } : undefined, width: { ideal: w }, height: { ideal: h } }, audio: false }); }
-        catch (e1) { if (!id || !/NotFound|Overconstrained/.test(e1.name)) throw e1;        // câmera escolhida antes sumiu: tenta a que estiver ligada
-          stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: w }, height: { ideal: h } }, audio: false }); }
-      } catch (e) { stream = null; camErr(e); return; }
-      camErr(null);
-      video.srcObject = stream; await video.play();
-      await listCams();
-      curTrack = stream.getVideoTracks()[0];
+    if (window.Android) {                                            // MODO NATIVO (app)
+      await FVN.ready();                                             // 1º: câmera USB (stream MJPEG do app)
+      if (!FVN.ok && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {                                                        // sem câmera USB: usa a câmera do próprio aparelho (para testar)
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+          video.srcObject = stream; await video.play(); FVN.useVideo(video); curTrack = stream.getVideoTracks()[0];
+        } catch (e) { camErr(e); }
+      }
+      if (FVN.ok) camErr(null);
+      camKey = "nativo"; camDirect = false; camIsHD = false;
+      outW = 400; outH = 400; cv.width = 0; dcv.width = 0; dirShow(false);
+      await listCams(); if (typeof camModeSync === "function") camModeSync();
+      return;
     }
+    try {
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: id ? { exact: id } : undefined, width: { ideal: w }, height: { ideal: h } }, audio: false }); }
+      catch (e1) { if (!id || !/NotFound|Overconstrained/.test(e1.name)) throw e1;        // câmera escolhida antes sumiu: tenta a que estiver ligada
+        stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: w }, height: { ideal: h } }, audio: false }); }
+    } catch (e) { stream = null; camErr(e); return; }
+    camErr(null);
+    video.srcObject = stream; await video.play();
+    await listCams();
+    curTrack = stream.getVideoTracks()[0];
     camKey = curTrack.label || id || "default";
     // guarda os valores de fábrica da câmera na 1ª vez que ela é usada (para "Retornar aos parâmetros normais")
     if (!store.get("hw0:" + camKey)) {

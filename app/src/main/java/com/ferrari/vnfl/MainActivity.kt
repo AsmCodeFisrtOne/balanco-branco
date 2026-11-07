@@ -1,10 +1,13 @@
 package com.ferrari.vnfl
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.hardware.usb.UsbDevice
+import android.webkit.PermissionRequest
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -66,6 +69,18 @@ class MainActivity : AppCompatActivity() {
             }
         })
         setupWebView()
+
+        // câmera do próprio aparelho (para testar antes de ter a câmera USB)
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), 1)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (::web.isInitialized) web.reload()   // recarrega para a câmera do aparelho abrir já liberada
+        }
     }
 
     override fun onStart() {
@@ -129,7 +144,11 @@ class MainActivity : AppCompatActivity() {
             useWideViewPort = true
             loadWithOverviewMode = true
         }
-        web.webChromeClient = WebChromeClient()
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest) {
+                runOnUiThread { request.grant(request.resources) }   // libera câmera/mic para a página (127.0.0.1)
+            }
+        }
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
                 request.url.host != "127.0.0.1"   // tudo fica no servidor local
