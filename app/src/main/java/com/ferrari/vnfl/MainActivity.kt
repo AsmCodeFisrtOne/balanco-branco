@@ -2,7 +2,7 @@ package com.ferrari.vnfl
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.graphics.PixelCopy
+import android.view.PixelCopy
 import android.hardware.usb.UsbDevice
 import android.os.Build
 import android.os.Bundle
