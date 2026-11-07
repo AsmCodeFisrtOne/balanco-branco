@@ -1985,7 +1985,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
   }
   function frame() {
     if (srCap || MT.open || (!rec && ((tab !== "imagem" && tab !== "adv" && !(tab === "pront" && typeof PR !== "undefined" && PR.scr === "config" && $("cfgLive"))) || !authEl.hidden))) {   // Métrica aberta, aba Prontuário/Tutorial ou tela de entrada: processamento parado, notebook livre
-      if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
+      if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
       return;
     }
     const vw = FVN.vw(), vh = FVN.vh();
@@ -2080,7 +2080,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     if (tab === "adv" && typeof advLiveDraw === "function") advLiveDraw();
     if (tab === "pront" && $("cfgLive")) liveTo($("cfgLive"));                     // prévia em Configurações → Imagem          // imagem ao vivo dentro do Avançado (comparações de bancada)
     FVN.tick();
-    if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
+    if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame);
   }
 
   // ----- calibração -----
@@ -2186,9 +2186,9 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
           FVN.drawInto(capCtx, sx, sy, sw, sh, w, h); st.frames.push(capCtx.getImageData(0, 0, w, h).data);
           $("lblFreeze").innerHTML = 'Capturando ' + st.frames.length + '/' + st.n + '<span class="sub">segure a câmera parada</span>'; }
         if (st.frames.length >= st.n || performance.now() - t0 > maxMs) { res(); return; }
-        if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(grab); else setTimeout(grab, 33);
+        if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(grab); else setTimeout(grab, 33);
       };
-      if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(grab); else grab();
+      if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(grab); else grab();
     });
   }
   async function toggleFreeze() {
@@ -3138,9 +3138,9 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
           he += Math.abs(C(x + 1, y) - C(x, y)) + Math.abs(C2(x + 1, y) - C2(x, y));
           ho += Math.abs(C(x + 2, y) - C(x + 1, y)) + Math.abs(C2(x + 2, y) - C2(x + 1, y)); }
         if (frames >= 8) { res(); return; }
-        if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(step); else setTimeout(step, 40);
+        if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(step); else setTimeout(step, 40);
       };
-      if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(step); else step();
+      if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(step); else step();
     });
     const block = (bB / nB) / (bI / nI), vRatio = ce / Math.max(co, 1e-6), hRatio = he / Math.max(ho, 1e-6);
     const v420 = vRatio < 0.6, h422 = hRatio < 0.6;
@@ -3162,7 +3162,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
   $("btnFmt").onclick = analyzeFormat;
 
   const MODO_REC = location.host === "127.0.0.1:47832" && new URLSearchParams(location.search).get("modo") === "recepcao";
-  function camBoot() { camBoot.pend = false; return startCam().then(() => { if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame); }); }
+  function camBoot() { camBoot.pend = false; return startCam().then(() => { if (video.requestVideoFrameCallback && !window.Android) video.requestVideoFrameCallback(frame); else requestAnimationFrame(frame); }); }
   setAR(0);                                                        // anti-vermelho oculto: começa sempre desligado
   setEVL(0);                                               // sempre abre com "Evitar estouro de luz" desligado
   renderAdj();
