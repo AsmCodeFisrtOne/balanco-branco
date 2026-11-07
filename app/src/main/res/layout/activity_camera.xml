@@ -1,22 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#000000">
 
-    <!-- Preview da câmera UVC (nativo, fica por baixo do WebView) -->
-    <FrameLayout
-        android:id="@+id/cameraContainer"
+    <!-- Imagem ao vivo da câmera USB (UVC) -->
+    <SurfaceView
+        android:id="@+id/preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Sistema web do médico, servido pelo servidor local em tela cheia -->
-    <WebView
-        android:id="@+id/web"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#FFFFFF" />
-
-    <!-- Status da Etapa 1: resolução/formato detectados e instruções -->
+    <!-- Faixa de status: resolução detectada e instruções -->
     <TextView
         android:id="@+id/status"
         android:layout_width="match_parent"
@@ -24,7 +18,16 @@
         android:layout_gravity="bottom"
         android:background="#CC1A1A1A"
         android:gravity="center"
-        android:padding="8dp"
+        android:padding="10dp"
         android:textColor="#FFFFFF"
-        android:textSize="12sp" />
+        android:textSize="13sp" />
+
+    <!-- Botão Foto (prova a captura) -->
+    <Button
+        android:id="@+id/foto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:text="Foto" />
 </FrameLayout>
