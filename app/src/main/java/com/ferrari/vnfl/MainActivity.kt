@@ -57,6 +57,9 @@ class MainActivity : AppCompatActivity() {
         preview = findViewById(R.id.preview)
         web = findViewById(R.id.web)
 
+        Lic.init(this)
+        Lic.abriu()               // conta esta abertura do app (limite da versão de avaliação)
+
         server = CameraServer(this)
         server.startSafe()
 

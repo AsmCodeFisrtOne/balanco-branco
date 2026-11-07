@@ -3,6 +3,7 @@ package com.ferrari.vnfl
 import android.content.Context
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
+import org.json.JSONObject
 import java.io.File
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
@@ -58,7 +59,7 @@ class CameraServer(private val ctx: Context) : NanoHTTPD("127.0.0.1", PORT) {   
             uri == "/ping" -> json("{\"ok\":true}")
             uri == "/camera.mjpeg" -> serveMjpeg()
             uri == "/fs/info" -> json("{\"pasta\":\"" + esc(CameraFiles.dataRoot(ctx).absolutePath) + "\"}")
-            uri == "/licenca" -> json("{}")
+            uri == "/licenca" -> serveLicenca(session)
             uri.startsWith("/fs/") -> serveFs(session, uri)
             else -> serveStatic(session, uri)
         }
@@ -87,6 +88,20 @@ class CameraServer(private val ctx: Context) : NanoHTTPD("127.0.0.1", PORT) {   
             }
         }.apply { isDaemon = true; name = "mjpeg-writer"; start() }
         return newChunkedResponse(Response.Status.OK, "multipart/x-mixed-replace; boundary=frame", pin)
+    }
+
+    // ----- licença/avaliação (mesma regra e chave do PC) -----
+    private fun serveLicenca(session: IHTTPSession): Response {
+        if (session.method == Method.POST) {
+            val files = HashMap<String, String>()
+            try { session.parseBody(files) } catch (e: Exception) {}
+            val body = files["postData"] ?: ""
+            val chave = try { JSONObject(if (body.isBlank()) "{}" else body).optString("chave") } catch (e: Exception) { "" }
+            if (!Lic.ativar(chave)) {
+                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", "{\"erro\":\"Chave inválida.\"}")
+            }
+        }
+        return json(Lic.status().toString())
     }
 
     // ----- assets embutidos no APK (offline) -----
