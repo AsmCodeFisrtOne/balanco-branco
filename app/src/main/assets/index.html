@@ -1891,12 +1891,17 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     if (resK) { if (![...$("res").options].some(o => o.value === resK)) $("res").add(new Option("Entrada " + resK.replace("x", "×"), resK)); $("res").value = resK; }
     const [w, h] = $("res").value.split("x").map(Number); outW = w; outH = h;
     if (window.Android) {                                            // MODO NATIVO (app)
+      FVN.ok = false; FVN.vid = null;                                // reavalia a fonte a cada chamada (troca de câmera)
       await FVN.ready();                                             // 1º: câmera USB (stream MJPEG do app)
       if (!FVN.ok && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const vc = id ? { deviceId: { exact: id } } : { facingMode: { ideal: "environment" } };
         try {                                                        // sem câmera USB: usa a câmera do próprio aparelho (para testar)
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+          stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
           video.srcObject = stream; await video.play(); FVN.useVideo(video); curTrack = stream.getVideoTracks()[0];
-        } catch (e) { camErr(e); }
+        } catch (e) {
+          try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });   // a câmera escolhida não abriu: pega qualquer uma
+            video.srcObject = stream; await video.play(); FVN.useVideo(video); curTrack = stream.getVideoTracks()[0]; } catch (e2) { camErr(e2); }
+        }
       }
       if (FVN.ok) camErr(null);
       camKey = "nativo"; camDirect = false; camIsHD = false;
