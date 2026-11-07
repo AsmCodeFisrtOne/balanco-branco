@@ -2,11 +2,7 @@ package com.ferrari.vnfl
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.core.content.pm.ShortcutInfoCompat
-import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.core.graphics.drawable.IconCompat
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
@@ -78,24 +74,6 @@ class MainActivity : AppCompatActivity() {
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.CAMERA), 1)
         }
-        ofereceAtalho()
-    }
-
-    // oferece, uma vez, colocar o ícone na tela inicial do celular
-    private fun ofereceAtalho() {
-        try {
-            val sp = getSharedPreferences("fv", MODE_PRIVATE)
-            if (sp.getBoolean("atalho", false)) return
-            if (!ShortcutManagerCompat.isRequestPinShortcutSupported(this)) return
-            val intent = Intent(this, MainActivity::class.java).setAction(Intent.ACTION_MAIN)
-            val info = ShortcutInfoCompat.Builder(this, "ferrari-vnfl")
-                .setShortLabel(getString(R.string.app_name))
-                .setIcon(IconCompat.createWithResource(this, R.mipmap.ic_launcher))
-                .setIntent(intent)
-                .build()
-            ShortcutManagerCompat.requestPinShortcut(this, info, null)
-            sp.edit().putBoolean("atalho", true).apply()
-        } catch (e: Exception) {}
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
