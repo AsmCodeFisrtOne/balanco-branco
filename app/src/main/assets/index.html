@@ -3089,7 +3089,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
   document.querySelectorAll("#nrSeg .btn").forEach(b => b.onclick = () => setNR(+b.dataset.nr));
   setSHP(0); setNR(0);
   document.querySelectorAll("#srSeg .btn").forEach(b => b.onclick = () => setSR(+b.dataset.sr));
-  { const v = store.get("sr"); setSR(typeof v === "number" && v >= 0 && v <= 2 ? v : 1); }
+  { const v = store.get("sr"); setSR(typeof v === "number" && v >= 0 && v <= 2 ? v : 0); }
   $("hdrZoom").onclick = () => setZoom(zoomF === 1);
   $("btnZoom").onclick = () => setZoom(zoomF === 1);
   $("btnSave").onclick = () => { askPerm(); if (viewing) saveItem(viewing); };
