@@ -179,7 +179,7 @@ class CameraServer(private val ctx: Context) : NanoHTTPD("127.0.0.1", PORT) {   
 
     // ----- auxiliares -----
     private fun safeFile(root: File, rel: String): File? {
-        if (rel.isBlank()) return null
+        if (rel.isBlank()) return root     // caminho vazio = a própria pasta de dados (raiz)
         val parts = rel.split("/")
         if (parts.any { it.isEmpty() || it == "." || it == ".." }) return null
         return File(root, parts.joinToString(File.separator))

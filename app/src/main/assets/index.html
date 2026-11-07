@@ -3632,16 +3632,16 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     if (!PR.root) return authSetup1();
     if (!PR.opfs && !PR.root.name.startsWith(ROOT_NAME) && !PR.root.name.startsWith("Backup_")) return authSetup1(false, "Escolha de novo o local dos dados: agora o sistema guarda tudo dentro da pasta " + ROOT_NAME + ".");   // local salvo por versão anterior
     const ok = PR.opfs || await rootPerm(PR.root, false);
-    if (ok && !PR.opfs) { try { for await (const _ of PR.root.keys()) break; } catch (e) { await idbSet("prRoot", null); return authSetup1(false, "A pasta de dados anterior não foi encontrada (apagada ou movida). Escolha onde salvar."); } }
+    if (ok && !PR.opfs && !window.Android) { try { for await (const _ of PR.root.keys()) break; } catch (e) { await idbSet("prRoot", null); return authSetup1(false, "A pasta de dados anterior não foi encontrada (apagada ou movida). Escolha onde salvar."); } }
     const users = ok ? await readJSON(["cadastros", "usuarios.json"], null) : "?";
     if (users !== "?" && (!users || !users.length)) return authSetup2();
     authLogin(); }
   function authLogin(msg) {
-    authShow('<h2>Entrar</h2><p class="au-sub">Pasta: <b>' + esc(PR.opfs ? "(pasta interna de teste)" : PR.srv ? SRV_PASTA : PR.root.name) + '</b></p>' +
+    authShow('<h2>Entrar</h2>' + (window.Android ? '' : '<p class="au-sub">Pasta: <b>' + esc(PR.opfs ? "(pasta interna de teste)" : PR.srv ? SRV_PASTA : PR.root.name) + '</b></p>') +
       '<label>Usuário</label><input id="auU" autocomplete="username"><label>Senha</label><input id="auP" type="password" autocomplete="current-password">' +
       (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
       '<div class="au-row"><button class="btn primary" id="auGo">Entrar</button><button class="btn" id="auCam" title="Usa a câmera sem acessar pacientes (bancada, testes)">Só câmera</button></div>' +
-      '<p class="au-sub"><a href="#" id="auOther">' + (PR.srv ? "Trazer exames de outra pasta…" : "Trocar o local dos dados…") + '</a></p>');
+      (window.Android ? '' : '<p class="au-sub"><a href="#" id="auOther">' + (PR.srv ? "Trazer exames de outra pasta…" : "Trocar o local dos dados…") + '</a></p>'));
     $("auU").focus(); $("auP").onkeydown = e => { if (e.key === "Enter") $("auGo").click(); };
     $("auGo").onclick = async () => {
       if (!(await rootPerm(PR.root, true))) return authLogin("Sem permissão para a pasta do consultório. Clique em Entrar e permita o acesso.");
@@ -3649,9 +3649,9 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       if (!u || (await passHash($("auP").value, u.salt)).hash !== u.hash) { await audit("tentativa de acesso negada", $("auU").value.trim()); return authLogin("Usuário ou senha incorretos."); }
       PR.user = u; PR.camOnly = false; PR.pacOpened = null; await loadAll(); verFile(); await audit("entrou"); AU.hidden = true; prSession(); };
     $("auCam").onclick = () => { PR.user = null; PR.camOnly = true; AU.hidden = true; prSession(); };
-    $("auOther").onclick = e => { e.preventDefault(); authSetup1(true); }; }
+    if ($("auOther")) $("auOther").onclick = e => { e.preventDefault(); authSetup1(true); }; }
   function authSetup1(back, msg) {
-    if (PR.srv) return srvImport(back, msg);
+    if (PR.srv) return window.Android ? authSetup2(msg) : srvImport(back, msg);   // no app a pasta é fixa: vai direto ao Primeiro acesso
     authShow('<h2>Onde salvar os dados</h2><p class="au-sub">Ex.: crie <b>C:\\Consultorio</b> e escolha. O sistema cria a pasta <b>' + ROOT_NAME + '</b> dentro.</p>' + (msg ? '<p class="au-err">' + esc(msg) + '</p>' : '') +
       (window.showDirectoryPicker ? '<div class="au-row"><button class="btn primary" id="auPick">Escolher onde salvar…</button>' + (back ? '<button class="btn" id="auBack">Voltar</button>' : '') + '</div>'
         : '<p class="au-err">Este navegador não permite gravar numa pasta do computador. Use o Microsoft Edge ou o Google Chrome.</p>') +
@@ -3684,7 +3684,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       catch (e) { console.error(e); btn.disabled = false; $("impBack").disabled = false; prog.textContent = ""; srvImport(back, "A cópia parou (" + e.message + "). Tente de novo."); } }; }
   function authSetup2(msg) {
     authShow('<h2>Primeiro acesso</h2><p class="au-sub">Consultório e primeiro médico.</p>' +
-      (PR.opfs ? '' : PR.srv ? '<p class="au-sub">Os exames ficam em <b>' + esc(SRV_PASTA) + '</b>.</p><div class="au-imp">Já usava o sistema pelo site? <a href="#" id="s0">Trazer os exames da pasta antiga…</a></div>' : '<p class="au-sub">Pasta: <b>' + esc(PR.root.name) + '</b> · <a href="#" id="s0">trocar</a></p>') +
+      (PR.opfs || window.Android ? '' : PR.srv ? '<p class="au-sub">Os exames ficam em <b>' + esc(SRV_PASTA) + '</b>.</p><div class="au-imp">Já usava o sistema pelo site? <a href="#" id="s0">Trazer os exames da pasta antiga…</a></div>' : '<p class="au-sub">Pasta: <b>' + esc(PR.root.name) + '</b> · <a href="#" id="s0">trocar</a></p>') +
       '<label>Nome do consultório / clínica</label><input id="s1">' +
       '<div class="au-g2"><div><label>Nome do médico</label><input id="s2"></div><div><label>CRM</label><input id="s3" placeholder="000000"></div><div><label>UF</label><input id="s4" maxlength="2" placeholder="SP"></div><div><label>RQE (opcional)</label><input id="s5"></div></div>' +
       '<div class="au-g2"><div><label>Usuário</label><input id="s6" placeholder="ex.: ana.silva"></div><div><label>Senha (mín. 6)</label><input id="s7" type="password"></div></div>' +
