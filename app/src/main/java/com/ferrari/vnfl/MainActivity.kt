@@ -1,50 +1,61 @@
 package com.ferrari.vnfl
 
 import android.annotation.SuppressLint
-import android.graphics.Bitmap
-import android.view.PixelCopy
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
 import android.hardware.usb.UsbDevice
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.herohan.uvcapp.CameraHelper
 import com.herohan.uvcapp.ICameraHelper
+import com.serenegiant.usb.IFrameCallback
+import com.serenegiant.usb.UVCCamera
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 
 /**
- * Etapa 1 — app mínimo só da câmera (valida se a OV6946/HD abre neste Android).
- * Usa a biblioteca com.herohan:UVCAndroid (Maven Central), que lê a câmera USB (UVC)
- * direto pela USB Host API — o navegador do Android não enxerga câmera USB.
+ * App do médico (Ferrari Medical — Videonasofibrolaringoscopia).
  *
- *  - pede permissão de USB quando a câmera é conectada;
- *  - mostra a imagem ao vivo em tela cheia;
- *  - a faixa de status mostra a resolução detectada;
- *  - botão "Foto" salva um JPG (prova a captura).
+ * O sistema web inteiro (prontuário, laudos, métrica, configurações, recepção) roda num
+ * WebView em tela cheia, servido por um servidor local em 127.0.0.1 (só o próprio aparelho).
+ * A câmera USB (UVC) é lida nativamente pela lib com.herohan:UVCAndroid e entra no sistema
+ * como stream MJPEG — o navegador do Android não enxerga câmera USB sozinho.
+ *
+ * Sem a câmera USB conectada, tudo funciona, menos a imagem ao vivo (que aparece assim que
+ * a câmera for plugada por OTG).
  */
 class MainActivity : AppCompatActivity() {
 
-    private var helper: CameraHelper? = null
+    private lateinit var server: CameraServer
+    private lateinit var web: WebView
     private lateinit var preview: SurfaceView
-    private lateinit var status: TextView
-    private val ui = Handler(Looper.getMainLooper())
 
-    private var cameraAberta = false
+    private var helper: CameraHelper? = null
     private var surfacePronta = false
+    private var cameraAberta = false
+    private var camW = 0
+    private var camH = 0
+    private val ui = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         preview = findViewById(R.id.preview)
-        status = findViewById(R.id.status)
-        findViewById<Button>(R.id.foto).setOnClickListener { tirarFoto() }
+        web = findViewById(R.id.web)
+
+        server = CameraServer(this)
+        server.startSafe()
 
         preview.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(h: SurfaceHolder) { surfacePronta = true; ligarPreview() }
@@ -54,46 +65,51 @@ class MainActivity : AppCompatActivity() {
                 try { helper?.removeSurface(preview.holder.surface) } catch (e: Exception) {}
             }
         })
-        setStatus("Ligue a câmera USB no aparelho (cabo/hub OTG).\nQuando aparecer o pedido de permissão da USB, toque em OK/Permitir.")
+        setupWebView()
     }
 
     override fun onStart() {
         super.onStart()
-        if (helper == null) {
-            helper = CameraHelper().apply { setStateCallback(stateCallback) }
-        }
+        if (helper == null) helper = CameraHelper().apply { setStateCallback(stateCallback) }
     }
 
     override fun onStop() {
         super.onStop()
-        helper?.release()
-        helper = null
-        cameraAberta = false
+        helper?.release(); helper = null; cameraAberta = false
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::server.isInitialized) server.stop()
+    }
+
+    // ----- câmera USB (UVC) -> stream MJPEG que o sistema web consome -----
+
     private val stateCallback = object : ICameraHelper.StateCallback {
-        override fun onAttach(device: UsbDevice) {
-            setStatus("Câmera USB detectada. Abrindo…")
-            helper?.selectDevice(device)                     // pede permissão e abre o dispositivo
-        }
-        override fun onDeviceOpen(device: UsbDevice, isFirstOpen: Boolean) {
-            helper?.openCamera()
-        }
+        override fun onAttach(device: UsbDevice) { helper?.selectDevice(device) }
+        override fun onDeviceOpen(device: UsbDevice, isFirstOpen: Boolean) { helper?.openCamera() }
         override fun onCameraOpen(device: UsbDevice) {
             cameraAberta = true
-            helper?.startPreview()
+            val s = try { helper?.previewSize } catch (e: Exception) { null }
+            camW = s?.width ?: 640; camH = s?.height ?: 480
             ligarPreview()
-            mostrarResolucao()
+            try { helper?.setFrameCallback(frameCallback, UVCCamera.PIXEL_FORMAT_NV21) } catch (e: Exception) {}
+            helper?.startPreview()
         }
         override fun onCameraClose(device: UsbDevice) { cameraAberta = false }
         override fun onDeviceClose(device: UsbDevice) {}
-        override fun onDetach(device: UsbDevice) {
-            cameraAberta = false
-            setStatus("Câmera USB desconectada. Reconecte o cabo.")
-        }
-        override fun onCancel(device: UsbDevice) {
-            setStatus("Permissão de USB negada. Reconecte a câmera e toque em Permitir.")
-        }
+        override fun onDetach(device: UsbDevice) { cameraAberta = false }
+        override fun onCancel(device: UsbDevice) {}
+    }
+
+    private val frameCallback = IFrameCallback { frame: ByteBuffer ->
+        if (!cameraAberta || camW <= 0 || camH <= 0) return@IFrameCallback
+        try {
+            val b = ByteArray(frame.remaining()); frame.get(b)
+            val out = ByteArrayOutputStream()
+            YuvImage(b, ImageFormat.NV21, camW, camH, null).compressToJpeg(Rect(0, 0, camW, camH), 90, out)
+            CameraServer.pushJpeg(out.toByteArray(), camW, camH)
+        } catch (e: Exception) {}
     }
 
     private fun ligarPreview() {
@@ -102,40 +118,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun mostrarResolucao() {
-        ui.post {
-            val s = try { helper?.previewSize } catch (e: Exception) { null }
-            val txt = if (s != null) "${s.width}×${s.height}" else "resolução não informada"
-            setStatus("Câmera OK · $txt\nSe não vir a imagem, confira o cabo/hub USB.")
+    // ----- sistema web em tela cheia -----
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
+        web.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            mediaPlaybackRequiresUserGesture = false
+            useWideViewPort = true
+            loadWithOverviewMode = true
+        }
+        web.webChromeClient = WebChromeClient()
+        web.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+                request.url.host != "127.0.0.1"   // tudo fica no servidor local
+        }
+        web.addJavascriptInterface(JsBridge(), "Android")   // o index.html detecta "modo nativo" por window.Android
+        web.loadUrl("http://127.0.0.1:" + CameraServer.PORT + "/")
+    }
+
+    inner class JsBridge {
+        @JavascriptInterface fun stamp(): Long = CameraServer.lastStamp()
+        @JavascriptInterface fun info(): String {
+            val s = CameraServer.lastSize(); return s[0].toString() + "x" + s[1]
         }
     }
 
-    private fun tirarFoto() {
-        if (!cameraAberta) { toast("A câmera ainda não abriu."); return }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) { toast("Android muito antigo para a foto."); return }
-        val w = if (preview.width > 0) preview.width else 640
-        val h = if (preview.height > 0) preview.height else 480
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        try {
-            PixelCopy.request(preview, bmp, { res ->
-                if (res == PixelCopy.SUCCESS) {
-                    val out = ByteArrayOutputStream()
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 92, out)
-                    val f = CameraFiles.savePhoto(this, out.toByteArray(), "etapa1")
-                    toast("Foto salva: ${f.name}")
-                } else toast("Não consegui capturar a foto (código $res).")
-                bmp.recycle()
-            }, ui)
-        } catch (e: Exception) { toast("Erro na foto: ${e.message}"); bmp.recycle() }
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (::web.isInitialized && web.canGoBack()) web.goBack() else super.onBackPressed()
     }
 
-    private fun setStatus(t: String) { ui.post { status.text = t } }
-    private fun toast(t: String) { ui.post { Toast.makeText(this, t, Toast.LENGTH_SHORT).show() } }
-
-    @SuppressLint("SourceLockedOrientationActivity")
     override fun onResume() {
         super.onResume()
-        // tela cheia (imersivo)
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY

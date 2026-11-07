@@ -4,30 +4,16 @@
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- Imagem ao vivo da câmera USB (UVC) -->
+    <!-- Preview nativo da câmera USB (fica por baixo; o sistema web mostra a imagem via MJPEG) -->
     <SurfaceView
         android:id="@+id/preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Faixa de status: resolução detectada e instruções -->
-    <TextView
-        android:id="@+id/status"
+    <!-- Sistema web do médico (prontuário, laudos, métrica, configurações, recepção) -->
+    <WebView
+        android:id="@+id/web"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="#CC1A1A1A"
-        android:gravity="center"
-        android:padding="10dp"
-        android:textColor="#FFFFFF"
-        android:textSize="13sp" />
-
-    <!-- Botão Foto (prova a captura) -->
-    <Button
-        android:id="@+id/foto"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_margin="16dp"
-        android:text="Foto" />
+        android:layout_height="match_parent"
+        android:background="#FFFFFF" />
 </FrameLayout>

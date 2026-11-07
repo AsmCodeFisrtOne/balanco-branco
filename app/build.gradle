@@ -28,6 +28,8 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.core:core-ktx:1.13.1'
-    // Captura UVC (Maven Central). A Etapa 1 valida se a OV6946 abre com esta lib.
+    // Captura UVC (Maven Central): le a camera USB direto pela USB Host API.
     implementation 'com.herohan:UVCAndroid:1.0.12'
+    // Servidor HTTP local (so no 127.0.0.1): serve o sistema web + /fs + stream MJPEG da camera.
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
 }
