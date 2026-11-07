@@ -158,6 +158,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     inner class JsBridge {
+        @JavascriptInterface fun sair() { runOnUiThread { finishAffinity() } }   // fecha o aplicativo
         @JavascriptInterface fun stamp(): Long = CameraServer.lastStamp()
         @JavascriptInterface fun info(): String {
             val s = CameraServer.lastSize(); return s[0].toString() + "x" + s[1]

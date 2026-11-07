@@ -1894,7 +1894,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       FVN.ok = false; FVN.vid = null;                                // reavalia a fonte a cada chamada (troca de câmera)
       await FVN.ready();                                             // 1º: câmera USB (stream MJPEG do app)
       if (!FVN.ok && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const vc = id ? { deviceId: { exact: id } } : { facingMode: { ideal: "environment" } };
+        const vc = id ? { deviceId: { exact: id } } : { facingMode: { ideal: "user" } };   // começa na câmera frontal
         try {                                                        // sem câmera USB: usa a câmera do próprio aparelho (para testar)
           stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
           video.srcObject = stream; await video.play(); FVN.useVideo(video); curTrack = stream.getVideoTracks()[0];
@@ -1906,7 +1906,9 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       if (FVN.ok) camErr(null);
       camKey = "nativo"; camDirect = false; camIsHD = false;
       outW = 400; outH = 400; cv.width = 0; dcv.width = 0; dirShow(false);
-      await listCams(); if (typeof camModeSync === "function") camModeSync();
+      await listCams();
+      if (curTrack) { const did = curTrack.getSettings().deviceId; if (did && [...$("cam").options].some(o => o.value === did)) $("cam").value = did; }   // o seletor mostra a câmera que está aberta de verdade
+      if (typeof camModeSync === "function") camModeSync();
       return;
     }
     try {
@@ -4289,6 +4291,12 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
   document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("gSearch").focus(); $("gSearch").select(); } });
   // ----- menu lateral -----
   document.querySelectorAll("#side [data-nav]").forEach(b => b.onclick = () => navGo(b.dataset.nav));
+  if (window.Android && window.Android.sair) {                 // app: botão para fechar o aplicativo (no PC isso era a janela)
+    const fb = document.createElement("button"); fb.className = "nb"; fb.id = "sideExit"; fb.style.marginTop = "auto";
+    fb.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span>Fechar app</span>';
+    fb.onclick = () => { fb.querySelector("span").textContent === "Tocar de novo para fechar" ? window.Android.sair() : (fb.querySelector("span").textContent = "Tocar de novo para fechar", setTimeout(() => { if (fb.querySelector("span")) fb.querySelector("span").textContent = "Fechar app"; }, 2500)); };
+    const foot = document.querySelector("#side .foot"); if (foot) foot.parentNode.insertBefore(fb, foot); else document.getElementById("side").appendChild(fb);
+  }
   const curNav = () => tab === "imagem" ? (MT.open ? (MT.mode === "cmp" ? "cmp" : "metrica") : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {
     if (n === "adv" && tab !== "adv") PR.advBack = curNav();
