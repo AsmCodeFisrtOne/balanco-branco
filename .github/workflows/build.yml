@@ -1,0 +1,27 @@
+name: build-apk
+on:
+  push:
+    branches: [ app-medico ]
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+      - run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: apk, path: app/build/outputs/apk/debug/*.apk, if-no-files-found: ignore }
+      - name: Publicar Release com o APK
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-etapa1
+          name: App do medico — Etapa 1 (teste da camera)
+          body: APK de teste (Etapa 1). Instale no celular/tablet, ligue a camera USB por OTG e veja se a faixa de status mostra "Camera OK".
+          files: app/build/outputs/apk/debug/*.apk

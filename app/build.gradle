@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.ferrari.vnfl'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "br.com.ferrarimedical.vnfl"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0-etapa1"
+    }
+
+    buildTypes {
+        release { minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    // Captura UVC (libuvc). A Etapa 1 valida se a OV6946 abre com esta lib.
+    implementation 'com.github.jiangdongguo.AndroidUSBCamera:libausbc:3.3.3'
+    // Servidor HTTP local (assets + MJPEG + /fs)
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+}
