@@ -4310,14 +4310,8 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     btn.onclick = () => { try { window.Android.conectar(); } catch (e) {} msg.textContent = "Conectando…"; btn.disabled = true; setTimeout(() => btn.disabled = false, 2500); };
     bar.appendChild(btn);
     (document.body || document.documentElement).appendChild(bar);
-    // log técnico escondido (3 toques no canto superior esquerdo revela — para o Michel, remoto)
-    const dbg = document.createElement("div"); dbg.id = "usbDbg";
-    dbg.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:99998;display:none;background:rgba(0,0,0,.84);color:#9fe9c9;font:10px/1.35 monospace;padding:7px 9px;border-radius:6px;white-space:pre-wrap;max-width:64vw";
-    (document.body || document.documentElement).appendChild(dbg);
-    let showDbg = false;
     const upd = () => { try {
       const d = JSON.parse(window.Android.diag()); const evs = d.eventos || [];
-      dbg.style.display = showDbg ? "block" : "none"; if (showDbg) dbg.textContent = ("MODOS: " + (d.modos || "?") + "\n—\n" + (evs.join("\n") || "(sem eventos)"));
       const vivo = d.aberta && d.ultimoQuadroMs >= 0 && d.ultimoQuadroMs < 1800;
       const negada = evs.length && evs[evs.length - 1].indexOf("NEGADA") >= 0;
       const parou = d.aberta && d.ultimoQuadroMs > 2500;
@@ -4328,8 +4322,6 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       else { bar.style.background = "#b9770e"; msg.textContent = "Conecte a câmera do naso no cabo."; btn.textContent = "Conectar câmera"; }
     } catch (e) {} };
     setInterval(upd, 600); upd();
-    let taps = 0, tt = 0;
-    document.addEventListener("pointerdown", e => { if (e.clientX < 72 && e.clientY < 72) { const n = Date.now(); taps = (n - tt < 500) ? taps + 1 : 1; tt = n; if (taps >= 3) { showDbg = !showDbg; taps = 0; } } });
   }
   const curNav = () => tab === "imagem" ? (MT.open ? (MT.mode === "cmp" ? "cmp" : "metrica") : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {
