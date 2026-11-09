@@ -16,24 +16,6 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
       - run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Inspecionar API da lib UVC (so leitura, nao afeta o APK)
-        if: always()
-        continue-on-error: true
-        run: |
-          echo "=== procurando AARs/JARs da herohan e serenegiant no cache ==="
-          mkdir -p /tmp/apiinspect && cd /tmp/apiinspect
-          find ~/.gradle /root/.gradle -name "*.aar" 2>/dev/null | grep -iE "uvc|herohan|libausbc" || true
-          for aar in $(find ~/.gradle /root/.gradle -name "*.aar" 2>/dev/null | grep -iE "uvc|herohan"); do
-            echo ">>> AAR $aar"; mkdir -p ext; (cd ext && unzip -o "$aar" classes.jar -d . >/dev/null 2>&1 && mv classes.jar "$(basename $aar).jar" 2>/dev/null) || true
-          done
-          find ~/.gradle /root/.gradle -name "*.jar" 2>/dev/null | grep -iE "uvc|herohan|serenegiant|libausbc|libuvc" | while read j; do cp "$j" ext/ 2>/dev/null || true; done
-          echo "=== classes disponiveis ==="
-          for j in ext/*.jar; do echo "--- $j ---"; unzip -l "$j" 2>/dev/null | grep -iE "ICameraHelper|CameraHelper|UVCParam|UVCCamera|/Size\.class|Format" || true; done
-          echo "=== javap COMPLETO das classes-chave (com valores de constantes) ==="
-          CP=$(ls ext/*.jar 2>/dev/null | tr '\n' ':')
-          for C in com.serenegiant.usb.UVCParam com.herohan.uvcapp.CameraPreviewConfig com.serenegiant.usb.UVCCamera com.serenegiant.usb.Size; do
-            echo "########## $C ##########"; javap -public -constants -classpath "$CP" "$C" 2>&1 || echo "(nao encontrada)"
-          done
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: apk, path: app/build/outputs/apk/debug/*.apk, if-no-files-found: ignore }

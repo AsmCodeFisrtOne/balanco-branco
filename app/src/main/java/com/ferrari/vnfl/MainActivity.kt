@@ -24,6 +24,7 @@ import com.herohan.uvcapp.CameraHelper
 import com.herohan.uvcapp.ICameraHelper
 import com.serenegiant.usb.IFrameCallback
 import com.serenegiant.usb.UVCCamera
+import com.serenegiant.usb.UVCParam
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
@@ -150,8 +151,18 @@ class MainActivity : AppCompatActivity() {
             helper?.selectDevice(device)
         }
         override fun onDeviceOpen(device: UsbDevice, isFirstOpen: Boolean) {
-            logEv("2-permissao OK, abrindo")
-            helper?.openCamera()
+            // Abre a camera com o ajuste UVC_QUIRK_FIX_BANDWIDTH (128): corrige camera que
+            // trava depois de alguns segundos no Android (pede mais banda do que o Android libera).
+            // Rede de seguranca: se falhar, abre do jeito padrao (que ja reconhece).
+            try {
+                val param = UVCParam()
+                param.quirks = UVCCamera.UVC_QUIRK_FIX_BANDWIDTH
+                logEv("2-permissao OK, abrindo (ajuste de banda)")
+                helper?.openCamera(param)
+            } catch (e: Exception) {
+                logEv("2-permissao OK, abrindo (padrao)")
+                helper?.openCamera()
+            }
         }
         override fun onCameraOpen(device: UsbDevice) {
             cameraAberta = true
