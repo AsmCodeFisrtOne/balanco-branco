@@ -29,10 +29,10 @@ jobs:
           find ~/.gradle /root/.gradle -name "*.jar" 2>/dev/null | grep -iE "uvc|herohan|serenegiant|libausbc|libuvc" | while read j; do cp "$j" ext/ 2>/dev/null || true; done
           echo "=== classes disponiveis ==="
           for j in ext/*.jar; do echo "--- $j ---"; unzip -l "$j" 2>/dev/null | grep -iE "ICameraHelper|CameraHelper|UVCParam|UVCCamera|/Size\.class|Format" || true; done
-          echo "=== javap das classes-chave ==="
+          echo "=== javap COMPLETO das classes-chave (com valores de constantes) ==="
           CP=$(ls ext/*.jar 2>/dev/null | tr '\n' ':')
-          for C in com.herohan.uvcapp.ICameraHelper com.herohan.uvcapp.CameraHelper com.herohan.uvcapp.UVCParam com.serenegiant.usb.UVCCamera com.serenegiant.usb.Size com.serenegiant.usb.Format; do
-            echo "########## $C ##########"; javap -public -classpath "$CP" "$C" 2>&1 | grep -iE "PreviewSize|Size|Format|MJPEG|YUYV|FRAME_FORMAT|openCamera|UVCParam|public|field|width|height|type" | head -80 || echo "(nao encontrada)"
+          for C in com.serenegiant.usb.UVCParam com.herohan.uvcapp.CameraPreviewConfig com.serenegiant.usb.UVCCamera com.serenegiant.usb.Size; do
+            echo "########## $C ##########"; javap -public -constants -classpath "$CP" "$C" 2>&1 || echo "(nao encontrada)"
           done
       - uses: actions/upload-artifact@v4
         if: always()
