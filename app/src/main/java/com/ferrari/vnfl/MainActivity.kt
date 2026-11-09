@@ -108,19 +108,8 @@ class MainActivity : AppCompatActivity() {
         override fun onDeviceOpen(device: UsbDevice, isFirstOpen: Boolean) { helper?.openCamera() }
         override fun onCameraOpen(device: UsbDevice) {
             cameraAberta = true
-            // Igual ao PC: usar o tamanho REAL (quadrado) da camera do naso, nao o padrao 640x480 da lib.
-            // 640x480 nao e quadrado -> o sistema recorta o centro e "amplia"; 400x400 mostra o quadro inteiro.
-            try {
-                val lista = helper?.supportedSizeList
-                if (lista != null && lista.isNotEmpty()) {
-                    val alvo = lista.minByOrNull { sz ->
-                        (if (sz.width == sz.height) 0 else 1_000_000) + Math.abs(sz.width - 400) + Math.abs(sz.height - 400)
-                    }
-                    if (alvo != null) helper?.previewSize = alvo
-                }
-            } catch (e: Exception) {}
             val s = try { helper?.previewSize } catch (e: Exception) { null }
-            camW = s?.width ?: 400; camH = s?.height ?: 400
+            camW = s?.width ?: 640; camH = s?.height ?: 480
             ligarPreview()
             try { helper?.setFrameCallback(frameCallback, UVCCamera.PIXEL_FORMAT_NV21) } catch (e: Exception) {}
             helper?.startPreview()
