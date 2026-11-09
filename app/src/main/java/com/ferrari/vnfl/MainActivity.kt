@@ -51,6 +51,14 @@ class MainActivity : AppCompatActivity() {
     private var camH = 0
     private val ui = Handler(Looper.getMainLooper())
 
+    // --- compressao JPEG em linha PARALELA (nao trava a entrega da camera USB) ---
+    private val frameLock = Object()
+    @Volatile private var nextFrame: ByteArray? = null   // ultimo quadro cru aguardando compressao (quadro atrasado e descartado)
+    @Volatile private var nextW = 0
+    @Volatile private var nextH = 0
+    @Volatile private var encoderOn = false
+    private var encoderThread: Thread? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
@@ -62,6 +70,7 @@ class MainActivity : AppCompatActivity() {
 
         server = CameraServer(this)
         server.startSafe()
+        iniciarEncoder()          // linha paralela que comprime os quadros em JPEG
 
         preview.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(h: SurfaceHolder) { surfacePronta = true; ligarPreview() }
@@ -98,7 +107,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        encoderOn = false
+        synchronized(frameLock) { frameLock.notifyAll() }
         if (::server.isInitialized) server.stop()
+    }
+
+    // Comprime cada quadro em JPEG numa linha separada: a câmera entrega o quadro e é liberada na hora.
+    private fun iniciarEncoder() {
+        if (encoderThread != null) return
+        encoderOn = true
+        encoderThread = Thread {
+            while (encoderOn) {
+                var b: ByteArray? = null; var w = 0; var h = 0
+                synchronized(frameLock) {
+                    while (nextFrame == null && encoderOn) { try { frameLock.wait() } catch (e: InterruptedException) {} }
+                    b = nextFrame; w = nextW; h = nextH; nextFrame = null
+                }
+                val buf = b ?: continue
+                if (w <= 0 || h <= 0) continue
+                try {
+                    val out = ByteArrayOutputStream()
+                    YuvImage(buf, ImageFormat.NV21, w, h, null).compressToJpeg(Rect(0, 0, w, h), 85, out)
+                    CameraServer.pushJpeg(out.toByteArray(), w, h)
+                } catch (e: Exception) {}
+            }
+        }.apply { isDaemon = true; name = "jpeg-encoder"; start() }
     }
 
     // ----- câmera USB (UVC) -> stream MJPEG que o sistema web consome -----
@@ -123,10 +156,8 @@ class MainActivity : AppCompatActivity() {
     private val frameCallback = IFrameCallback { frame: ByteBuffer ->
         if (!cameraAberta || camW <= 0 || camH <= 0) return@IFrameCallback
         try {
-            val b = ByteArray(frame.remaining()); frame.get(b)
-            val out = ByteArrayOutputStream()
-            YuvImage(b, ImageFormat.NV21, camW, camH, null).compressToJpeg(Rect(0, 0, camW, camH), 90, out)
-            CameraServer.pushJpeg(out.toByteArray(), camW, camH)
+            val b = ByteArray(frame.remaining()); frame.get(b)      // só copia (rápido) e libera a câmera
+            synchronized(frameLock) { nextFrame = b; nextW = camW; nextH = camH; frameLock.notifyAll() }
         } catch (e: Exception) {}
     }
 
