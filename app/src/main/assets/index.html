@@ -4297,6 +4297,23 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     fb.onclick = () => { fb.querySelector("span").textContent === "Tocar de novo para fechar" ? window.Android.sair() : (fb.querySelector("span").textContent = "Tocar de novo para fechar", setTimeout(() => { if (fb.querySelector("span")) fb.querySelector("span").textContent = "Fechar app"; }, 2500)); };
     const foot = document.querySelector("#side .foot"); if (foot) foot.parentNode.insertBefore(fb, foot); else document.getElementById("side").appendChild(fb);
   }
+  // ===== DIAGNÓSTICO TEMPORÁRIO: estado da câmera USB no app (toque para recolher) =====
+  if (window.Android && window.Android.diag) {
+    const dg = document.createElement("div"); dg.id = "usbDiag";
+    dg.style.cssText = "position:fixed;left:8px;top:8px;z-index:99999;max-width:52vw;background:rgba(0,0,0,.84);color:#9fe9c9;font:11px/1.4 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;box-shadow:0 2px 10px rgba(0,0,0,.4)";
+    dg.textContent = "diagnóstico…"; let min = false;
+    dg.onclick = () => { min = !min; dg.style.maxHeight = min ? "18px" : ""; dg.style.overflow = min ? "hidden" : ""; };
+    (document.body || document.documentElement).appendChild(dg);
+    const upd = () => { try {
+      const d = JSON.parse(window.Android.diag());
+      const q = d.ultimoQuadroMs < 0 ? "nenhum ainda" : d.ultimoQuadroMs + " ms atrás";
+      dg.textContent = ["CÂMERA USB · toque p/ recolher",
+        "aberta: " + (d.aberta ? "SIM" : "não") + "    tam: " + d.w + "×" + d.h,
+        "último quadro: " + q + (d.temQuadro ? "" : " (sem imagem)"), "—",
+        ...(d.eventos || [])].join("\n");
+    } catch (e) { dg.textContent = "diag erro: " + e; } };
+    setInterval(upd, 500); upd();
+  }
   const curNav = () => tab === "imagem" ? (MT.open ? (MT.mode === "cmp" ? "cmp" : "metrica") : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {
     if (n === "adv" && tab !== "adv") PR.advBack = curNav();

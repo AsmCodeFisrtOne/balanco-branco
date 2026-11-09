@@ -51,6 +51,14 @@ class MainActivity : AppCompatActivity() {
     private var camH = 0
     private val ui = Handler(Looper.getMainLooper())
 
+    // --- diagnostico (so leitura): registra os eventos da camera USB para aparecer na tela ---
+    private val eventos = java.util.concurrent.ConcurrentLinkedQueue<String>()
+    private fun logEv(s: String) {
+        val t = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
+        eventos.add("$t  $s")
+        while (eventos.size > 14) eventos.poll()
+    }
+
     // --- compressao JPEG em linha PARALELA (nao trava a entrega da camera USB) ---
     private val frameLock = Object()
     @Volatile private var nextFrame: ByteArray? = null   // ultimo quadro cru aguardando compressao (quadro atrasado e descartado)
@@ -137,20 +145,27 @@ class MainActivity : AppCompatActivity() {
     // ----- câmera USB (UVC) -> stream MJPEG que o sistema web consome -----
 
     private val stateCallback = object : ICameraHelper.StateCallback {
-        override fun onAttach(device: UsbDevice) { helper?.selectDevice(device) }
-        override fun onDeviceOpen(device: UsbDevice, isFirstOpen: Boolean) { helper?.openCamera() }
+        override fun onAttach(device: UsbDevice) {
+            logEv("1-detectada USB ${String.format("%04x:%04x", device.vendorId, device.productId)}")
+            helper?.selectDevice(device)
+        }
+        override fun onDeviceOpen(device: UsbDevice, isFirstOpen: Boolean) {
+            logEv("2-permissao OK, abrindo")
+            helper?.openCamera()
+        }
         override fun onCameraOpen(device: UsbDevice) {
             cameraAberta = true
             val s = try { helper?.previewSize } catch (e: Exception) { null }
             camW = s?.width ?: 640; camH = s?.height ?: 480
+            logEv("3-camera aberta ${camW}x${camH}")
             ligarPreview()
             try { helper?.setFrameCallback(frameCallback, UVCCamera.PIXEL_FORMAT_NV21) } catch (e: Exception) {}
             helper?.startPreview()
         }
-        override fun onCameraClose(device: UsbDevice) { cameraAberta = false }
-        override fun onDeviceClose(device: UsbDevice) {}
-        override fun onDetach(device: UsbDevice) { cameraAberta = false }
-        override fun onCancel(device: UsbDevice) {}
+        override fun onCameraClose(device: UsbDevice) { cameraAberta = false; logEv("camera fechou") }
+        override fun onDeviceClose(device: UsbDevice) { logEv("dispositivo fechou") }
+        override fun onDetach(device: UsbDevice) { cameraAberta = false; logEv("USB desconectada") }
+        override fun onCancel(device: UsbDevice) { logEv("X-permissao NEGADA/cancelada") }
     }
 
     private val frameCallback = IFrameCallback { frame: ByteBuffer ->
@@ -196,6 +211,17 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface fun stamp(): Long = CameraServer.lastStamp()
         @JavascriptInterface fun info(): String {
             val s = CameraServer.lastSize(); return s[0].toString() + "x" + s[1]
+        }
+        // diagnostico (so leitura): estado da camera USB + ultimos eventos, para mostrar na tela
+        @JavascriptInterface fun diag(): String {
+            val o = org.json.JSONObject()
+            o.put("aberta", cameraAberta)
+            o.put("w", camW); o.put("h", camH)
+            val st = CameraServer.lastStamp()
+            o.put("ultimoQuadroMs", if (st == 0L) -1L else System.currentTimeMillis() - st)
+            o.put("temQuadro", CameraServer.hasFrame())
+            o.put("eventos", org.json.JSONArray(eventos.toList()))
+            return o.toString()
         }
     }
 
