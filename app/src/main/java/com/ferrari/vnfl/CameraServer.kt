@@ -179,11 +179,18 @@ class CameraServer(private val ctx: Context) : NanoHTTPD("127.0.0.1", PORT) {   
         val f = safeFile(root, session.parameters["p"]?.firstOrNull() ?: "") ?: return bad("caminho inválido")
         return try {
             val files = HashMap<String, String>()
-            session.parseBody(files)                       // corpo vai para arquivo temporário ("postData")
-            val tmp = files["postData"] ?: return bad("corpo vazio")
+            session.parseBody(files)
+            // NanoHTTPD guarda o corpo de um PUT como ARQUIVO TEMPORARIO na chave "content";
+            // "postData" (texto) e usado no POST. Antes lia so "postData" -> toda gravacao falhava.
+            val contentPath = files["content"]
+            val postData = files["postData"]
             f.parentFile?.mkdirs()
             val tmpF = File(f.absolutePath + ".tmp")
-            File(tmp).copyTo(tmpF, overwrite = true)
+            when {
+                contentPath != null -> File(contentPath).copyTo(tmpF, overwrite = true)
+                postData != null -> tmpF.writeText(postData)
+                else -> return bad("corpo vazio")
+            }
             if (f.exists()) f.delete()
             if (!tmpF.renameTo(f)) return bad("falha ao gravar")
             json("{\"ok\":true}")
