@@ -4297,22 +4297,37 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     fb.onclick = () => { fb.querySelector("span").textContent === "Tocar de novo para fechar" ? window.Android.sair() : (fb.querySelector("span").textContent = "Tocar de novo para fechar", setTimeout(() => { if (fb.querySelector("span")) fb.querySelector("span").textContent = "Fechar app"; }, 2500)); };
     const foot = document.querySelector("#side .foot"); if (foot) foot.parentNode.insertBefore(fb, foot); else document.getElementById("side").appendChild(fb);
   }
-  // ===== DIAGNÓSTICO TEMPORÁRIO: estado da câmera USB no app (toque para recolher) =====
+  // ===== Assistente de conexão da câmera USB (app) — à prova de leigo =====
+  // Quando a câmera está OK: nada aparece. Quando falta algo: aviso grande em português + botão único.
   if (window.Android && window.Android.diag) {
-    const dg = document.createElement("div"); dg.id = "usbDiag";
-    dg.style.cssText = "position:fixed;left:8px;top:8px;z-index:99999;max-width:52vw;background:rgba(0,0,0,.84);color:#9fe9c9;font:11px/1.4 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;box-shadow:0 2px 10px rgba(0,0,0,.4)";
-    dg.textContent = "diagnóstico…"; let min = false;
-    dg.onclick = () => { min = !min; dg.style.maxHeight = min ? "18px" : ""; dg.style.overflow = min ? "hidden" : ""; };
-    (document.body || document.documentElement).appendChild(dg);
+    const bar = document.createElement("div"); bar.id = "usbBar";
+    bar.style.cssText = "position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;display:none;align-items:center;gap:14px;max-width:92vw;padding:13px 18px;border-radius:12px;font:600 15px/1.25 system-ui,sans-serif;color:#fff;box-shadow:0 4px 18px rgba(0,0,0,.35)";
+    const msg = document.createElement("span"); bar.appendChild(msg);
+    const btn = document.createElement("button"); btn.textContent = "Conectar câmera";
+    btn.style.cssText = "border:0;border-radius:9px;padding:9px 16px;font:700 14px system-ui;background:#fff;color:#111";
+    btn.onclick = () => { try { window.Android.conectar(); } catch (e) {} msg.textContent = "Conectando…"; btn.disabled = true; setTimeout(() => btn.disabled = false, 2500); };
+    bar.appendChild(btn);
+    (document.body || document.documentElement).appendChild(bar);
+    // log técnico escondido (3 toques no canto superior esquerdo revela — para o Michel, remoto)
+    const dbg = document.createElement("div"); dbg.id = "usbDbg";
+    dbg.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:99998;display:none;background:rgba(0,0,0,.84);color:#9fe9c9;font:10px/1.35 monospace;padding:7px 9px;border-radius:6px;white-space:pre-wrap;max-width:64vw";
+    (document.body || document.documentElement).appendChild(dbg);
+    let showDbg = false;
     const upd = () => { try {
-      const d = JSON.parse(window.Android.diag());
-      const q = d.ultimoQuadroMs < 0 ? "nenhum ainda" : d.ultimoQuadroMs + " ms atrás";
-      dg.textContent = ["CÂMERA USB · toque p/ recolher",
-        "aberta: " + (d.aberta ? "SIM" : "não") + "    tam: " + d.w + "×" + d.h,
-        "último quadro: " + q + (d.temQuadro ? "" : " (sem imagem)"), "—",
-        ...(d.eventos || [])].join("\n");
-    } catch (e) { dg.textContent = "diag erro: " + e; } };
-    setInterval(upd, 500); upd();
+      const d = JSON.parse(window.Android.diag()); const evs = d.eventos || [];
+      dbg.style.display = showDbg ? "block" : "none"; if (showDbg) dbg.textContent = evs.join("\n") || "(sem eventos)";
+      const vivo = d.aberta && d.ultimoQuadroMs >= 0 && d.ultimoQuadroMs < 1800;
+      const negada = evs.length && evs[evs.length - 1].indexOf("NEGADA") >= 0;
+      const parou = d.aberta && d.ultimoQuadroMs > 2500;
+      if (vivo) { bar.style.display = "none"; return; }
+      bar.style.display = "flex";
+      if (negada) { bar.style.background = "#c0392b"; msg.textContent = "Permissão da câmera recusada."; btn.textContent = "Tentar de novo"; }
+      else if (parou) { bar.style.background = "#d35400"; msg.textContent = "A câmera parou de enviar imagem."; btn.textContent = "Reconectar"; }
+      else { bar.style.background = "#b9770e"; msg.textContent = "Conecte a câmera do naso no cabo."; btn.textContent = "Conectar câmera"; }
+    } catch (e) {} };
+    setInterval(upd, 600); upd();
+    let taps = 0, tt = 0;
+    document.addEventListener("pointerdown", e => { if (e.clientX < 72 && e.clientY < 72) { const n = Date.now(); taps = (n - tt < 500) ? taps + 1 : 1; tt = n; if (taps >= 3) { showDbg = !showDbg; taps = 0; } } });
   }
   const curNav = () => tab === "imagem" ? (MT.open ? (MT.mode === "cmp" ? "cmp" : "metrica") : "exame") : tab === "adv" ? "adv" : tab === "tutorial" ? "tut" : tab === "pront" ? (PR.scr === "config" ? "config" : PR.scr === "exame" ? "exame" : "pront") : "exame";
   function navGo(n) {

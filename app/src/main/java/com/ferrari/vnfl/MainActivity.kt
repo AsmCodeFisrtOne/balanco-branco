@@ -212,6 +212,15 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface fun info(): String {
             val s = CameraServer.lastSize(); return s[0].toString() + "x" + s[1]
         }
+        // botao "Conectar camera": recria o helper -> reenumera a USB -> dispara a permissao e abre a camera
+        @JavascriptInterface fun conectar() {
+            runOnUiThread {
+                try { helper?.release() } catch (e: Exception) {}
+                cameraAberta = false
+                helper = CameraHelper().apply { setStateCallback(stateCallback) }
+                logEv("reconectar solicitado")
+            }
+        }
         // diagnostico (so leitura): estado da camera USB + ultimos eventos, para mostrar na tela
         @JavascriptInterface fun diag(): String {
             val o = org.json.JSONObject()
