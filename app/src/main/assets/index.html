@@ -4315,7 +4315,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     let showDbg = false;
     const upd = () => { try {
       const d = JSON.parse(window.Android.diag()); const evs = d.eventos || [];
-      dbg.style.display = showDbg ? "block" : "none"; if (showDbg) dbg.textContent = evs.join("\n") || "(sem eventos)";
+      dbg.style.display = showDbg ? "block" : "none"; if (showDbg) dbg.textContent = ("MODOS: " + (d.modos || "?") + "\n—\n" + (evs.join("\n") || "(sem eventos)"));
       const vivo = d.aberta && d.ultimoQuadroMs >= 0 && d.ultimoQuadroMs < 1800;
       const negada = evs.length && evs[evs.length - 1].indexOf("NEGADA") >= 0;
       const parou = d.aberta && d.ultimoQuadroMs > 2500;

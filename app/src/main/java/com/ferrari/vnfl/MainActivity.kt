@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var nextH = 0
     @Volatile private var encoderOn = false
     private var encoderThread: Thread? = null
+    @Volatile private var modosStr = ""   // tamanhos que a camera USB oferece (diagnostico, so leitura)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -168,6 +169,8 @@ class MainActivity : AppCompatActivity() {
             cameraAberta = true
             val s = try { helper?.previewSize } catch (e: Exception) { null }
             camW = s?.width ?: 640; camH = s?.height ?: 480
+            // lista os tamanhos que a camera oferece (so para diagnostico; nao muda nada)
+            modosStr = try { helper?.supportedSizeList?.joinToString(" ") { "${it.width}x${it.height}/t${it.type}" } ?: "" } catch (e: Exception) { "" }
             logEv("3-camera aberta ${camW}x${camH}")
             ligarPreview()
             try { helper?.setFrameCallback(frameCallback, UVCCamera.PIXEL_FORMAT_NV21) } catch (e: Exception) {}
@@ -240,6 +243,7 @@ class MainActivity : AppCompatActivity() {
             val st = CameraServer.lastStamp()
             o.put("ultimoQuadroMs", if (st == 0L) -1L else System.currentTimeMillis() - st)
             o.put("temQuadro", CameraServer.hasFrame())
+            o.put("modos", modosStr)
             o.put("eventos", org.json.JSONArray(eventos.toList()))
             return o.toString()
         }
