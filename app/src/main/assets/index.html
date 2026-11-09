@@ -1963,7 +1963,9 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
     const ar = (outCv.width && outCv.height) ? outCv.width / outCv.height : 1;
     let w, h, x, y;
     if (viewing) { w = Math.min(aw * 0.32, 280); h = w / ar; x = 12; y = 12; }
-    else { w = aw; h = w / ar; if (h > ah) { h = ah; w = h * ar; } x = (aw - w) / 2; y = (ah - h) / 2; }
+    else { w = aw; h = w / ar; if (h > ah) { h = ah; w = h * ar; }
+      if (window.Android) { const cap = 560; if (h > cap) { h = cap; w = h * ar; } }   // tablet: limita o tamanho da imagem p/ ela ficar mais nítida (menos esticada)
+      x = (aw - w) / 2; y = (ah - h) / 2; }
     Object.assign(live.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
     live.classList.toggle("pip", !!viewing);
   }
