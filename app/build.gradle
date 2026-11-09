@@ -8,11 +8,11 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "br.com.ferrarimedical.vnfl"
+        applicationId "br.com.ferrarimedical.vnfl.naso"   // app separado do anterior: instala do lado, nao substitui
         minSdk 24
         targetSdk 34
         versionCode 1
-        versionName "1.0-etapa1"
+        versionName "1.0-naso"
     }
 
     signingConfigs {
