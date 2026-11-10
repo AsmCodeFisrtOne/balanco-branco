@@ -2,7 +2,9 @@ package com.ferrari.vnfl
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.core.content.FileProvider
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
@@ -122,6 +124,21 @@ class MainActivity : AppCompatActivity() {
         if (::server.isInitialized) server.stop()
     }
 
+    // Baixa um PDF do servidor local (ex.: manual.pdf) para o cache e abre num leitor do Android.
+    private fun abrirPdfDoServidor(url: String) {
+        Thread {
+            try {
+                val nome = url.substringAfterLast('/').substringBefore('?').ifBlank { "documento.pdf" }
+                val f = java.io.File(cacheDir, nome)
+                val con = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                con.inputStream.use { ins -> java.io.FileOutputStream(f).use { out -> ins.copyTo(out) } }
+                val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", f)
+                val it = Intent(Intent.ACTION_VIEW).apply { setDataAndType(uri, "application/pdf"); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK) }
+                runOnUiThread { try { startActivity(Intent.createChooser(it, "Abrir").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Exception) {} }
+            } catch (e: Exception) {}
+        }.apply { isDaemon = true; start() }
+    }
+
     // Comprime cada quadro em JPEG numa linha separada: a câmera entrega o quadro e é liberada na hora.
     private fun iniciarEncoder() {
         if (encoderThread != null) return
@@ -213,8 +230,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
         web.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-                request.url.host != "127.0.0.1"   // tudo fica no servidor local
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url
+                if (url.path?.endsWith(".pdf", true) == true) { abrirPdfDoServidor(url.toString()); return true }  // PDF (manual) -> leitor do Android
+                return url.host != "127.0.0.1"   // o resto fica no servidor local
+            }
         }
         web.addJavascriptInterface(JsBridge(), "Android")   // o index.html detecta "modo nativo" por window.Android
         web.loadUrl("http://127.0.0.1:" + CameraServer.PORT + "/")
@@ -225,6 +245,26 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface fun stamp(): Long = CameraServer.lastStamp()
         @JavascriptInterface fun info(): String {
             val s = CameraServer.lastSize(); return s[0].toString() + "x" + s[1]
+        }
+        // Abre (ou compartilha) um arquivo já gravado na pasta de dados, num app do Android.
+        // relPath: caminho relativo dentro de Dados/ (ex.: "_saida/laudo.pdf"); acao: "ver" ou "enviar".
+        @JavascriptInterface fun abrirArquivo(relPath: String, mime: String, acao: String): Boolean {
+            return try {
+                val f = java.io.File(CameraFiles.dataRoot(this@MainActivity), relPath)
+                if (!f.isFile) return false
+                val uri = FileProvider.getUriForFile(this@MainActivity, "$packageName.fileprovider", f)
+                val tipo = if (mime.isBlank()) "application/octet-stream" else mime
+                val base = if (acao == "enviar") {
+                    Intent(Intent.ACTION_SEND).apply { type = tipo; putExtra(Intent.EXTRA_STREAM, uri) }
+                } else {
+                    Intent(Intent.ACTION_VIEW).apply { setDataAndType(uri, tipo) }
+                }
+                base.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val chooser = Intent.createChooser(base, if (acao == "enviar") "Enviar" else "Abrir")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                runOnUiThread { try { startActivity(chooser) } catch (e: Exception) {} }
+                true
+            } catch (e: Exception) { false }
         }
         // botao "Conectar camera": recria o helper -> reenumera a USB -> dispara a permissao e abre a camera
         @JavascriptInterface fun conectar() {

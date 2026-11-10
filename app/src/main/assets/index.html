@@ -4053,7 +4053,18 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       doc.text("Laudo v" + ver + " · gerado em " + brDT(isoNow()) + " · documento para impressão e assinatura (assinatura digital ICP-Brasil prevista para a 2ª fase)", M, 297 - 10); doc.text(i + "/" + n, W - M, 297 - 10, { align: "right" }); }
     return doc.output("blob"); }
   async function pdfOf(base, x) { const l = (x.laudos || []).slice(-1)[0]; return l ? readBlob([...base, ...l.arquivo.split("/")]) : null; }
-  function openBlob(b) { const u = URL.createObjectURL(b), w = window.open(u, "_blank"); if (!w) { const a = document.createElement("a"); a.href = u; a.download = "laudo.pdf"; a.click(); } setTimeout(() => URL.revokeObjectURL(u), 60000); }
+  function mimeDe(nome, blob) { if (blob && blob.type) return blob.type; const n = (nome || "").toLowerCase();
+    return n.endsWith(".pdf") ? "application/pdf" : n.endsWith(".png") ? "image/png" : (n.endsWith(".jpg") || n.endsWith(".jpeg")) ? "image/jpeg"
+      : n.endsWith(".csv") ? "text/csv" : n.endsWith(".xlsx") ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : n.endsWith(".webm") ? "video/webm" : n.endsWith(".mp4") ? "video/mp4" : "application/octet-stream"; }
+  async function nativeFile(blob, nome, acao) {   // app: grava em Dados/_saida e abre/compartilha num app do Android
+    if (!(window.Android && window.Android.abrirArquivo)) return false;
+    try { await writeFile(["_saida", nome], blob); return !!window.Android.abrirArquivo("_saida/" + nome, mimeDe(nome, blob), acao); } catch (e) { return false; } }
+  async function openBlob(b, nome) { nome = nome || "laudo.pdf";
+    if (await nativeFile(b, nome, "ver")) return;
+    const u = URL.createObjectURL(b), w = window.open(u, "_blank"); if (!w) { const a = document.createElement("a"); a.href = u; a.download = nome; a.click(); } setTimeout(() => URL.revokeObjectURL(u), 60000); }
+  async function saveBlob(b, nome) {   // "baixar": no app vira compartilhar (Drive, e-mail, Downloads...)
+    if (await nativeFile(b, nome, "enviar")) return;
+    const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(u), 5000); }
   // ================= DICOM (Secondary Capture, Explicit VR Little Endian, RGB sem compressão) =================
   function dicomUid() { const r = crypto.getRandomValues(new Uint8Array(16)); let n = 0n; for (const b of r) n = (n << 8n) | BigInt(b); return "2.25." + n.toString(); }
   function dicomSC(img, meta) {
@@ -4163,7 +4174,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       case "addEv": { const txt = $("evTxt").value.trim(); if (!txt) return; const d = isoNow(); await writeJSON(["pacientes", PR.pac, "evolucao", d.slice(0, 19).replace(/[:T]/g, "-") + ".json"], { formato: FMT, data: d, autor: PR.user.nome, texto: txt });
         await audit("anotou evolução", PR.pac); prRender(); break; }
       case "anexar": $("prDocIn").click(); break;
-      case "abrirDoc": { const f = await readBlob(["pacientes", PR.pac, "documentos", id]); if (f) openBlob(f); await audit("abriu documento", PR.pac + " · " + id); break; }
+      case "abrirDoc": { const f = await readBlob(["pacientes", PR.pac, "documentos", id]); if (f) openBlob(f, id); await audit("abriu documento", PR.pac + " · " + id); break; }
       case "termoImp": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); termoPrint(p, $("xTipo") ? $("xTipo").value : "Nasofibrolaringoscopia"); break; }
       case "termoAss": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); termoSign(p, "Nasofibrolaringoscopia"); break; }
       case "termoAssEx": { const p = await readJSON(["pacientes", PR.pac, "paciente.json"]); termoSign(p, $("xTipo").value, n => { PR.termoArq = "documentos/" + n; $("xTermoOk").textContent = "✓ Termo assinado e anexado (" + n + ")."; }); break; }
@@ -4181,7 +4192,7 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
       case "cfgImgDef": DOC.shp = FAB.shp; DOC.nr = FAB.nr; DOC.evl = FAB.evl; docSave(); docApply(); setStatus("Imagem: padrão de fábrica.", "ok"); break;
       case "ajFoto": ajOpen(id); break;
       case "verVid": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) pvOpen(f, arq.split("/").pop()); await audit("assistiu vídeo", PR.pac + " · " + arq); break; }
-      case "verArq": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) openBlob(f); break; }
+      case "verArq": { const [dir, arq] = id.split("|"), f = await readBlob(["pacientes", PR.pac, "exames", dir, ...arq.split("/")]); if (f) openBlob(f, arq.split("/").pop()); break; }
       case "cmpEx": { await cmpChooser(PR.pac, id); break; }
       case "cmpExOld": {                                       // (substituído por cmpChooser)
         const pid = PR.pac, all = await patientPhotos(pid), dirOf = q => q.base[3], mine = all.filter(q => dirOf(q) === id), others = [...new Set(all.filter(q => dirOf(q) !== id).map(dirOf))];
@@ -4199,11 +4210,13 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
         break; }
       case "metricaDe": { const [dir, arq] = id.split("|"); await openMetricFrom(PR.pac, dir, arq); break; }
       case "laudo": go("laudo", { ldir: id, lbase: ["pacientes", PR.pac, "exames", id] }); break;
-      case "verPdf": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), f = await pdfOf(base, x); if (f) { openBlob(f); await audit("abriu laudo", PR.pac + " · " + x.id); } break; }
+      case "verPdf": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), f = await pdfOf(base, x); if (f) { openBlob(f, "laudo_" + x.id + ".pdf"); await audit("abriu laudo", PR.pac + " · " + x.id); } break; }
       case "copiaPdf": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), f = await pdfOf(base, x); if (!f) return; const nm = "laudo_" + x.id + ".pdf";
+        if (await nativeFile(f, nm, "enviar")) { setStatus("Escolha onde salvar/enviar a cópia do laudo.", "ok"); await audit("salvou cópia do laudo (entrega)", PR.pac + " · " + x.id); break; }
         if (window.showSaveFilePicker) { try { const h = await window.showSaveFilePicker({ suggestedName: nm, types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] }); const w = await h.createWritable(); await w.write(f); await w.close(); setStatus("Cópia do laudo salva.", "ok"); } catch (er) { return; } }
         else { const u = URL.createObjectURL(f), aa = document.createElement("a"); aa.href = u; aa.download = nm; aa.click(); } await audit("salvou cópia do laudo (entrega)", PR.pac + " · " + x.id); break; }
       case "email": { const base = ["pacientes", PR.pac, "exames", id], x = await readJSON([...base, "exame.json"]), p = await readJSON(["pacientes", PR.pac, "paciente.json"]), f = await pdfOf(base, x); if (!f) return;
+        if (await nativeFile(f, "laudo_" + x.id + ".pdf", "enviar")) { setStatus("Escolha o e-mail (o PDF já vai anexado).", "ok"); await audit("compartilhou laudo por e-mail", PR.pac + " · " + x.id); break; }
         const u = URL.createObjectURL(f), aa = document.createElement("a"); aa.href = u; aa.download = "laudo_" + x.id + ".pdf"; aa.click();
         location.href = "mailto:" + encodeURIComponent(p.email || "") + "?subject=" + encodeURIComponent("Laudo de " + x.tipo + " — " + brDate(x.inicio)) + "&body=" + encodeURIComponent("Segue em anexo o laudo do exame realizado em " + brDate(x.inicio) + ".\n\n" + (PR.cons.nome || ""));
         setStatus("O PDF foi baixado: anexe-o no e-mail que abriu.", "ok"); await audit("preparou e-mail do laudo", PR.pac + " · " + x.id); break; }
@@ -4224,13 +4237,13 @@ html.lic-locked body > *:not(#licWrap):not(script){display:none!important}
           const nome = mv("mdNome") || "Meu modelo", mods = PR.L.mods, ex = mods.find(q => q.nome === nome), o = { id: ex ? ex.id : "m" + Date.now(), nome, secoes: L.secoes, conclusao: L.conclusao };
           if (ex) Object.assign(ex, o); else mods.push(o); L.modelo = o.id; await writeJSON(["cadastros", "modelos_laudo", PR.L.medId + ".json"], mods); MD.hidden = true; setStatus("Modelo “" + nome + "” salvo.", "ok"); await scrLaudoKeep(); }, "primary"]]); break; }
       case "lRasc": { PR.L.x.laudo_rascunho = lCollect(); await writeJSON([...PR.L.base, "exame.json"], PR.L.x); setStatus("Rascunho do laudo salvo.", "ok"); break; }
-      case "lPrev": { const L = lCollect(); setStatus("Gerando PDF…", ""); openBlob(await buildPdf(PR.L.x, PR.L.p, L, (PR.L.x.laudos || []).length + 1)); setStatus("Pré-visualização aberta (ainda não finalizado).", "ok"); break; }
+      case "lPrev": { const L = lCollect(); setStatus("Gerando PDF…", ""); await openBlob(await buildPdf(PR.L.x, PR.L.p, L, (PR.L.x.laudos || []).length + 1), "laudo_previa.pdf"); setStatus("Pré-visualização aberta (ainda não finalizado).", "ok"); break; }
       case "lFinal": { const L = lCollect(), x = PR.L.x; if (!L.secoes.some(s => s.texto.trim()) && !L.conclusao.trim()) { setStatus("O laudo está vazio.", "bad"); return; }
         setStatus("Gerando PDF…", ""); const v = (x.laudos || []).length + 1, pdf = await buildPdf(x, PR.L.p, L, v), arq = "laudo/laudo_v" + v + ".pdf";
         await writeFile([...PR.L.base, ...arq.split("/")], pdf); (x.laudos = x.laudos || []).push({ arquivo: arq, versao: v, gerado_em: isoNow(), por: PR.user.nome, conteudo: JSON.parse(JSON.stringify(L)) });
         delete x.laudo_rascunho; x.status = "laudado"; L.imagens.forEach(q => { const m = x.midias.find(mm => mm.arquivo === q.arquivo); if (m) m.legenda = q.legenda; });
         await writeJSON([...PR.L.base, "exame.json"], x); if (x.paciente) { const s = PR.index.pacientes[x.paciente].exames.find(q => q.id === x.id); if (s) s.status = "laudado"; await saveIndex(); }
-        await audit("finalizou laudo v" + v, (x.paciente || "avulso") + " · " + x.id); setStatus("Laudo v" + v + " finalizado e gravado no exame.", "ok"); openBlob(pdf); go("paciente", { pac: x.paciente, pacTab: "exames" }); break; }
+        await audit("finalizou laudo v" + v, (x.paciente || "avulso") + " · " + x.id); setStatus("Laudo v" + v + " finalizado e gravado no exame.", "ok"); await openBlob(pdf, "laudo_" + x.id + ".pdf"); go("paciente", { pac: x.paciente, pacTab: "exames" }); break; }
       // configurações
       case "cfgCons": Object.assign(PR.cons, { nome: $("cNome").value.trim(), cidade: $("cCid").value.trim(), termo: $("cTermo").value }); await writeJSON(["_sistema", "consultorio.json"], PR.cons); await audit("editou dados do consultório"); setStatus("Consultório salvo.", "ok"); break;
       case "cfgEdit": { const [k, i] = id.split("|"); cfgEdit(k, i); break; }

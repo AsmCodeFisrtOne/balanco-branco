@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- pasta de dados do app (getExternalFilesDir/Dados) -->
+    <external-files-path name="dados" path="Dados/" />
+    <cache-path name="cache" path="." />
+</paths>
